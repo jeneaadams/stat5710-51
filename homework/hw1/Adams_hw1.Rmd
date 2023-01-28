@@ -31,7 +31,7 @@ knitr::opts_chunk$set(echo = FALSE, results = "hide", fig.width=8, fig.height=4)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, scales, ggballoonplot, ggpubr)
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, scales, ggballoonplot, ggpubr, readr)
 ```
 
 
@@ -214,7 +214,7 @@ Now we have an age range of 18-76
 
 We can see the new distribution of ages with a historgram 
 ```{r}
-hist(survey.sub.pruned$age, breaks = 50, col = topo.colors(50))
+# hist(survey.sub.pruned$age, breaks = 50, col = topo.colors(50))
 ```
 
 ```{r}
@@ -342,6 +342,8 @@ Median income in the US
 
 
 2. Does this sample appear to be a random sample from the MTURK population?
+
+
 
 ### answer
 
@@ -762,6 +764,14 @@ Here are the datasets:
 -`baseball.csv`: long format
 
 Feel free to use either dataset to address the problems. 
+```{r}
+baseball <- read.csv("data/baseball.csv", header=T, stringsAsFactors = FALSE)  
+```
+
+```{r}
+head(baseball)
+```
+
 
 ## EDA: Relationship between payroll changes and performance
 
@@ -774,11 +784,25 @@ a). To describe the increment of payroll in each year there are several possible
     - option 1: diff: payroll_2013 - payroll_2012
     - option 2: log diff: log(payroll_2013) - log(payroll_2012)
 
+
 Explain why the log difference is more appropriate in this setup.
 
 b). Create a new variable `diff_log=log(payroll_2013) - log(payroll_2012)`. Hint: use `dplyr::lag()` function.
 
+```{r}
+baseball_logdiff = baseball %>%
+  group_by(team) %>%
+  mutate(diff_log = log(payroll) - log(lag(payroll, default = payroll[1], order_by = team)))
+head(baseball_logdiff)
+```
+
+
 c). Create a long data table including: team, year, diff_log, win_pct
+```{r}
+baseball_long = baseball_logdiff %>%
+  select(team, year, diff_log, win_pct)
+  
+```
 
 
 ## Exploratory questions

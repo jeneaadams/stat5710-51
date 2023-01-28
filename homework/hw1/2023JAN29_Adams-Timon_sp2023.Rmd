@@ -277,23 +277,23 @@ received 1740 surveys
 # refactor education responses
 survey_data_subset$education <- education
 print(paste("number of surveys:", nrow(survey_data_subset)))
-survey_data_cleaned <- filter(survey_data_subset,
+survey.sub.pruned <- filter(survey_data_subset,
                               (!is.na(age) & !(age %in% c(4,223))) &
                                 gender != "" &
                                 income != "" &
                                 wharton != "" &
                                 sirius != "" &
                                 !(sirius == "No" & wharton == "Yes"))
-print(paste("number of surveys:", nrow(survey_data_cleaned)))
+print(paste("number of surveys:", nrow(survey.sub.pruned)))
 
-survey_data_cleaned$income <- as.factor(survey_data_cleaned$income)
-summary(survey_data_cleaned$income)
+survey.sub.pruned$income <- as.factor(survey.sub.pruned$income)
+summary(survey.sub.pruned$income)
 
-survey_data_cleaned$education <- as.factor(survey_data_cleaned$education)
-summary(survey_data_cleaned$education)
+survey.sub.pruned$education <- as.factor(survey.sub.pruned$education)
+summary(survey.sub.pruned$education)
 
-survey_data_cleaned$gender <- as.factor(survey_data_cleaned$gender)
-summary(survey_data_cleaned$gender)
+survey.sub.pruned$gender <- as.factor(survey.sub.pruned$gender)
+summary(survey.sub.pruned$gender)
 ```
 
 ```{r}
@@ -304,7 +304,7 @@ summary(survey_data_cleaned$gender)
 ```{r gender plots}
 
 # plot looking at gender
-survey_data_cleaned %>%
+survey.sub.pruned %>%
   summarise(pct = summary(gender)/length(gender),
             gender = levels(gender)) %>%
   ggplot(aes(x=gender, y=pct, fill=pct))+
@@ -319,22 +319,22 @@ survey_data_cleaned %>%
 
 ```{r age plots}
 
-summary(survey_data_cleaned$age)
+summary(survey.sub.pruned$age)
 
 # plot looking at age total
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_histogram( aes(x=age, y = ..density..),bins=30, fill= "forestgreen", position="identity") 
 
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_boxplot(aes(y=age, x= gender, fill=gender),
                   position="identity") +
   scale_fill_brewer(palette="Reds")
 
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_boxplot(aes(y=age,x= income, fill=income),
                   position="identity")  +
   scale_fill_brewer(palette="Reds")
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_boxplot(aes(y=age, x= education, fill=education),
                   position="identity") +
   scale_fill_brewer(palette="Reds")
@@ -344,16 +344,16 @@ ggplot(survey_data_cleaned) +
 ```{r income plots}
 
 # plot income, reorder income brackets
-survey_data_cleaned$income <- factor(survey_data_cleaned$income,
+survey.sub.pruned$income <- factor(survey.sub.pruned$income,
                                      levels = c("Less than $15,000",
                                                 "$15,000 - $30,000",
                                                 "$30,000 - $50,000",
                                                 "$50,000 - $75,000",
                                                 "$75,000 - $150,000",
                                                 "Above $150,000"))
-((summary(survey_data_cleaned$income)/length(survey_data_cleaned$income))*100)
+((summary(survey.sub.pruned$income)/length(survey.sub.pruned$income))*100)
 # plot looking at income total
-ggplot(survey_data_cleaned, aes(x=income, fill=income))+
+ggplot(survey.sub.pruned, aes(x=income, fill=income))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
@@ -362,7 +362,7 @@ ggplot(survey_data_cleaned, aes(x=income, fill=income))+
   theme_minimal()
 
 # income separated by gender
-ggplot(survey_data_cleaned, aes(x=income, group=gender))+
+ggplot(survey.sub.pruned, aes(x=income, group=gender))+
   geom_bar(aes(y = ..prop.., fill =factor(..x..)), stat="count") +
   geom_text(aes(label = scales::percent(..prop..),
                 y= ..prop..), stat= "count", vjust = -.5) +
@@ -374,7 +374,7 @@ ggplot(survey_data_cleaned, aes(x=income, group=gender))+
 
 
 # income separated by age
-ggplot(survey_data_cleaned, aes(x=income, y=age, fill=income)) +
+ggplot(survey.sub.pruned, aes(x=income, y=age, fill=income)) +
   geom_boxplot() +
   scale_fill_brewer(palette="Reds")
 
@@ -383,16 +383,16 @@ ggplot(survey_data_cleaned, aes(x=income, y=age, fill=income)) +
 ```{r education plots}
 
 # plot education, reorder education values
-survey_data_cleaned$education <- factor(survey_data_cleaned$education,
+survey.sub.pruned$education <- factor(survey.sub.pruned$education,
                                      levels = c("Other",
                                                 "Less than 12 years; no high school diploma",
                                                 "High school graduate (or equivalent)",
                                                 "Some college, no diploma; or Associate’s degree",
                                                 "Bachelor’s degree or other 4-year degree",
                                                 "Graduate or professional degree"))
-((summary(survey_data_cleaned$education)/length(survey_data_cleaned$education))*100)
+((summary(survey.sub.pruned$education)/length(survey.sub.pruned$education))*100)
 # plot looking at education
-ggplot(survey_data_cleaned, aes(x=education, fill=education))+
+ggplot(survey.sub.pruned, aes(x=education, fill=education))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
@@ -403,7 +403,7 @@ ggplot(survey_data_cleaned, aes(x=education, fill=education))+
         axis.ticks.x=element_blank())
 
 # education separated by gender
-ggplot(survey_data_cleaned, aes(x=education, group=gender))+
+ggplot(survey.sub.pruned, aes(x=education, group=gender))+
   geom_bar(aes(y = ..prop.., fill =factor(..x..)), stat="count") +
   geom_text(aes(label = scales::percent(..prop..),
                 y= ..prop..), stat= "count", vjust = -.5) +
@@ -414,7 +414,7 @@ ggplot(survey_data_cleaned, aes(x=education, group=gender))+
   theme_minimal()
 
 # education separated by age
-ggplot(survey_data_cleaned, aes(x=education, y=age, fill=education)) +
+ggplot(survey.sub.pruned, aes(x=education, y=age, fill=education)) +
   geom_boxplot() +
   scale_fill_brewer(palette="Reds")
 
@@ -423,21 +423,21 @@ ggplot(survey_data_cleaned, aes(x=education, y=age, fill=education)) +
 
 ```{r age worktime}
 
-summary(survey_data_cleaned$worktime)
+summary(survey.sub.pruned$worktime)
 
 # plot looking at worktime total
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_histogram( aes(x=worktime, y = ..density..),
                   bins=30, fill= "lightgreen", position="identity") 
 
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_boxplot(aes(y=worktime, x= gender, fill=gender),
                   position="identity")
 
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_boxplot(aes(y=worktime,x= income, fill=income),
                   position="identity") 
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_boxplot(aes(y=worktime, x= education, fill=education),
                   position="identity") 
 
@@ -447,7 +447,7 @@ ggplot(survey_data_cleaned) +
 
 
 # plot looking at sirius listeners
-ggplot(survey_data_cleaned, aes(x=sirius, fill=sirius))+
+ggplot(survey.sub.pruned, aes(x=sirius, fill=sirius))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
@@ -456,7 +456,7 @@ ggplot(survey_data_cleaned, aes(x=sirius, fill=sirius))+
   scale_fill_brewer(palette="Greens")
 
 
-survey_data_cleaned[survey_data_cleaned$sirius =='Yes',] %>% 
+survey.sub.pruned[survey.sub.pruned$sirius =='Yes',] %>% 
   ggplot(., aes(x=gender, fill = gender)) +
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
@@ -465,7 +465,7 @@ survey_data_cleaned[survey_data_cleaned$sirius =='Yes',] %>%
   theme_minimal() +
   scale_fill_brewer(palette="Reds")
 
-survey_data_cleaned[survey_data_cleaned$sirius =='Yes',] %>% 
+survey.sub.pruned[survey.sub.pruned$sirius =='Yes',] %>% 
   ggplot(., aes(x=education, fill=education))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
@@ -474,7 +474,7 @@ survey_data_cleaned[survey_data_cleaned$sirius =='Yes',] %>%
   theme_minimal() +
   scale_fill_brewer(palette="Reds")
 
-survey_data_cleaned[survey_data_cleaned$sirius =='Yes',] %>% 
+survey.sub.pruned[survey.sub.pruned$sirius =='Yes',] %>% 
   ggplot(., aes(x=income, fill=income))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
@@ -487,7 +487,7 @@ survey_data_cleaned[survey_data_cleaned$sirius =='Yes',] %>%
 
 ```{r wharton plots}
 
-ggplot(survey_data_cleaned, aes(x=wharton, fill=wharton))+
+ggplot(survey.sub.pruned, aes(x=wharton, fill=wharton))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
@@ -495,7 +495,7 @@ ggplot(survey_data_cleaned, aes(x=wharton, fill=wharton))+
   theme_minimal() +
   scale_fill_brewer(palette="Greens")
 
-survey_data_cleaned[survey_data_cleaned$wharton =='Yes',] %>% 
+survey.sub.pruned[survey.sub.pruned$wharton =='Yes',] %>% 
   ggplot(., aes(x=gender, fill = gender)) +
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
@@ -504,7 +504,7 @@ survey_data_cleaned[survey_data_cleaned$wharton =='Yes',] %>%
   theme_minimal() +
   scale_fill_brewer(palette="Reds")
 
-survey_data_cleaned[survey_data_cleaned$wharton =='Yes',] %>% 
+survey.sub.pruned[survey.sub.pruned$wharton =='Yes',] %>% 
   ggplot(., aes(x=education, fill=education))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
@@ -513,7 +513,7 @@ survey_data_cleaned[survey_data_cleaned$wharton =='Yes',] %>%
   theme_minimal() +
   scale_fill_brewer(palette="Reds")
 
-survey_data_cleaned[survey_data_cleaned$wharton =='Yes',] %>% 
+survey.sub.pruned[survey.sub.pruned$wharton =='Yes',] %>% 
   ggplot(., aes(x=income, fill=income))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
@@ -545,7 +545,7 @@ us_gender_2014 <- data.frame("gender" = c("Male", "Female"),
 
 
 # plot looking at gender
-ggplot(survey_data_cleaned, aes(x=gender, fill=gender))+
+ggplot(survey.sub.pruned, aes(x=gender, fill=gender))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
@@ -580,34 +580,34 @@ us_census_age$ranges
 survey_age <- data.frame("age" = c("Under 5 years" = 0,
                                          "5 to 9 years"= 0,
                                          "10 to 14 years"= 0,
-                                         "15 to 19 years" = sum(survey_data_cleaned$age < 19),
-                                         "20 to 24 years" = sum(survey_data_cleaned$age > 19 &
-                                                                survey_data_cleaned$age < 25),
-                                         "25 to 29 years" = sum(survey_data_cleaned$age > 24 &
-                                                                survey_data_cleaned$age < 30),
-                                         "30 to 34 years" = sum(survey_data_cleaned$age > 29 &
-                                                                survey_data_cleaned$age < 35),
-                                         "35 to 39 years" = sum(survey_data_cleaned$age > 34 &
-                                                                survey_data_cleaned$age < 40),
-                                         "40 to 44 years" = sum(survey_data_cleaned$age > 39 &
-                                                                survey_data_cleaned$age < 45),
-                                         "45 to 49 years" = sum(survey_data_cleaned$age > 44 &
-                                                                survey_data_cleaned$age < 50),
-                                         "50 to 54 years"= sum(survey_data_cleaned$age > 49 &
-                                                                survey_data_cleaned$age < 55),
-                                         "55 to 59 years" = sum(survey_data_cleaned$age > 54 &
-                                                                survey_data_cleaned$age < 60),
-                                         "60 to 64 years" = sum(survey_data_cleaned$age > 59 &
-                                                                survey_data_cleaned$age < 65),
-                                         "65 to 69 years" = sum(survey_data_cleaned$age > 64 &
-                                                                survey_data_cleaned$age < 70),
-                                         "70 to 74 years" = sum(survey_data_cleaned$age > 69 &
-                                                                survey_data_cleaned$age < 75),
-                                         "75 to 79 years" = sum(survey_data_cleaned$age > 74 &
-                                                                survey_data_cleaned$age < 80),
-                                         "80 to 84 years" = sum(survey_data_cleaned$age > 79 &
-                                                                survey_data_cleaned$age < 85),
-                                         "85 years and over" = sum(survey_data_cleaned$age > 84)))
+                                         "15 to 19 years" = sum(survey.sub.pruned$age < 19),
+                                         "20 to 24 years" = sum(survey.sub.pruned$age > 19 &
+                                                                survey.sub.pruned$age < 25),
+                                         "25 to 29 years" = sum(survey.sub.pruned$age > 24 &
+                                                                survey.sub.pruned$age < 30),
+                                         "30 to 34 years" = sum(survey.sub.pruned$age > 29 &
+                                                                survey.sub.pruned$age < 35),
+                                         "35 to 39 years" = sum(survey.sub.pruned$age > 34 &
+                                                                survey.sub.pruned$age < 40),
+                                         "40 to 44 years" = sum(survey.sub.pruned$age > 39 &
+                                                                survey.sub.pruned$age < 45),
+                                         "45 to 49 years" = sum(survey.sub.pruned$age > 44 &
+                                                                survey.sub.pruned$age < 50),
+                                         "50 to 54 years"= sum(survey.sub.pruned$age > 49 &
+                                                                survey.sub.pruned$age < 55),
+                                         "55 to 59 years" = sum(survey.sub.pruned$age > 54 &
+                                                                survey.sub.pruned$age < 60),
+                                         "60 to 64 years" = sum(survey.sub.pruned$age > 59 &
+                                                                survey.sub.pruned$age < 65),
+                                         "65 to 69 years" = sum(survey.sub.pruned$age > 64 &
+                                                                survey.sub.pruned$age < 70),
+                                         "70 to 74 years" = sum(survey.sub.pruned$age > 69 &
+                                                                survey.sub.pruned$age < 75),
+                                         "75 to 79 years" = sum(survey.sub.pruned$age > 74 &
+                                                                survey.sub.pruned$age < 80),
+                                         "80 to 84 years" = sum(survey.sub.pruned$age > 79 &
+                                                                survey.sub.pruned$age < 85),
+                                         "85 years and over" = sum(survey.sub.pruned$age > 84)))
 
 survey_age <- data.frame("ranges" = rownames(survey_age), "count"=survey_age$age)
 
@@ -668,7 +668,7 @@ us_education_2014$education <- factor(us_education_2014$education,
                                                 "Bachelor’s degree or other 4-year degree",
                                                 "Graduate or professional degree"))
 
-ggplot(survey_data_cleaned, aes(x=education, fill=education))+
+ggplot(survey.sub.pruned, aes(x=education, fill=education))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
@@ -707,7 +707,7 @@ us_income_2013$income <- factor(us_income_2013$income,
                                                 "$75,000 - $150,000",
                                                 "Above $150,000"))
 
-ggplot(survey_data_cleaned, aes(x=income, fill=income))+
+ggplot(survey.sub.pruned, aes(x=income, fill=income))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
@@ -730,7 +730,7 @@ ggplot(us_income_2013, aes(x=income, fill=income))+
 Give a final estimate of the Wharton audience size in January 2014. Assume that the sample is a random sample of the MTURK population, and that the proportion of Wharton listeners vs. Sirius listeners in the general population is the same as that in the MTURK population. Write a brief executive summary to summarize your findings and how you came to that conclusion.
 
 ```{r estimating population size}
-total_sirius_liteners <- survey_data_cleaned[survey_data_cleaned$sirius == "Yes",]
+total_sirius_liteners <- survey.sub.pruned[survey.sub.pruned$sirius == "Yes",]
 total_wharton_liteners <- total_sirius_liteners[total_sirius_liteners$wharton == "Yes",]
 
 prop_listeners <- nrow(total_wharton_liteners)/nrow(total_sirius_liteners)
