@@ -242,6 +242,22 @@ survey.sub$worktime %>% summary(.)
 
 Write a brief report to summarize all the variables collected. Include both summary statistics (including sample size) and graphical displays such as histograms or bar charts where appropriate. Comment on what you have found from this sample. (For example - it's very interesting to think about why would one work for a job that pays only 10cents/each survey? Who are those survey workers? The answer may be interesting even if it may not directly relate to our goal.)
 
+```{r}
+#refactor certain columns
+survey.sub.pruned$income <- as.factor(survey.sub.pruned$income)
+
+survey.sub.pruned$education <- as.factor(survey.sub.pruned$education)
+
+survey.sub.pruned$gender <- as.factor(survey.sub.pruned$gender)
+
+# discard values based on age
+survey.sub.pruned <- survey.sub.pruned %>%
+  filter(!age >80 & !age <18)
+
+summary(survey.sub.pruned$age)
+
+```
+
 received 1740 surveys
 - age 
   - right skewed, younger participants 
@@ -265,21 +281,6 @@ kable((summary(survey.sub.pruned$income)/length(survey.sub.pruned$income))*100,
   - longest time 108 seconds
   - shortest time 8 seconds
 
-```{r}
-#refactor certain columns
-survey.sub.pruned$income <- as.factor(survey.sub.pruned$income)
-
-survey.sub.pruned$education <- as.factor(survey.sub.pruned$education)
-
-survey.sub.pruned$gender <- as.factor(survey.sub.pruned$gender)
-
-# discard values based on age
-survey.sub.pruned <- survey.sub.pruned %>%
-  filter(!age >80 & !age <18)
-
-summary(survey.sub.pruned$age)
-
-```
 ### age 
 Now we have an age range of 18-76 
 
