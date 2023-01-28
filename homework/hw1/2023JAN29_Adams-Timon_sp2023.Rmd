@@ -145,16 +145,13 @@ missing.survey
 How many blanks in
 ```{r}
 # change value of wrong age values
-age <- survey.sub$age 
-age[age == "Eighteen (18)"] <-  18
-age <- as.numeric((age))
-survey.sub$age <- age
 
 blanks =  survey.sub %>%
   filter(age == "" | gender == "" | education == "" | education == "select one" | income == ""| sirius == "" | wharton == "" | worktime == "")
 
 head(blanks)
 ```
+
 
 b
 Before this point, I thought  there were just blanks and NAs in the data, but discovered there were unchanged entire fields in the form os "select one" for at least the eucatuon column. I went back to tabulate these entires with `summarise()`. The reason the table shows 41 total counts at the filer shows 34 rows is because some people have multiple variables missing. 
@@ -167,68 +164,82 @@ Income could be missing because people did not have an income in the indicated y
 Altogehter there are 34 entries which match this condition and will be reomved be removed. 
 
 ```{r}
+dim(survey.sub)
+age <- survey.sub$age 
+age[age == "Eighteen (18)"] <-  18
+age <- as.numeric((age))
+
+survey.sub$age <- age
 survey.sub.pruned = survey.sub %>%
-  filter(! age == "" & !gender == "" & !education == "" & !education == "select one" & !income == ""& !sirius == "" & !wharton == "" & !worktime == "")
+  filter(!is.na(age) & !gender == "" & !education == "" & !education == "select one" & !income == ""& !sirius == "" & !wharton == "" & !worktime == "")
+
+dim(survey.sub.pruned)
 
 ```
 
 Tip: Reflect on the reasons for which data could be wrong or missing. How would you address each case? For this homework, if you are trying to predict missing values with regression, you are definitely overthinking. Keep it simple.
 
-* Within the `age` variable, 3 people did not respond, 2 people selected ages that did not make sense in the context of the survey (4 and 223) and one person's age needed to be changed. Since these were likely errors on the part of the participant, we decided to fully remove their surveys
+
+* Within the `age` variable, 3 people did not respond, 2 people selected ages that did not make sense in the context of the survey (4 and 223), and one person wrote their age as a character "eighteen (18)". Since these were likely errors on the part of the participant, we decided to fully remove their surveys
 
 ```{r examine age, echo=FALSE}
 # coerce to numeric 
-summary(survey.sub.pruned$age)
-# 4 people did not respond and 3 people selected an incorrect age, remove these responses
+age <- survey.sub$age 
+age[age == "Eighteen (18)"] <-  18
+age <- as.numeric((age))
+summary(age)
+
+# 4 people did not respond and 2 people selected an incorrect age, remove these responses
 
 ```
 * Within the `gender` variable, 6 people did not respond. We decided to fully remove their surveys.
 
 ```{r examine gender}
 # coerce to factor 
-survey_data_subset$gender %>% as.factor(.) %>% summary(.)
+survey.sub$gender %>% as.factor(.) %>% summary(.)
 
 # 6 people did not respond, will remove these
 ```
 
 * Within the `education` variable, 19 selected 'select one'. We decided to keep their surveys but change the result to "other".
 ```{r examine education}
-education <- survey_data_subset$education %>% as.factor(.)
+education <- survey.sub$education %>% as.factor(.)
 summary(education)
 
 # 19 people selected the invalid response "select one" will chage these responses to 'other'
-education <- recode_factor(education, 'select one' = "Other")
 summary(education)
 ```
 
 * Within the `income` variable, 6 people did not respond. We decided to fully remove their surveys.
 ```{r examine income}
 # coerce to factor 
-survey_data_subset$income %>% as.factor(.) %>% summary(.)
+survey.sub$income %>% as.factor(.) %>% summary(.)
 
 # 6 people did not respond, will remove these
 ```
 * Within the `sirius` variable, 5 people did not respond. We decided to fully remove their surveys.
 ```{r examine sirius}
 # coerce to factor 
-survey_data_subset$sirius %>% as.factor(.) %>% summary(.)
+survey.sub$sirius %>% as.factor(.) %>% summary(.)
 ```
 
 * Within the `wharton` variable, 4 people did not respond. We decided to fully remove their surveys.
 ```{r examine wharton}
 # coerce to factor 
-survey_data_subset$wharton %>% as.factor(.) %>% summary(.)
+survey.sub$wharton %>% as.factor(.) %>% summary(.)
 
 # remove everyone who did not answer this question
 # remove everyone who said no to sirius and yes to wharton
 ```
 
+
 * We did not remove any values from the `worktime` variable
 ```{r examine worktime}
-survey_data_subset$worktime %>% summary(.)
+survey.sub$worktime %>% summary(.)
 
 # this section is fine and doesn't need change
 ```
+
 
 3. Brief summary 
 
