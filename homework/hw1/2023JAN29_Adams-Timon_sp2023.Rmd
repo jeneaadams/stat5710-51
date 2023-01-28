@@ -33,7 +33,11 @@ if(!require('pacman')) {install.packages('pacman')}
 pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2,readxl,reshape2, ggpmisc)
 ```
 
-hello test
+
+```{r}
+print("test")
+```
+
 
 \pagebreak
 
