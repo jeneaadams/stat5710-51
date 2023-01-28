@@ -233,6 +233,8 @@ age[age == "Eighteen (18)"] <-  18
 age <- as.numeric((age))
 
 survey.sub$age <- age
+
+summary(survey.sub)
 survey.sub <- filter(survey.sub,
                               (!is.na(age) & !(age %in% c(4,223))) &
                                 gender != "" &
@@ -1223,10 +1225,7 @@ baseball_long %>%
 ## Do log increases in payroll imply better performance? 
 
 ```{r}
-baseball_long <- baseball %>%
-  group_by(team) %>%
-  mutate(diff_log =log(payroll) - log(lag(payroll, default = payroll[1], order_by = team))) %>%
-  select(., c("team", "year", "diff_log", "win_pct")) %>%
+baseball_long %>%
   ggplot(aes(x = diff_log, y = win_pct)) + 
   geom_point(aes(color = team), size = 3) + 
   stat_poly_line() +
@@ -1239,10 +1238,7 @@ baseball_long <- baseball %>%
   theme(legend.position = "none")
 
 
-baseball_long <- baseball %>%
-  group_by(team) %>%
-  mutate(diff_log =log(payroll) - log(lag(payroll, default = payroll[1], order_by = team))) %>%
-  select(., c("team", "year", "diff_log", "win_pct")) %>%
+baseball_long %>%
   ggplot(aes(x = diff_log, y = win_pct)) + 
   geom_point(aes(color = team), size = 3) + 
   stat_poly_line() +
@@ -1254,6 +1250,20 @@ baseball_long <- baseball %>%
   theme_bw() +
   theme(legend.position = "none") +
   facet_wrap(~team)
+
+baseball_long %>%
+  ggplot(aes(x = diff_log, y = win_pct)) + 
+  geom_point(aes(color = team), size = 3) + 
+  stat_poly_line() +
+  stat_poly_eq(aes(label = paste(after_stat(eq.label),
+                                 after_stat(rr.label), sep = "*\", \"*"))) +
+  labs(title = "MLB Team's Win Percentage  vs. Payroll increase", 
+       x = "Log yearly Payroll Increase", 
+       y = "Win Percentage") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  facet_wrap(~year)
+
 ```
 
 Is there evidence to support the hypothesis that higher increases in payroll on the log scale lead to increased performance?
@@ -1264,6 +1274,47 @@ Pick up a few statistics, accompanied with some data visualization, to support y
 
 Which set of factors are better explaining performance? Yearly payroll or yearly increase in payroll? What criterion is being used? 
 
+```{r}
+baseball %>%
+  ggplot(aes(x = payroll, y = win_pct)) + 
+  geom_point(aes(color = team), size = 3) + 
+  stat_poly_line() +
+  stat_poly_eq(aes(label = paste(after_stat(eq.label),
+                                 after_stat(rr.label), sep = "*\", \"*"))) +
+  labs(title = "MLB Team's Win Percentage  vs. Payroll", 
+       x = "Payroll", 
+       y = "Win Percentage") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+baseball %>%
+  ggplot(aes(x = payroll, y = win_pct)) + 
+  geom_point(aes(color = team), size = 3) + 
+  stat_poly_line() +
+  stat_poly_eq(aes(label = paste(after_stat(eq.label),
+                                 after_stat(rr.label), sep = "*\", \"*"))) +
+  labs(title = "MLB Team's Win Percentage  vs. Payroll", 
+       x = "Payroll", 
+       y = "Win Percentage") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  facet_wrap(~year)
+
+
+baseball %>%
+  ggplot(aes(x = payroll, y = win_pct)) + 
+  geom_point(aes(color = team), size = 3) + 
+  stat_poly_line() +
+  stat_poly_eq(aes(label = paste(after_stat(eq.label),
+                                 after_stat(rr.label), sep = "*\", \"*"))) +
+  labs(title = "MLB Team's Win Percentage  vs. Payroll", 
+       x = "Payroll", 
+       y = "Win Percentage") +
+  theme_bw() +
+  theme(legend.position = "none")+
+  facet_wrap(~team)
+
+```
 
 
 
