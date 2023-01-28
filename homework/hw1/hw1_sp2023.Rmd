@@ -106,6 +106,7 @@ Change the variable names to be "age", "gender", "education", "income", "sirius"
 survey_data <- read.csv("data/Survey_results_final.csv", header=T, stringsAsFactors = FALSE)
 names(survey_data)
 ```
+
 ```{r rename and subset data}
 survey_data_subset <- rename(survey_data,
                              age = Answer.Age,
@@ -134,13 +135,12 @@ Tip: Reflect on the reasons for which data could be wrong or missing. How would 
 
 ```{r examine age, echo=FALSE}
 # coerce to numeric 
-age <- survey_data_subset$age %>% as.numeric(.)
+age <- survey_data_subset$age 
+age[age == "Eighteen (18)"] <-  18
+age <- as.numeric((age))
 summary(age)
 head(age[order(age)])
 tail(age[order(age)])
-
-age <- age[(!is.na(age) & !(age %in% c(4,223)))]
-summary(age)
 
 # 4 people did not respond and 2 people selected an incorrect age, remove these responses
 
@@ -160,7 +160,6 @@ education <- survey_data_subset$education %>% as.factor(.)
 summary(education)
 
 # 19 people selected the invalid response "select one" will chage these responses to 'other'
-education <- recode_factor(education, 'select one' = "Other")
 summary(education)
 ```
 
@@ -225,16 +224,22 @@ received 1740 surveys
 
 
 ```{r cleaned data}
-
+survey.sub <- survey_data_subset
 # refactor education responses
-survey_data_subset$education <- education
-print(paste("number of surveys:", nrow(survey_data_subset)))
-survey_data_cleaned <- filter(survey_data_subset,
+print(paste("number of surveys:", nrow(survey.sub)))
+
+age <- survey.sub$age 
+age[age == "Eighteen (18)"] <-  18
+age <- as.numeric((age))
+
+survey.sub$age <- age
+survey.sub <- filter(survey.sub,
                               (!is.na(age) & !(age %in% c(4,223))) &
                                 gender != "" &
                                 income != "" &
                                 wharton != "" &
                                 sirius != "" &
+                                education != "select one"&
                                 !(sirius == "No" & wharton == "Yes"))
 print(paste("number of surveys:", nrow(survey_data_cleaned)))
 
