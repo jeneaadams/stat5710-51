@@ -171,9 +171,9 @@ age <- as.numeric((age))
 
 survey.sub$age <- age
 survey.sub.pruned = survey.sub %>%
-  filter(!is.na(age) & !gender == "" & !education == "" & !education == "select one" & !income == ""& !sirius == "" & !wharton == "" & !worktime == "")
+  filter(!is.na(age) & !(age %in% c(4,223)) & !gender == "" & !education == "" & !education == "select one" & !income == ""& !sirius == "" & !wharton == "" & !worktime == "")
 
-dim(survey.sub.pruned)
+summary(survey.sub.pruned)
 
 ```
 
@@ -184,9 +184,6 @@ Tip: Reflect on the reasons for which data could be wrong or missing. How would 
 
 ```{r examine age, echo=FALSE}
 # coerce to numeric 
-age <- survey.sub$age 
-age[age == "Eighteen (18)"] <-  18
-age <- as.numeric((age))
 summary(age)
 
 # 4 people did not respond and 2 people selected an incorrect age, remove these responses
@@ -274,17 +271,7 @@ received 1740 surveys
 
 ```{r cleaned data}
 
-# refactor education responses
-survey_data_subset$education <- education
-print(paste("number of surveys:", nrow(survey_data_subset)))
-survey.sub.pruned <- filter(survey_data_subset,
-                              (!is.na(age) & !(age %in% c(4,223))) &
-                                gender != "" &
-                                income != "" &
-                                wharton != "" &
-                                sirius != "" &
-                                !(sirius == "No" & wharton == "Yes"))
-print(paste("number of surveys:", nrow(survey.sub.pruned)))
+# refactor responses
 
 survey.sub.pruned$income <- as.factor(survey.sub.pruned$income)
 summary(survey.sub.pruned$income)
@@ -295,12 +282,6 @@ summary(survey.sub.pruned$education)
 survey.sub.pruned$gender <- as.factor(survey.sub.pruned$gender)
 summary(survey.sub.pruned$gender)
 ```
-
-```{r}
-
-```
-
-
 ```{r gender plots}
 
 # plot looking at gender
@@ -319,7 +300,7 @@ survey.sub.pruned %>%
 
 ```{r age plots}
 
-summary(survey.sub.pruned$age)
+summary(survey.sub.pruned)
 
 # plot looking at age total
 ggplot(survey.sub.pruned) +
