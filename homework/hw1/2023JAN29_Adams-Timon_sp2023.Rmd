@@ -1,8 +1,8 @@
 ---
 title: " Modern Data Mining, HW 1"
 author:
-- Group Member 1
-- Group Member 2
+- Group Member 1 Jenea Adams
+- Group Member 2 Annan timon
 - Group Member 3
 date: 'Due: 11:59PM,  Jan. 29th, 2023'
 output:
@@ -24,13 +24,14 @@ output:
 urlcolor: blue
 ---
 
+# Packages
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, results = "hide", fig.width=8, fig.height=4)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2,readxl,reshape2, ggpmisc, knitr)
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2,readxl,reshape2, ggpmisc, knitr, ggpubr)
 ```
 
 
@@ -286,8 +287,7 @@ Now we have an age range of 18-76
 
 We can see the new distribution of ages with a historgram 
 
-<<<<<<< HEAD
-=======
+
 ```{r}
 age_hist = survey.sub.pruned %>%
   ggplot() + 
@@ -359,8 +359,8 @@ edu_pie = survey.sub.pruned %>%
   geom_bar(stat ="identity", width = 1) + 
   coord_polar("y", start=0) + 
   theme_void()
+```
 
-<<<<<<< HEAD
 
 ```{r age plots}
 
@@ -427,11 +427,18 @@ ggplot(survey.sub.pruned, aes(x=income, y=age, fill=income)) +
 
 ```
 
-```{r education plots}
-=======
-edu_pie
->>>>>>> 5d0ed39005b074bcca1f3ccdd3eab194461fdea9
+```{r }
+edu_pie = survey.sub.pruned %>%
+  ggplot(aes(x = "", y = education, fill = education)) + 
+  geom_bar(stat ="identity", width = 1) + 
+  coord_polar("y", start=0) + 
+  theme_void()
 
+edu_pie
+```
+
+
+```{r education plots}
 # plot education, reorder education values
 survey.sub.pruned$education <- factor(survey.sub.pruned$education,
                                      levels = c("Other",
@@ -469,7 +476,7 @@ ggplot(survey.sub.pruned, aes(x=education, y=age, fill=education)) +
   scale_fill_brewer(palette="Reds")
 ```
 
-```{r income plots}
+```{r }
 # income
 income_pie = survey.sub.pruned %>%
   ggplot(aes(x = "", y = income, fill = income)) + 
@@ -539,7 +546,7 @@ ggplot(survey.sub.pruned, aes(x=sirius, fill=sirius))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Self repoted listeners to SiriusXM", y = "Percent", x ='Answer') +
+  labs(title = "Self reported listeners to SiriusXM", y = "Percent", x ='Answer') +
   theme_minimal() +
   scale_fill_brewer(palette="Greens")+
   theme(axis.text.x=element_blank(),
@@ -917,31 +924,64 @@ Our goal is to answer the above questions only through EDA (Exploratory Data Ana
 Notice the data came in as an Excel file. We need to use the package `readxl` and the function `read_excel()` to read the data `WomenData_06_16.xlsx` into R. 
 
 
-a). Read the data into R.
+### a). Read the data into R.
+```{r}
+wsci <- read_excel("data/WomenData_06_16.xlsx")
+```
 
-b). Clean the names of each variables. (Change variable names to  `Field`,`Degree`, `Sex`, `Year` and `Number` )
 
-c). Set the variable natures properly. 
-
-d). Any missing values?
 
 ```{r data wrangling, echo = FALSE, warning = FALSE}
-wsci <- read_excel("data/WomenData_06_16.xlsx")
+
 names(wsci)
 head(wsci)
 summary(wsci)
+```
+
+```{r}
+str(wsci)
+```
+
+
+```{r  echo = FALSE, warning = FALSE}
 # change names
 # set the field, degree and sex as factors
-wsci %<>% rename(Field = 'Field and sex',
-                 Number = "Degrees Awarded") %>% 
-  mutate(Field = as.factor(Field),
+```
+
+
+### b). Clean the names of each variables. (Change variable names to  `Field`,`Degree`, `Sex`, `Year` and `Number` )
+```{r  }
+colnames(wsci) = c("Field","Degree", "Sex", "Year", "Number")
+```
+
+
+### c). Set the variable natures properly. 
+```{r  }
+wsci = wsci %>% mutate(Field = as.factor(Field),
          Sex = as.factor(Sex),
          Degree = as.factor(Degree))
 ```
 
-2. Write a summary describing the data set provided here. 
+```{r}
+glimpse(wsci)
+```
 
-a). How many fields are there in this data?
+
+### d). Any missing values?
+
+We can count the number of `NA` values, if there are any
+```{r}
+missing = wsci %>%
+  summarise(count = sum(is.na(wsci)))
+missing
+
+```
+
+There are no missing values
+
+### 2. Write a summary describing the data set provided here. 
+
+### a). How many fields are there in this data?
 5 fields: Field, Degree, Sex, Year, Number
 
 ```{r summary, echo = FALSE, warning = FALSE}
@@ -956,10 +996,29 @@ length(unique(wsci$Year))
 summary(wsci$Number)
 ```
 
-b). What are the degree types? 
+We can count the amount of unique entries in the Field variable
+```{r}
+length(unique(wsci$Field))
+```
+
+There are 10 Fields possible 
+
+
+### b). What are the degree types? 
+
+```{r}
+unique(wsci$Degree)
+```
+
 BS MS PhD 
 
-c). How many year's statistics are being reported here? 
+
+### c). How many year's statistics are being reported here? 
+
+```{r}
+length(unique(wsci$Year))
+```
+
 11
 
 
@@ -967,21 +1026,26 @@ c). How many year's statistics are being reported here?
 
 Is there evidence that more males are in science-related fields vs `Non-S&E`? Provide summary statistics and a plot which shows the number of people by gender and by field. Write a brief summary to describe your findings.
 
+### answer 
+
+
 
 ```{r}
-
 # by field (S&E and Non-S&E) only
-wsci %>%
+p1 = wsci %>%
   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
   group_by(SE) %>%
   summarise(SE_number = sum(Number)) %>%
   ggplot(aes(x = SE, y = SE_number, fill = SE)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label =SE_number), vjust = -.5)  +
-  ggtitle("Degrees Awarded by Field (S&E and Non-S&E)") 
+  ggtitle("Degrees Awarded by Field (S&E and Non-S&E)")
+```
 
+
+```{r}
 # by sex and field (S&E and Non-S&E)
-wsci %>%
+p2 = wsci %>%
   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
   group_by(SE, Sex) %>%
   summarise(SE_number = sum(Number)) %>%
@@ -989,99 +1053,140 @@ wsci %>%
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label =SE_number), vjust = -.5)  +
   facet_wrap(~SE, scales = "free_y") +
-  ggtitle("Degrees Awarded by Sex and Field (S&E and Non-S&E)") 
+  ggtitle("Degrees Awarded by Sex and Field (S&E and Non-S&E)")
 
 
 ```
+
+```{r}
+ggarrange(p1, p2 + rremove("x.text"),
+          labels = c("A", "B"),
+          ncol=1, nrow = 2)
+```
+
+
+Is there evidence that more males are in science-related fields vs `Non-S&E`? --> There are more people overall in nons&e fields, in which there are more women. However, there are more men in the S&E fields from these plots. 
+
+
 
 ## EDA bringing type of degree, field and gender in 2015
 
 Describe the number of people by type of degree, field, and gender. Do you see any evidence of gender effects over different types of degrees? Again, provide graphs to summarize your findings.
 
 ```{r eval = FALSE, echo = FALSE}
-# number of degrees by sex
-wsci %>%
-  group_by(Sex) %>%
-  summarise(sex_number = sum(Number)) %>%
-  ggplot(aes(x = Sex, y = sex_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label =sex_number), vjust = -.5)  +
-  ggtitle("Degrees Awarded by Sex") 
-
-# number of degrees by degree
-wsci %>%
-  group_by(Degree) %>%
-  summarise(degree_number = sum(Number)) %>%
-  ggplot(aes(x = Degree, y = degree_number, fill = Degree)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label =degree_number), vjust = -.5)  +
-  ggtitle("Degrees Awarded by Degree Type") 
-
-# number of degrees by field
-wsci %>%
-  group_by(Field) %>%
-  summarise(field_number = sum(Number)) %>%
-  ggplot(aes(x = Field, y = field_number, fill = Field)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label =field_number), vjust = -.5)  +
-  ggtitle("Degrees Awarded by Field") 
-
-# number of degrees by degree and sex
-wsci %>%
-  group_by(Degree, Sex) %>%
-  summarise(degree_number = sum(Number)) %>%
-  ggplot(aes(x = Sex, y = degree_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label =degree_number), vjust = -.5)  +
-  facet_wrap(~Degree, scales = "free_y") +
-  ggtitle("Degrees Awarded Sex and Degree Type") 
-
-# number of degrees by field and sex
-wsci %>%
-  group_by(Field, Sex) %>%
-  summarise(field_number = sum(Number)) %>%
-  ggplot(aes(x = Sex, y = field_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label =field_number), vjust = -.5)  +
-  facet_wrap(~Field, scales = "free_y") +
-  ggtitle("Degrees Awarded By Sex and Field") 
-
-# number of degrees by field and degree
-wsci %>%
-  group_by(Field, Degree) %>%
-  summarise(field_number = sum(Number)) %>%
-  ggplot(aes(x = Field, y = field_number, fill =Field)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label =field_number), vjust = -.5)  +
-  facet_wrap(~Degree, scales = "free_y") +
-  ggtitle("Degrees Awarded by Field and Degree Type") 
-
-
-# number of degrees by sex and field and degree
-wsci %>%
-  group_by(Field, Sex, Degree) %>%
-  summarise(All_number = sum(Number)) %>%
-  ggplot(aes(x = Sex, y = All_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Degree~Field, scales = "free_y") +
-  geom_text(aes(label =All_number), vjust = -.5)  +
-  ggtitle("Degrees Awarded by Sex, Field, and Degree Type") 
+# # number of degrees by sex
+# wsci %>%
+#   group_by(Sex) %>%
+#   summarise(sex_number = sum(Number)) %>%
+#   ggplot(aes(x = Sex, y = sex_number, fill = Sex)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   geom_text(aes(label =sex_number), vjust = -.5)  +
+#   ggtitle("Degrees Awarded by Sex") 
+# 
+# # number of degrees by degree
+# wsci %>%
+#   group_by(Degree) %>%
+#   summarise(degree_number = sum(Number)) %>%
+#   ggplot(aes(x = Degree, y = degree_number, fill = Degree)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   geom_text(aes(label =degree_number), vjust = -.5)  +
+#   ggtitle("Degrees Awarded by Degree Type") 
+# 
+# # number of degrees by field
+# wsci %>%
+#   group_by(Field) %>%
+#   summarise(field_number = sum(Number)) %>%
+#   ggplot(aes(x = Field, y = field_number, fill = Field)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   geom_text(aes(label =field_number), vjust = -.5)  +
+#   ggtitle("Degrees Awarded by Field") 
+# 
+# # number of degrees by degree and sex
+# wsci %>%
+#   group_by(Degree, Sex) %>%
+#   summarise(degree_number = sum(Number)) %>%
+#   ggplot(aes(x = Sex, y = degree_number, fill = Sex)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   geom_text(aes(label =degree_number), vjust = -.5)  +
+#   facet_wrap(~Degree, scales = "free_y") +
+#   ggtitle("Degrees Awarded Sex and Degree Type") 
+# 
+# # number of degrees by field and sex
+# wsci %>%
+#   group_by(Field, Sex) %>%
+#   summarise(field_number = sum(Number)) %>%
+#   ggplot(aes(x = Sex, y = field_number, fill = Sex)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   geom_text(aes(label =field_number), vjust = -.5)  +
+#   facet_wrap(~Field, scales = "free_y") +
+#   ggtitle("Degrees Awarded By Sex and Field") 
+# 
+# # number of degrees by field and degree
+# wsci %>%
+#   group_by(Field, Degree) %>%
+#   summarise(field_number = sum(Number)) %>%
+#   ggplot(aes(x = Field, y = field_number, fill =Field)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   geom_text(aes(label =field_number), vjust = -.5)  +
+#   facet_wrap(~Degree, scales = "free_y") +
+#   ggtitle("Degrees Awarded by Field and Degree Type") 
+# 
+# 
+# # number of degrees by sex and field and degree
+# wsci %>%
+#   group_by(Field, Sex, Degree) %>%
+#   summarise(All_number = sum(Number)) %>%
+#   ggplot(aes(x = Sex, y = All_number, fill = Sex)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   facet_grid(Degree~Field, scales = "free_y") +
+#   geom_text(aes(label =All_number), vjust = -.5)  +
+#   ggtitle("Degrees Awarded by Sex, Field, and Degree Type") 
 
 ```
+
+
+
+```{r  }
+wsci$science.i = ifelse(wsci$Field == "Non-S&E", "Non-S&E", "S&E")
+dfg2015 = wsci %>% 
+  filter(Year == 2015) %>% 
+  select(Degree, Field, Sex, Number, science.i)
+
+```
+
+
+```{r}
+dfg2015%>%
+  ggplot(aes(x = Field, y = Number, fill = Sex)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_grid(Degree~., scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  ggtitle("Degrees granted across fields by degree and gender in 2015")
+```
+
+```{r}
+dfg2015%>%
+  ggplot(aes(x = science.i, y = Number, fill = Sex)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_grid(Degree~., scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  ggtitle("Degrees granted across fields by degree and gender in 2015")
+```
+### answer 
+The proportion of non s&e fields are about the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.
 
 ## EDA bring all variables 
 
 In this last portion of the EDA, we ask you to provide evidence numerically and graphically: Do the number of  degrees change by gender, field, and time? 
 
 ```{r eval = FALSE, echo = FALSE}
-
 # time series: degrees awarded by field
-wsci %>%
-  group_by(Field, Year) %>%
-  summarise(field_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = field_number, color = Field)) +
-  geom_point() + geom_line() +
-  ggtitle("Degrees awarded across years by Field")
+# wsci %>%
+#   group_by(Field, Year) %>%
+#   summarise(field_number = sum(Number)) %>%
+#   ggplot(aes(x = Year, y = field_number, color = Field)) +
+#   geom_point() + geom_line() +
+#   ggtitle("Degrees awarded across years by Field")
 
 # time series: degrees awarded by sex
 wsci %>%
@@ -1098,7 +1203,10 @@ wsci %>%
   ggplot(aes(x = Year, y = degree_number, color = Degree)) +
   geom_point() + geom_line() +
   ggtitle("Degrees awarded across years by Degree")
+```
 
+
+```{r eval = FALSE, echo = FALSE}
 # time series: degrees awarded by Field and sex
 wsci %>%
   group_by(Field, Sex, Year) %>%
@@ -1107,7 +1215,10 @@ wsci %>%
   geom_point() + geom_line() +
   facet_wrap(~Field)+
   ggtitle("Degrees awarded across years by Degree")
+```
 
+
+```{r eval = FALSE, echo = FALSE}
 # time series: degrees awarded by Field and Degree
 wsci %>%
   group_by(Field, Degree, Year) %>%
@@ -1136,6 +1247,32 @@ wsci %>%
   ggtitle("Degrees awarded across years by Degree")
 ```
 
+
+```{r}
+wsci%>% 
+  ggplot(aes(x = Year,
+             y = Number, 
+             color = Field, 
+             shape = Sex)) + 
+  geom_point(size = 3, alpha = 0.6) + 
+  geom_line() +
+  labs(Title="Degrees by gender, field, and time") + 
+  facet_grid(~Degree + Sex, scale = "free")
+```
+
+
+```{r}
+wsci %>% 
+  ggplot(aes(x = Year,
+             y = Number, 
+             fill = Field, 
+             shape = Sex)) + 
+  geom_bar(position="stack", stat="identity") + 
+  labs(Title="Degrees by gender, field, and time") + 
+  facet_grid(~Degree + Sex, scale = "free")
+```
+Do the number of degrees change by gender, field, and time? --> Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females. 
+
 ## Women in Data Science
 
 Finally, is there evidence showing that women are underrepresented in data science? Data science is an interdisciplinary field of computer science, math, and statistics. You may include year and/or degree.
@@ -1151,9 +1288,13 @@ wsci %>%
   ggplot(aes(x = Sex, y = All_number, fill = Sex)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label =All_number), vjust = -.5)  +
+  # stat_compare_means(method = "t.test") +
   facet_grid(~Field, scales = "free_y") +
-  ggtitle("Degrees granted in Data science by sex")
+  ggtitle("Degrees granted in Data science by sex") 
+```
 
+
+```{r eval = FALSE, echo = FALSE}
 # Sex, Field, Degree
 wsci %>%
   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
@@ -1164,7 +1305,10 @@ wsci %>%
   geom_text(aes(label =All_number), vjust = -.5)  +
   facet_grid(Degree~Field, scales = "free_y") +
   ggtitle("Degrees granted in Data science by sex")
+```
 
+
+```{r eval = FALSE, echo = FALSE}
 # Sex, Field, Degree, Time
 wsci %>%
   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
@@ -1177,38 +1321,43 @@ wsci %>%
 
 ```
 
+Overall, we believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men. 
+
+
+
+
 ```{r}
-# social science
-
-# Sex, Field
-wsci %>%
-  filter(Field %in% c("Psychology", "Social sciences")) %>%
-  group_by(Field, Sex) %>%
-  summarise(All_number = sum(Number)) %>%
-  ggplot(aes(x = Sex, y = All_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(~Field, scales = "free_y") +
-  ggtitle("Degrees granted in Social science by sex across degree and SE")
-
-# Sex, Field, Degree
-wsci %>%
-  filter(Field %in% c("Psychology", "Social sciences")) %>%
-  group_by(Field, Sex, Degree) %>%
-  summarise(All_number = sum(Number)) %>%
-  ggplot(aes(x = Sex, y = All_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Field~Degree, scales = "free_y") +
-  ggtitle("Degrees granted in Social science by sex across degree and SE")
-
-# Sex, Field, Degree, Time
-wsci %>%
-  filter(Field %in% c("Psychology", "Social sciences")) %>%
-  group_by(Field, Sex, Degree,Year) %>%
-  summarise(All_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = All_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Field~Degree, scales = "free_y") +
-  ggtitle("Degrees granted in Social science by sex across degree and SE")
+# # social science
+# 
+# # Sex, Field
+# wsci %>%
+#   filter(Field %in% c("Psychology", "Social sciences")) %>%
+#   group_by(Field, Sex) %>%
+#   summarise(All_number = sum(Number)) %>%
+#   ggplot(aes(x = Sex, y = All_number, fill = Sex)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   facet_grid(~Field, scales = "free_y") +
+#   ggtitle("Degrees granted in Social science by sex across degree and SE")
+# 
+# # Sex, Field, Degree
+# wsci %>%
+#   filter(Field %in% c("Psychology", "Social sciences")) %>%
+#   group_by(Field, Sex, Degree) %>%
+#   summarise(All_number = sum(Number)) %>%
+#   ggplot(aes(x = Sex, y = All_number, fill = Sex)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   facet_grid(Field~Degree, scales = "free_y") +
+#   ggtitle("Degrees granted in Social science by sex across degree and SE")
+# 
+# # Sex, Field, Degree, Time
+# wsci %>%
+#   filter(Field %in% c("Psychology", "Social sciences")) %>%
+#   group_by(Field, Sex, Degree,Year) %>%
+#   summarise(All_number = sum(Number)) %>%
+#   ggplot(aes(x = Year, y = All_number, fill = Sex)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   facet_grid(Field~Degree, scales = "free_y") +
+#   ggtitle("Degrees granted in Social science by sex across degree and SE")
 
 
 ```
@@ -1217,120 +1366,122 @@ wsci %>%
 
 Summarize your findings focusing on answering the questions regarding if we see consistent patterns that more males pursue science-related fields. Any concerns with the data set? How could we improve on the study?
 
+
+
 ## Appendix
 
-To help out, we have included some R-codes here as references. You should make your own chunks filled with texts going through each items listed above. Make sure to hide the unnecessary outputs/code etc. 
+<!-- To help out, we have included some R-codes here as references. You should make your own chunks filled with texts going through each items listed above. Make sure to hide the unnecessary outputs/code etc.  -->
 
-1. Clean data
+<!-- 1. Clean data -->
 
-```{r data wrangling, echo = FALSE, warning = FALSE}
-# For the demonstration purpose, we show this R-chunk by taking echo=TRUE
-# In your final report you should hide all the R-chunks to keep your report flowing well.
-wsci <- read_excel("WomenData_06_16.xlsx")
-names(wsci)
-head(wsci)
-#change names
-wsci %<>% 
-  rename(Field = 'Field and sex')
-# set the field, degree and sex as factors
-wsci %<>% 
-  mutate( Field = as.factor(Field))
-```
-
-
-```{r, echo=FALSE}
-# wsci %<>%
-#   rename(Field = "Field and sex",
-#          Number = "Degrees Awarded") %>%
-#   mutate(Field = as.factor(Field),
-#          Degree = as.factor(Degree),
-#          Sex = as.factor(Sex))
-
-```
+<!-- ```{r data wrangling, echo = FALSE, warning = FALSE} -->
+<!-- # For the demonstration purpose, we show this R-chunk by taking echo=TRUE -->
+<!-- # In your final report you should hide all the R-chunks to keep your report flowing well. -->
+<!-- wsci <- read_excel("WomenData_06_16.xlsx") -->
+<!-- names(wsci) -->
+<!-- head(wsci) -->
+<!-- #change names -->
+<!-- wsci %<>%  -->
+<!--   rename(Field = 'Field and sex') -->
+<!-- # set the field, degree and sex as factors -->
+<!-- wsci %<>%  -->
+<!--   mutate( Field = as.factor(Field)) -->
+<!-- ``` -->
 
 
-2. A number of sample analyses 
+<!-- ```{r, echo=FALSE} -->
+<!-- # wsci %<>% -->
+<!-- #   rename(Field = "Field and sex", -->
+<!-- #          Number = "Degrees Awarded") %>% -->
+<!-- #   mutate(Field = as.factor(Field), -->
+<!-- #          Degree = as.factor(Degree), -->
+<!-- #          Sex = as.factor(Sex)) -->
 
-```{r eval = FALSE, echo = FALSE}
-wsci %>%  # to get the average number of ppl by gender
-  group_by(Field, Sex) %>%
-  summarise(deg = mean(Number))
-
-wsci %>%
-  filter(Year == 2007) %>%
-  ggplot(aes(x = Field, y = Number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Degree~., scales = "free_y") +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
-  ggtitle("Degrees granted across fields by degree and gender") 
-
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex) %>%
-  summarise(SE_number = sum(Number)) %>%
-  ggplot(aes(x = SE, y = SE_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  theme(axis.text.y = element_text(angle = 60)) +
-  ggtitle("Degrees granted by S&E vs non-S&E by gender")
-
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex, Year) %>%
-  summarise(SE_number = sum(Number)) %>%
-  group_by(SE, Year) %>%
-  mutate(ratio = SE_number / sum(SE_number)) %>%
-  filter(Sex == "Female") %>%
-  ggplot(aes(x = Year, y = ratio, color = SE)) +
-  geom_point() + geom_line() +
-  ggtitle("Female proportion in SE/non-SE across year")
-
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex, Year, Degree) %>%
-  summarise(SE_number = sum(Number)) %>%
-  group_by(SE, Year, Degree) %>%
-  mutate(ratio = SE_number / sum(SE_number)) %>%
-  filter(Sex == "Female") %>%
-  ggplot(aes(x = Year, y = ratio, color = SE)) +
-  geom_point() + geom_line() +
-  facet_grid(~Degree)+
-  ggtitle("Female proportion in SE/non-SE across year by degree")
+<!-- ``` -->
 
 
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex, Year, Degree) %>%
-  summarise(SE_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = SE_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(SE~Degree, scales = "free_y") +
-  ggtitle("Degrees granted by sex, degree and SE")
+<!-- 2. A number of sample analyses  -->
+
+<!-- ```{r eval = FALSE, echo = FALSE} -->
+<!-- wsci %>%  # to get the average number of ppl by gender -->
+<!--   group_by(Field, Sex) %>% -->
+<!--   summarise(deg = mean(Number)) -->
+
+<!-- wsci %>% -->
+<!--   filter(Year == 2007) %>% -->
+<!--   ggplot(aes(x = Field, y = Number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   facet_grid(Degree~., scales = "free_y") + -->
+<!--   theme(axis.text.x = element_text(angle = 30, hjust = 1)) + -->
+<!--   ggtitle("Degrees granted across fields by degree and gender")  -->
+
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   ggplot(aes(x = SE, y = SE_number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   theme(axis.text.y = element_text(angle = 60)) + -->
+<!--   ggtitle("Degrees granted by S&E vs non-S&E by gender") -->
+
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex, Year) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   group_by(SE, Year) %>% -->
+<!--   mutate(ratio = SE_number / sum(SE_number)) %>% -->
+<!--   filter(Sex == "Female") %>% -->
+<!--   ggplot(aes(x = Year, y = ratio, color = SE)) + -->
+<!--   geom_point() + geom_line() + -->
+<!--   ggtitle("Female proportion in SE/non-SE across year") -->
+
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex, Year, Degree) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   group_by(SE, Year, Degree) %>% -->
+<!--   mutate(ratio = SE_number / sum(SE_number)) %>% -->
+<!--   filter(Sex == "Female") %>% -->
+<!--   ggplot(aes(x = Year, y = ratio, color = SE)) + -->
+<!--   geom_point() + geom_line() + -->
+<!--   facet_grid(~Degree)+ -->
+<!--   ggtitle("Female proportion in SE/non-SE across year by degree") -->
 
 
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex, Year, Degree) %>%
-  summarise(SE_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = SE_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "fill") +
-  facet_grid(SE~Degree, scales = "free_y") +
-  ggtitle("Degrees granted proportion by sex across degree and SE")
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex, Year, Degree) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   ggplot(aes(x = Year, y = SE_number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   facet_grid(SE~Degree, scales = "free_y") + -->
+<!--   ggtitle("Degrees granted by sex, degree and SE") -->
 
 
-wsci %>%
-  filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
-  ggplot(aes(x = Year, y = Number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Field~Degree, scales = "free_y") +
-  ggtitle("Degrees granted pr option by sex across degree and SE")
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex, Year, Degree) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   ggplot(aes(x = Year, y = SE_number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "fill") + -->
+<!--   facet_grid(SE~Degree, scales = "free_y") + -->
+<!--   ggtitle("Degrees granted proportion by sex across degree and SE") -->
 
 
-wsci %>%
-  ggplot(aes(x = Year, y = Number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Field~Degree, scales = "free_y") +
-  ggtitle("Degrees granted proportion by sex across degree and SE")
-```
+<!-- wsci %>% -->
+<!--   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>% -->
+<!--   ggplot(aes(x = Year, y = Number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   facet_grid(Field~Degree, scales = "free_y") + -->
+<!--   ggtitle("Degrees granted pr option by sex across degree and SE") -->
+
+
+<!-- wsci %>% -->
+<!--   ggplot(aes(x = Year, y = Number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   facet_grid(Field~Degree, scales = "free_y") + -->
+<!--   ggtitle("Degrees granted proportion by sex across degree and SE") -->
+<!-- ``` -->
 
 
 
