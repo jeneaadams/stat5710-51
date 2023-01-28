@@ -33,7 +33,8 @@ if(!require('pacman')) {install.packages('pacman')}
 pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2,readxl,reshape2, ggpmisc)
 ```
 
-hello test
+
+
 
 \pagebreak
 
@@ -249,6 +250,11 @@ survey_data_cleaned$gender <- as.factor(survey_data_cleaned$gender)
 summary(survey_data_cleaned$gender)
 ```
 
+```{r}
+
+```
+
+
 ```{r gender plots}
 
 # plot looking at gender
@@ -262,6 +268,8 @@ survey_data_cleaned %>%
   theme_minimal()
 
 ```
+
+
 
 ```{r age plots}
 
