@@ -630,126 +630,126 @@ Summarize your findings focusing on answering the questions regarding if we see 
 
 To help out, we have included some R-codes here as references. You should make your own chunks filled with texts going through each items listed above. Make sure to hide the unnecessary outputs/code etc. 
 
-1. Clean data
+<!-- 1. Clean data -->
 
-```{r data wrangling, echo = FALSE, warning = FALSE}
-# For the demonstration purpose, we show this R-chunk by taking echo=TRUE
-# In your final report you should hide all the R-chunks to keep your report flowing well.
-wsci = women
-names(wsci)
-head(wsci)
-#change names
-wsci %<>% 
-  rename(Field = 'Field and sex')
-# set the field, degree and sex as factors
-wsci %<>% 
-  mutate( Field = as.factor(Field))
-```
-
-
-```{r, echo=FALSE}
-# wsci %<>%
-#   rename(Field = "Field and sex",
-#          Number = "Degrees Awarded") %>%
-#   mutate(Field = as.factor(Field),
-#          Degree = as.factor(Degree),
-#          Sex = as.factor(Sex))
-
-```
+<!-- ```{r data wrangling, echo = FALSE, warning = FALSE} -->
+<!-- # For the demonstration purpose, we show this R-chunk by taking echo=TRUE -->
+<!-- # In your final report you should hide all the R-chunks to keep your report flowing well. -->
+<!-- wsci = women -->
+<!-- names(wsci) -->
+<!-- head(wsci) -->
+<!-- #change names -->
+<!-- wsci %<>%  -->
+<!--   rename(Field = 'Field and sex') -->
+<!-- # set the field, degree and sex as factors -->
+<!-- wsci %<>%  -->
+<!--   mutate( Field = as.factor(Field)) -->
+<!-- ``` -->
 
 
-2. A number of sample analyses 
+<!-- ```{r, echo=FALSE} -->
+<!-- # wsci %<>% -->
+<!-- #   rename(Field = "Field and sex", -->
+<!-- #          Number = "Degrees Awarded") %>% -->
+<!-- #   mutate(Field = as.factor(Field), -->
+<!-- #          Degree = as.factor(Degree), -->
+<!-- #          Sex = as.factor(Sex)) -->
 
-```{r eval = FALSE, echo = FALSE}
-wsci %>%  # to get the average number of ppl by gender
-  group_by(Field, Sex) %>%
-  summarise(deg = mean(Number))
-```
-
-
-```{r eval = FALSE, echo = FALSE}
-wsci %>%
-  filter(Year == 2007) %>%
-  ggplot(aes(x = Field, y = Number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Degree~., scales = "free_y") +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
-  ggtitle("Degrees granted across fields by degree and gender")
-```
+<!-- ``` -->
 
 
-```{r eval = FALSE, echo = FALSE}
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex) %>%
-  summarise(SE_number = sum(Number)) %>%
-  ggplot(aes(x = SE, y = SE_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  theme(axis.text.y = element_text(angle = 60)) +
-  ggtitle("Degrees granted by S&E vs non-S&E by gender")
+<!-- 2. A number of sample analyses  -->
 
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex, Year) %>%
-  summarise(SE_number = sum(Number)) %>%
-  group_by(SE, Year) %>%
-  mutate(ratio = SE_number / sum(SE_number)) %>%
-  filter(Sex == "Female") %>%
-  ggplot(aes(x = Year, y = ratio, color = SE)) +
-  geom_point() + geom_line() +
-  ggtitle("Female proportion in SE/non-SE across year")
-
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex, Year, Degree) %>%
-  summarise(SE_number = sum(Number)) %>%
-  group_by(SE, Year, Degree) %>%
-  mutate(ratio = SE_number / sum(SE_number)) %>%
-  filter(Sex == "Female") %>%
-  ggplot(aes(x = Year, y = ratio, color = SE)) +
-  geom_point() + geom_line() +
-  facet_grid(~Degree)+
-  ggtitle("Female proportion in SE/non-SE across year by degree")
-```
+<!-- ```{r eval = FALSE, echo = FALSE} -->
+<!-- wsci %>%  # to get the average number of ppl by gender -->
+<!--   group_by(Field, Sex) %>% -->
+<!--   summarise(deg = mean(Number)) -->
+<!-- ``` -->
 
 
-```{r eval = FALSE, echo = FALSE}
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex, Year, Degree) %>%
-  summarise(SE_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = SE_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(SE~Degree, scales = "free_y") +
-  ggtitle("Degrees granted by sex, degree and SE")
-```
+<!-- ```{r eval = FALSE, echo = FALSE} -->
+<!-- wsci %>% -->
+<!--   filter(Year == 2007) %>% -->
+<!--   ggplot(aes(x = Field, y = Number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   facet_grid(Degree~., scales = "free_y") + -->
+<!--   theme(axis.text.x = element_text(angle = 30, hjust = 1)) + -->
+<!--   ggtitle("Degrees granted across fields by degree and gender") -->
+<!-- ``` -->
 
 
-```{r eval = FALSE, echo = FALSE}
-wsci %>%
-  mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
-  group_by(SE, Sex, Year, Degree) %>%
-  summarise(SE_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = SE_number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "fill") +
-  facet_grid(SE~Degree, scales = "free_y") +
-  ggtitle("Degrees granted proportion by sex across degree and SE")
+<!-- ```{r eval = FALSE, echo = FALSE} -->
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   ggplot(aes(x = SE, y = SE_number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   theme(axis.text.y = element_text(angle = 60)) + -->
+<!--   ggtitle("Degrees granted by S&E vs non-S&E by gender") -->
+
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex, Year) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   group_by(SE, Year) %>% -->
+<!--   mutate(ratio = SE_number / sum(SE_number)) %>% -->
+<!--   filter(Sex == "Female") %>% -->
+<!--   ggplot(aes(x = Year, y = ratio, color = SE)) + -->
+<!--   geom_point() + geom_line() + -->
+<!--   ggtitle("Female proportion in SE/non-SE across year") -->
+
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex, Year, Degree) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   group_by(SE, Year, Degree) %>% -->
+<!--   mutate(ratio = SE_number / sum(SE_number)) %>% -->
+<!--   filter(Sex == "Female") %>% -->
+<!--   ggplot(aes(x = Year, y = ratio, color = SE)) + -->
+<!--   geom_point() + geom_line() + -->
+<!--   facet_grid(~Degree)+ -->
+<!--   ggtitle("Female proportion in SE/non-SE across year by degree") -->
+<!-- ``` -->
 
 
-wsci %>%
-  filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
-  ggplot(aes(x = Year, y = Number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Field~Degree, scales = "free_y") +
-  ggtitle("Degrees granted pr option by sex across degree and SE")
+<!-- ```{r eval = FALSE, echo = FALSE} -->
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex, Year, Degree) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   ggplot(aes(x = Year, y = SE_number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   facet_grid(SE~Degree, scales = "free_y") + -->
+<!--   ggtitle("Degrees granted by sex, degree and SE") -->
+<!-- ``` -->
 
 
-wsci %>%
-  ggplot(aes(x = Year, y = Number, fill = Sex)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_grid(Field~Degree, scales = "free_y") +
-  ggtitle("Degrees granted proportion by sex across degree and SE")
-```
+<!-- ```{r eval = FALSE, echo = FALSE} -->
+<!-- wsci %>% -->
+<!--   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>% -->
+<!--   group_by(SE, Sex, Year, Degree) %>% -->
+<!--   summarise(SE_number = sum(Number)) %>% -->
+<!--   ggplot(aes(x = Year, y = SE_number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "fill") + -->
+<!--   facet_grid(SE~Degree, scales = "free_y") + -->
+<!--   ggtitle("Degrees granted proportion by sex across degree and SE") -->
+
+
+<!-- wsci %>% -->
+<!--   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>% -->
+<!--   ggplot(aes(x = Year, y = Number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   facet_grid(Field~Degree, scales = "free_y") + -->
+<!--   ggtitle("Degrees granted pr option by sex across degree and SE") -->
+
+
+<!-- wsci %>% -->
+<!--   ggplot(aes(x = Year, y = Number, fill = Sex)) + -->
+<!--   geom_bar(stat = "identity", position = "dodge") + -->
+<!--   facet_grid(Field~Degree, scales = "free_y") + -->
+<!--   ggtitle("Degrees granted proportion by sex across degree and SE") -->
+<!-- ``` -->
 
 
 
