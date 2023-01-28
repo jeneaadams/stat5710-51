@@ -102,27 +102,28 @@ The raw data is stored as `Survey_results_final.csv` on Canvas.
 
 Select only the variables Age, Gender, Education Level, Household Income in 2013, Sirius Listener?, Wharton Listener? and Time used to finish the survey.
 
+Reading in the data 
+```{r}
+setwd("./data")
+survey = read.csv("Survey_results_final.csv")
+```
+```{r}
+names(survey)
+```
+
+```{r}
+survey.sub = survey %>%
+  select(Answer.Age, Answer.Gender, Answer.Education, Answer.HouseHoldIncome , Answer.Sirius.Radio, Answer.Wharton.Radio, WorkTimeInSeconds)
+```
+
+
+
 Change the variable names to be "age", "gender", "education", "income", "sirius", "wharton", "worktime".
 
-```{r read data}
-survey_data <- read.csv("data/Survey_results_final.csv", header=T, stringsAsFactors = FALSE)
-names(survey_data)
-```
-```{r rename and subset data}
-survey_data_subset <- rename(survey_data,
-                             age = Answer.Age,
-                             gender =Answer.Gender,
-                             education = Answer.Education,
-                             income = Answer.HouseHoldIncome,
-                             sirius = Answer.Sirius.Radio,
-                             wharton = Answer.Wharton.Radio,
-                             worktime = WorkTimeInSeconds) %>%
-  select(. ,c("age", "gender", "education", "income", "sirius", "wharton", "worktime"))
 
-head(survey_data_subset)
-
-str(survey_data_subset)
-summary(survey_data_subset)
+```{r}
+colnames(survey.sub) = c("age", "gender", "education", "income", "sirius", "wharton", "worktime")
+survey.sub
 ```
 
 
@@ -132,19 +133,53 @@ As in real world data with user input, the data is incomplete, with missing valu
 
 Tip: Reflect on the reasons for which data could be wrong or missing. How would you address each case? For this homework, if you are trying to predict missing values with regression, you are definitely overthinking. Keep it simple.
 
-* Within the `age` variable, 4 people did not respond and 2 people selected ages that did not make sense in the context of the survey (4 and 223). Since these were likely errors on the part of the participant, we decided to fully remove their surveys
+```{r}
+missing.survey = survey.sub %>%
+  summarise(nas = sum(is.na(survey.sub)),
+            blanks = sum(survey.sub == ""),
+            select = sum(survey.sub =="select one"))
+missing.survey
+```
+
+
+How many blanks in
+```{r}
+# change value of wrong age values
+age <- survey.sub$age 
+age[age == "Eighteen (18)"] <-  18
+age <- as.numeric((age))
+survey.sub$age <- age
+
+blanks =  survey.sub %>%
+  filter(age == "" | gender == "" | education == "" | education == "select one" | income == ""| sirius == "" | wharton == "" | worktime == "")
+
+head(blanks)
+```
+
+b
+Before this point, I thought  there were just blanks and NAs in the data, but discovered there were unchanged entire fields in the form os "select one" for at least the eucatuon column. I went back to tabulate these entires with `summarise()`. The reason the table shows 41 total counts at the filer shows 34 rows is because some people have multiple variables missing. 
+
+
+This shows there aren't any NAs in the data, but there are 22 "blanks" or missing values. There are also more unanswered questions which indicate the "select one" option that people have not changed. 
+
+Income could be missing because people did not have an income in the indicated year. Education could be missing if people have little or did not know what to report. 
+
+Altogehter there are 34 entries which match this condition and will be reomved be removed. 
+
+```{r}
+survey.sub.pruned = survey.sub %>%
+  filter(! age == "" & !gender == "" & !education == "" & !education == "select one" & !income == ""& !sirius == "" & !wharton == "" & !worktime == "")
+
+```
+
+Tip: Reflect on the reasons for which data could be wrong or missing. How would you address each case? For this homework, if you are trying to predict missing values with regression, you are definitely overthinking. Keep it simple.
+
+* Within the `age` variable, 3 people did not respond, 2 people selected ages that did not make sense in the context of the survey (4 and 223) and one person's age needed to be changed. Since these were likely errors on the part of the participant, we decided to fully remove their surveys
 
 ```{r examine age, echo=FALSE}
 # coerce to numeric 
-age <- survey_data_subset$age %>% as.numeric(.)
-summary(age)
-head(age[order(age)])
-tail(age[order(age)])
-
-age <- age[(!is.na(age) & !(age %in% c(4,223)))]
-summary(age)
-
-# 4 people did not respond and 2 people selected an incorrect age, remove these responses
+summary(survey.sub.pruned$age)
+# 4 people did not respond and 3 people selected an incorrect age, remove these responses
 
 ```
 * Within the `gender` variable, 6 people did not respond. We decided to fully remove their surveys.
