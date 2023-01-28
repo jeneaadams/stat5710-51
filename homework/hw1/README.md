@@ -1,0 +1,5 @@
+Homework assignments can be done in a group consisting of up to three members. Please find your group members as soon as possible and register your group on our Canvas site.
+
+All work submitted should be completed in the R Markdown format. You can find a cheat sheet for R Markdown here For those who have never used it before, we urge you to start this homework as soon as possible.
+
+Submit the following files, one submission for each group: (1) Rmd file, (2) a compiled HTML or pdf version, and (3) all necessary data files if different from our source data. You may directly edit this .rmd file to add your answers. If you intend to work on the problems separately within your group, compile your answers into one Rmd file before submitting. We encourage that you at least attempt each problem by yourself before working with your teammates. Additionally, ensure that you can ‘knit’ or compile your Rmd file. It is also likely that you need to configure Rstudio to properly convert files to PDF. These instructions might be helpful.
