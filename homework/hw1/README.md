@@ -1,9 +1,11 @@
-# TOC 
+# Homework 1; Due 1/29/2023
+
+## TOC 
 1. [Rmd]()
 2. [HTML]()
 3. [Data]()
 
-# Objectives
+## Objectives
 
 Get familiar with R-studio and RMarkdown
   - Hands-on R
