@@ -884,6 +884,10 @@ prop_listeners
 51600000 * prop_listeners
 ```
 
+
+The final estimate is that there are 2,585,789 Wharton listeners. 
+
+
 To be specific, you should include:
 
 1. Goal of the study
@@ -896,10 +900,14 @@ To be specific, you should include:
 
 Now suppose you are asked to design a study to estimate the audience size of Wharton Business Radio Show as of today: You are given a budget of $1000. You need to present your findings in two months. 
 
-Write a proposal for this study which includes:
+### Write a proposal for this study which includes:
 
 1. Method proposed to estimate the audience size.
+  - Since we know that most participants have some sort of college experience, we could poll audiences within and adjecnt tot hose speces with a qualtrics survey senct across the country. The incentive to participate would be cash prizes raffled off to the top N participants and/or one year of subscription service to Sirus XM radio. 
+  
 2. What data should be collected and where it should be sourced from.
+- The Data collected should be Age, Education, Gender, Location, Experience with Wharton Radio, How they found out abotu Wharton Radio. 
+
 Please fill in the google form to list your platform where surveys will be launched and collected [HERE](https://forms.gle/8SmjFQ1tpqr6c4sa8) 
 
 A good proposal will give an accurate estimation with the least amount of money used. 
@@ -932,7 +940,6 @@ wsci <- read_excel("data/WomenData_06_16.xlsx")
 
 
 ```{r data wrangling, echo = FALSE, warning = FALSE}
-
 names(wsci)
 head(wsci)
 summary(wsci)
