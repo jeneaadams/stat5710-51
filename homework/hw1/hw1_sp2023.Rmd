@@ -224,26 +224,20 @@ received 1740 surveys
 
 
 ```{r cleaned data}
-survey.sub <- survey_data_subset
-# refactor education responses
-print(paste("number of surveys:", nrow(survey.sub)))
 
-age <- survey.sub$age 
+# correct age values
+age <- survey_data_subset$age 
 age[age == "Eighteen (18)"] <-  18
+age[age == "27`"] <-  27
 age <- as.numeric((age))
+survey_data_subset$age <- age
 
-survey.sub$age <- age
+# remove nas, missing, and incorrect education values
+survey_data_cleaned = survey_data_subset %>%
+  filter(!is.na(age) & !(age %in% c(4,223)) & !gender == "" & !education == "" & !education == "select one" & !income == ""& !sirius == "" & !wharton == "" & !worktime == "")
+dim(survey_data_cleaned)
 
-summary(survey.sub)
-survey.sub <- filter(survey.sub,
-                              (!is.na(age) & !(age %in% c(4,223))) &
-                                gender != "" &
-                                income != "" &
-                                wharton != "" &
-                                sirius != "" &
-                                education != "select one"&
-                                !(sirius == "No" & wharton == "Yes"))
-print(paste("number of surveys:", nrow(survey_data_cleaned)))
+summary(survey_data_cleaned)
 
 survey_data_cleaned$income <- as.factor(survey_data_cleaned$income)
 summary(survey_data_cleaned$income)
@@ -274,7 +268,7 @@ survey_data_cleaned %>%
 summary(survey_data_cleaned$age)
 
 # plot looking at age total
-ggplot(survey_data_cleaned) +
+ggplot(survey.sub.pruned) +
   geom_histogram( aes(x=age, y = ..density..),bins=30, fill= "forestgreen", position="identity") 
 
 ggplot(survey_data_cleaned) +
