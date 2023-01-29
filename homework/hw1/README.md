@@ -1,4 +1,9 @@
-1.1 Objectives
+# TOC 
+1. [Rmd]()
+2. [HTML]()
+3. [Data]()
+
+# Objectives
 
 Get familiar with R-studio and RMarkdown
   - Hands-on R
