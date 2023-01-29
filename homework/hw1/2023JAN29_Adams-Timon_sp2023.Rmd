@@ -31,7 +31,7 @@ knitr::opts_chunk$set(echo = FALSE, results = "hide", fig.width=8, fig.height=4)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2,readxl,reshape2, ggpmisc, knitr, ggpubr)
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2,readxl,reshape2, ggpmisc, knitr, ggpubr, gridExtra)
 ```
 
 
@@ -99,12 +99,12 @@ The raw data is stored as `Survey_results_final.csv` on Canvas.
 
 ## Data preparation
 
-1. We need to clean and select only the variables of interest. 
+### We need to clean and select only the variables of interest. 
 
-Select only the variables Age, Gender, Education Level, Household Income in 2013, Sirius Listener?, Wharton Listener? and Time used to finish the survey.
++ Select only the variables Age, Gender, Education Level, Household Income in 2013, Sirius Listener?, Wharton Listener?
+and Time used to finish the survey.
 
-Reading in the data 
-```{r}
+```{r, include=FALSE}
 setwd("./data")
 survey = read.csv("Survey_results_final.csv")
 ```
@@ -112,14 +112,14 @@ survey = read.csv("Survey_results_final.csv")
 names(survey)
 ```
 
-```{r}
+```{r, include=FALSE}
 survey.sub = survey %>%
   select(Answer.Age, Answer.Gender, Answer.Education, Answer.HouseHoldIncome , Answer.Sirius.Radio, Answer.Wharton.Radio, WorkTimeInSeconds)
 ```
 
 
 
-Change the variable names to be "age", "gender", "education", "income", "sirius", "wharton", "worktime".
++ Change the variable names to be "age", "gender", "education", "income", "sirius", "wharton", "worktime".
 
 
 ```{r}
@@ -128,79 +128,28 @@ survey.sub
 ```
 
 
-2. Handle missing/wrongly filled values of the selected variables
+### Handle missing/wrongly filled values of the selected variables
 
 As in real world data with user input, the data is incomplete, with missing values, and has incorrect responses. There is no general rule for dealing with these problems beyond “use common sense.” In whatever case, explain what the problems were and how you addressed them. Be sure to explain your rationale for your chosen methods of handling issues with the data. Do not use Excel for this, however tempting it might be.
 
 Tip: Reflect on the reasons for which data could be wrong or missing. How would you address each case? For this homework, if you are trying to predict missing values with regression, you are definitely overthinking. Keep it simple.
 
-```{r}
-missing.survey = survey.sub %>%
-  summarise(nas = sum(is.na(survey.sub)),
-            blanks = sum(survey.sub == ""),
-            select = sum(survey.sub =="select one"))
-missing.survey
-```
-
-
-How many blanks in
-```{r}
-# change value of wrong age values
-
-blanks =  survey.sub %>%
-  filter(age == "" | gender == "" | education == "" | education == "select one" | income == ""| sirius == "" | wharton == "" | worktime == "")
-
-head(blanks)
-```
-
-
-
-Before this point, I thought  there were just blanks and NAs in the data, but discovered there were unchanged entire fields in the form os "select one" for at least the eucatuon column. I went back to tabulate these entires with `summarise()`. The reason the table shows 41 total counts at the filer shows 34 rows is because some people have multiple variables missing. 
-
-
-This shows there aren't any NAs in the data, but there are 22 "blanks" or missing values. There are also more unanswered questions which indicate the "select one" option that people have not changed. 
-
-Income could be missing because people did not have an income in the indicated year. Education could be missing if people have little or did not know what to report. 
-
-Altogehter there are 34 entries which match this condition and will be reomved be removed. 
-
-```{r}
-dim(survey.sub)
-age <- survey.sub$age 
-age[age == "Eighteen (18)"] <-  18
-age <- as.numeric((age))
-
-survey.sub$age <- age
-survey.sub.pruned = survey.sub %>%
-  filter(!is.na(age) & !gender == "" & !education == "" & !education == "select one" & !income == ""& !sirius == "" & !wharton == "" & !worktime == "")
-
-summary(survey.sub.pruned)
-
-```
-
-Tip: Reflect on the reasons for which data could be wrong or missing. How would you address each case? For this homework, if you are trying to predict missing values with regression, you are definitely overthinking. Keep it simple.
-
-
-* Within the `age` variable, 3 people did not respond, 2 people selected ages that did not make sense in the context of the survey (4 and 223), and one person wrote their age as a character "eighteen (18)". Since these were likely errors on the part of the participant, we decided to fully remove their surveys
-
 ```{r examine age, echo=FALSE}
 # coerce to numeric 
-summary(age)
+summary(as.factor(survey.sub$age))
 
 # 4 people did not respond and 2 people selected an incorrect age, remove these responses
 
 ```
-* Within the `gender` variable, 6 people did not respond. We decided to fully remove their surveys.
 
-```{r examine gender}
+```{r examine gender, echo=FALSE}
 # coerce to factor 
 survey.sub$gender %>% as.factor(.) %>% summary(.)
 
 # 6 people did not respond, will remove these
 ```
 
-* Within the `education` variable, 19 selected 'select one'. We decided to keep their surveys but change the result to "other".
-```{r examine education}
+```{r examine education, echo=FALSE}
 education <- survey.sub$education %>% as.factor(.)
 summary(education)
 
@@ -208,21 +157,19 @@ summary(education)
 summary(education)
 ```
 
-* Within the `income` variable, 6 people did not respond. We decided to fully remove their surveys.
-```{r examine income}
+```{r examine income, echo=FALSE}
 # coerce to factor 
 survey.sub$income %>% as.factor(.) %>% summary(.)
 
 # 6 people did not respond, will remove these
 ```
-* Within the `sirius` variable, 5 people did not respond. We decided to fully remove their surveys.
-```{r examine sirius}
+
+```{r examine sirius, echo=FALSE}
 # coerce to factor 
 survey.sub$sirius %>% as.factor(.) %>% summary(.)
 ```
 
-* Within the `wharton` variable, 4 people did not respond. We decided to fully remove their surveys.
-```{r examine wharton}
+```{r examine wharton, echo=FALSE}
 # coerce to factor 
 survey.sub$wharton %>% as.factor(.) %>% summary(.)
 
@@ -230,167 +177,78 @@ survey.sub$wharton %>% as.factor(.) %>% summary(.)
 # remove everyone who said no to sirius and yes to wharton
 ```
 
-
-* We did not remove any values from the `worktime` variable
-```{r examine worktime}
+```{r examine worktime, echo=FALSE}
 survey.sub$worktime %>% summary(.)
 
 # this section is fine and doesn't need change
 ```
 
+```{r, echo=FALSE}
 
-3. Brief summary 
+missing.survey <- data.frame(rbind("Missing or NA Values" = apply(survey.sub,2,
+                                                                  FUN=function(y){sum(is.na(y) | y=='')}),
+                                   "Incorrect Values" = apply(survey.sub,2, FUN=function(y){
+                                     sum(y %in% c('select one',"female",
+                                                  "Eighteen (18)","27`",
+                                                  "223", "4"))})))
+sum(missing.survey)
+missing.survey
+```
+#### **Summary of missing values**
+Before this point, we thought there were just blanks and NAs in the data, but discovered there were unchanged entire fields in the form os "select one" for at least the education column and incorrect values in the age column. Here we tabulate these missing entries. 
+
+```{r, echo=FALSE, results='asis'}
+kable(missing.survey,
+      caption = "Breakdown of Missing and Incorrect Values")
+```
+
+* Within the `age` variable, 1 person did not respond, 2 people selected ages that did not make sense in the context of the survey (4 and 223), and 2 people wrote their age as a character "eighteen (18)", "27`", and female. We opted to remove the missing responses, and the incorrect ages; however, for the values "eighteen (18)" and "27'", we changed these to their numeric values.
+
+* Within the `education` variable, 19 selected 'select one' and we opted to remove these
+
+* Within the `gender`, `income`, `wharton`, and `sirius` variables, we removed all missing values.
+
+* We did not remove any values from the `worktime` variable since it did not contain any missing or incorrect values.
+
+
+```{r, echo=FALSE}
+# change value of wrong age values
+
+blanks =  survey.sub %>%
+  filter((age %in% c("","female", "223", "4"))| gender == "" | education == "" | education == "select one" | income == ""| sirius == "" | wharton == "" | worktime == "")
+
+dim(blanks)
+```
+Although there we remove 44 total (22 missing and 22 incorrect values) only 37 surveys are removed because some people have multiple variables missing. 
+
+
+
+```{r, echo=FALSE, warning=FALSE}
+dim(survey.sub)
+
+# correct age values
+age <- survey.sub$age 
+age[age == "Eighteen (18)"] <-  18
+age[age == "27`"] <-  27
+age <- as.numeric((age))
+survey.sub$age <- age
+
+# remove nas, missing, and incorrect education values
+survey.sub.pruned = survey.sub %>%
+  filter(!is.na(age) & !(age %in% c(4,223)) & !gender == "" & !education == "" & !education == "select one" & !income == ""& !sirius == "" & !wharton == "" & !worktime == "")
+dim(survey.sub.pruned)
+
+summary(survey.sub.pruned)
+
+```
+
+
+## Brief summary 
 
 Write a brief report to summarize all the variables collected. Include both summary statistics (including sample size) and graphical displays such as histograms or bar charts where appropriate. Comment on what you have found from this sample. (For example - it's very interesting to think about why would one work for a job that pays only 10cents/each survey? Who are those survey workers? The answer may be interesting even if it may not directly relate to our goal.)
 
 ```{r}
 #refactor certain columns
-survey.sub.pruned$income <- as.factor(survey.sub.pruned$income)
-
-survey.sub.pruned$education <- as.factor(survey.sub.pruned$education)
-
-survey.sub.pruned$gender <- as.factor(survey.sub.pruned$gender)
-
-# discard values based on age
-survey.sub.pruned <- survey.sub.pruned %>%
-  filter(!age >80 & !age <18)
-
-summary(survey.sub.pruned$age)
-
-```
-
-received 1740 surveys
-- age 
-  - right skewed, younger participants 
-  - youngest was 18 and the oldest was 76
-  - most people were in the early to late twenties
-- gender
-  - 42% Female, 58% male
-  - There are 729 Females and 997 Males in the survey pool 
-- education 
-```{r}
-kable((summary(survey.sub.pruned$education)/length(survey.sub.pruned$education))*100,
-      caption = "Survey Demographics by education")
-```
-- Income
-```{r}
-kable((summary(survey.sub.pruned$income)/length(survey.sub.pruned$income))*100,
-      caption = "Survey Demographics by education")
-```
-- worktime
-  - average worktime 22.5 seconds
-  - longest time 108 seconds
-  - shortest time 8 seconds
-
-### age 
-Now we have an age range of 18-76 
-
-We can see the new distribution of ages with a historgram 
-
-
-```{r}
-age_hist = survey.sub.pruned %>%
-  ggplot() + 
-  geom_histogram(aes(x = age), bins = 50, color ="darkblue", fill = "lightblue") + 
-  labs(title = "Historgram of age", subtitle = "Mean Age shown by red line", x = "Age", y = "frequency") +
-  geom_vline(aes(xintercept=mean(age)),
-             color = "red", linetype = "dashed", sixe = 1)
-
-age_hist
-
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=age, x= gender, fill=gender),
-                  position="identity") +
-  scale_fill_brewer(palette="Reds")+ 
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=age,x= income, fill=income),
-                  position="identity")  +
-  scale_fill_brewer(palette="Reds")+ 
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=age, x= education, fill=education),
-                  position="identity") +
-  scale_fill_brewer(palette="Reds") + 
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-```
-
->>>>>>> 5d0ed39005b074bcca1f3ccdd3eab194461fdea9
-
-### gender 
-```{r}
-summary(survey.sub.pruned)
-str(survey.sub.pruned)
-```
-```{r}
-table(survey.sub.pruned$gender)
-```
-
-There are 729 Females and 997 Males in the survey pool 
-```{r}
-gender_pie = survey.sub.pruned %>%
-  ggplot(aes(x = "", y = gender, fill = gender)) + 
-  geom_bar(stat ="identity", width = 1) + 
-  coord_polar("y", start=0) + 
-  theme_void()
-
-gender_pie
-
-#gender_hist
-survey.sub.pruned %>%
-  summarise(pct = summary(gender)/length(gender),
-            gender = levels(gender)) %>%
-  ggplot(aes(x=gender, y=pct, fill=pct))+
-  geom_bar(stat= "identity")  +
-  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
-  labs(title = "Participants by Gender", y = "Percent", x ='Gender') +
-  theme_minimal()
-```
-
-### education 
-```{r}
-edu_pie = survey.sub.pruned %>%
-  ggplot(aes(x = "", y = education, fill = education)) + 
-  geom_bar(stat ="identity", width = 1) + 
-  coord_polar("y", start=0) + 
-  theme_void()
-```
-
-
-```{r age plots}
-
-summary(survey.sub.pruned$age)
-
-# plot looking at age total
-
-
-ggplot(survey.sub.pruned) +
-  geom_histogram( aes(x=age, y = ..density..),bins=30, fill= "forestgreen", position="identity") 
-
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=age, x= gender, fill=gender),
-                  position="identity") +
-  scale_fill_brewer(palette="Reds")
-
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=age,x= income, fill=income),
-                  position="identity")  +
-  scale_fill_brewer(palette="Reds")
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=age, x= education, fill=education),
-                  position="identity") +
-  scale_fill_brewer(palette="Reds")
-
-```
-
-```{r income plots}
-
-# plot income, reorder income brackets
 survey.sub.pruned$income <- factor(survey.sub.pruned$income,
                                      levels = c("Less than $15,000",
                                                 "$15,000 - $30,000",
@@ -398,83 +256,152 @@ survey.sub.pruned$income <- factor(survey.sub.pruned$income,
                                                 "$50,000 - $75,000",
                                                 "$75,000 - $150,000",
                                                 "Above $150,000"))
-((summary(survey.sub.pruned$income)/length(survey.sub.pruned$income))*100)
-# plot looking at income total
-ggplot(survey.sub.pruned, aes(x=income, fill=income))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Participant Household Income 2013", y = "Percent", x ='income', fill="income bracket") +
-  scale_fill_brewer(palette="Greens")+
-  theme_minimal()
 
-# income separated by gender
-ggplot(survey.sub.pruned, aes(x=income, group=gender))+
-  geom_bar(aes(y = ..prop.., fill =factor(..x..)), stat="count") +
-  geom_text(aes(label = scales::percent(..prop..),
-                y= ..prop..), stat= "count", vjust = -.5) +
-  labs(y = "Percent", x ='income', fill="income bracket") +
-  facet_grid(~gender) +
-  scale_y_continuous(labels = scales::percent)+
-  scale_fill_brewer(palette="Reds")+
-  theme_minimal()
-
-
-# income separated by age
-ggplot(survey.sub.pruned, aes(x=income, y=age, fill=income)) +
-  geom_boxplot() +
-  scale_fill_brewer(palette="Reds")
-
-```
-
-```{r }
-edu_pie = survey.sub.pruned %>%
-  ggplot(aes(x = "", y = education, fill = education)) + 
-  geom_bar(stat ="identity", width = 1) + 
-  coord_polar("y", start=0) + 
-  theme_void()
-
-edu_pie
-```
-
-
-```{r education plots}
-# plot education, reorder education values
 survey.sub.pruned$education <- factor(survey.sub.pruned$education,
-                                     levels = c("Other",
+                                         levels = c("Other",
                                                 "Less than 12 years; no high school diploma",
                                                 "High school graduate (or equivalent)",
                                                 "Some college, no diploma; or Associate’s degree",
                                                 "Bachelor’s degree or other 4-year degree",
                                                 "Graduate or professional degree"))
 
-# plot looking at education
-ggplot(survey.sub.pruned, aes(x=education, fill=education))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Survey Highest Degree", y = "Percent", x ='Highest Degree') +
-  scale_fill_brewer(palette="Greens")+
+survey.sub.pruned$gender <- as.factor(survey.sub.pruned$gender)
+survey.sub.pruned$sirius <- as.factor(survey.sub.pruned$sirius)
+survey.sub.pruned$wharton <- as.factor(survey.sub.pruned$wharton)
+
+```
+
+This study received 1,764 surveys. We removed 37 of those after conductiong quality control, resulting in a total of 1,727 surveys. In general, the participants are mostly young, ranging from early to late twenties. Most are Male. The majority have at least attended some college and make mkae below 50,000 dollars. We describe the population of participants in greater detail and by several demographic categories below.
+
+### Age 
+
+* age ranges from 18-76
+
+* It is right skewed, with most participants being younger in their early to late twenties
+
+We can see the distribution of ages with a histogram and examine how this distribution is distributed by other variables
+
+
+```{r, warning=FALSE}
+age_hist <- survey.sub.pruned %>%
+  ggplot() + 
+  geom_histogram(aes(x = age), bins = 30, color ="darkblue", fill = "lightblue") + 
+  labs(title = "Historgram of age", subtitle = "Mean Age shown by red line", x = "Age (years)", y = "frequency") +
+  geom_vline(aes(xintercept=mean(age)),
+             color = "red", linetype = "dashed", sixe = 1)
+
+
+age_gender <- ggplot(survey.sub.pruned) +
+  geom_boxplot(aes(y=age, x= gender, fill=gender),
+                  position="identity")  +
+  labs(title = "Participant Age by Gender", y = "Age (years)", x ='Gender') +
+  scale_fill_brewer(palette="Reds")+ 
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+age_income <- ggplot(survey.sub.pruned) +
+  geom_boxplot(aes(y=age,x= income, fill=income),
+                  position="identity")  +
+  labs(title = "Participant Age by Income", y = "Age (years)", x ='Income') +
+  scale_fill_brewer(palette="Reds")+ 
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+age_education <- ggplot(survey.sub.pruned) +
+  geom_boxplot(aes(y=age, x= education, fill=education),
+                  position="identity") +
+  labs(title = "Participant Age by Education", y = "Age (years)", x ='Education') +
+  scale_fill_brewer(palette="Reds") + 
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+grid.arrange(age_hist, age_gender, age_income, age_education, ncol = 2)
+```
+
+
+### Gender 
+
+* There are 729 (42%) Females and 998 (58%) Males in the survey pool.
+```{r}
+# >>>>>>> 5d0ed39005b074bcca1f3ccdd3eab194461fdea9
+summary(survey.sub.pruned)
+str(survey.sub.pruned)
+```
+```{r}
+table(survey.sub.pruned$gender)
+```
+
+```{r}
+gender_pie <-  survey.sub.pruned %>%
+  ggplot(aes(x = "", y = gender, fill = gender)) + 
+  geom_bar(stat ="identity", width = 1) + 
+  coord_polar("y", start=0) + 
+  theme_void()
+
+#gender_hist
+gender_histogram <- survey.sub.pruned %>%
+  summarise(pct = summary(gender)/length(gender),
+            gender = levels(gender)) %>%
+  ggplot(aes(x=gender, y=pct, fill=gender))+
+  geom_bar(stat= "identity")  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
+  labs(title = "Participants by Gender", y = "Percent", x ='Gender') +
+  theme_minimal()
+
+grid.arrange(gender_pie, gender_histogram, ncol = 2)
+```
+
+### education 
+
+Most participants have completed some college education.
+
+```{r, results='asis'}
+edu_table <- data.frame("Counts" = summary(survey.sub.pruned$education),
+                        "Percentage" = (summary(survey.sub.pruned$education)/length(survey.sub.pruned$education))*100)
+kable(edu_table,
+      caption = "Survey Demographics by education")
+```
+
+```{r}
+edu_pie <- survey.sub.pruned %>%
+  ggplot(aes(x = "", y = education, fill = education)) + 
+  geom_bar(stat ="identity", width = 1) + 
+  coord_polar("y", start=0) + 
+  theme_void()
+  
+edu_hist <- survey.sub.pruned %>%
+  summarise(pct = summary(education)/length(education),
+            education= levels(education)) %>%
+  mutate(education = factor(education,
+                            levels = c("Other",
+                               "Less than 12 years; no high school diploma",
+                               "High school graduate (or equivalent)",
+                               "Some college, no diploma; or Associate’s degree",
+                               "Bachelor’s degree or other 4-year degree",
+                               "Graduate or professional degree"))) %>%
+ggplot(aes(x=education,y=pct, fill=education))+
+  geom_bar(stat= "identity")  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
+  labs(title = "Participants by Education", y = "Percent", x ='Highest Degree') +
   theme_minimal() +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
 
-# education separated by gender
-ggplot(survey.sub.pruned, aes(x=education, group=gender))+
-  geom_bar(aes(y = ..prop.., fill =factor(..x..)), stat="count") +
-  geom_text(aes(label = scales::percent(..prop..),
-                y= ..prop..), stat= "count", vjust = -.5) +
-  labs(title = "Survey Highest Degree", y = "Percent", x ='Highest Degree') +
-  facet_grid(~gender) +
-  scale_y_continuous(labels = scales::percent)+
-  scale_fill_brewer(palette="Reds")+
-  theme_minimal()
 
-# education separated by age
-ggplot(survey.sub.pruned, aes(x=education, y=age, fill=education)) +
-  geom_boxplot() +
-  scale_fill_brewer(palette="Reds")
+grid.arrange(edu_pie, edu_hist, ncol = 2)
 ```
+
+### Income
+
+Most participants make below $50,000
+
+```{r, results='asis'}
+inc_table <- data.frame("Counts" = summary(survey.sub.pruned$income),
+                        "Percentage" = (summary(survey.sub.pruned$income)/length(survey.sub.pruned$income))*100)
+kable(inc_table,
+      caption = "Survey Demographics by Income")
+```
+
 
 ```{r }
 # income
@@ -484,51 +411,33 @@ income_pie = survey.sub.pruned %>%
   coord_polar("y", start=0) + 
   theme_void()
 
-income_pie
-# plot income, reorder income brackets
-survey.sub.pruned$income <- factor(survey.sub.pruned$income,
-                                     levels = c("Less than $15,000",
+
+income_hist <- survey.sub.pruned %>%
+  summarise(pct = summary(income)/length(income),
+            income= levels(income)) %>%
+  mutate(income = factor(income,
+                         levels = c("Less than $15,000",
                                                 "$15,000 - $30,000",
                                                 "$30,000 - $50,000",
                                                 "$50,000 - $75,000",
                                                 "$75,000 - $150,000",
-                                                "Above $150,000"))
-
-# plot looking at income total
-ggplot(survey.sub.pruned, aes(x=income, fill=income))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Participant Household Income 2013", y = "Percent", x ='income', fill="income bracket") +
-  scale_fill_brewer(palette="Greens")+
-  theme_minimal()+
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-
-# income separated by gender
-ggplot(survey.sub.pruned, aes(x=income, group=gender))+
-  geom_bar(aes(y = ..prop.., fill =factor(..x..)), stat="count") +
-  geom_text(aes(label = scales::percent(..prop..),
-                y= ..prop..), stat= "count", vjust = -.5) +
-  labs(y = "Percent", x ='income', fill="income bracket") +
-  facet_grid(~gender) +
-  scale_y_continuous(labels = scales::percent)+
-  scale_fill_brewer(palette="Reds")+
-  theme_minimal()+
+                                                "Above $150,000"))) %>%
+ggplot(aes(x=income,y=pct, fill=income))+
+  geom_bar(stat= "identity")  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
+  labs(title = "Participants by income", y = "Percent", x ='Highest Degree') +
+  theme_minimal() +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
 
 
-# income separated by age
-ggplot(survey.sub.pruned, aes(x=income, y=age, fill=income)) +
-  geom_boxplot() +
-  scale_fill_brewer(palette="Reds")+
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+grid.arrange(income_pie, income_hist, ncol = 2)
 
 ```
 
+### Sirius Listeners
 
+* 77% of participants listen to Sirius Radio
 
 ```{r sirius plots}
 
@@ -538,55 +447,24 @@ sirius_pie = survey.sub.pruned %>%
   coord_polar("y", start=0) + 
   theme_void()
 
-sirius_pie
 
-
-# plot looking at sirius listeners
-ggplot(survey.sub.pruned, aes(x=sirius, fill=sirius))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Self reported listeners to SiriusXM", y = "Percent", x ='Answer') +
+sirius_hist <- survey.sub.pruned %>%
+  summarise(pct = summary(sirius)/length(sirius),
+            sirius= levels(sirius)) %>%
+ggplot(aes(x=sirius,y=pct, fill=sirius))+
+  geom_bar(stat= "identity")  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
+  labs(title = "Participants Who listen to SiriusXM Radio", y = "Percent", x ='Highest Degree') +
   theme_minimal() +
-  scale_fill_brewer(palette="Greens")+
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
 
-
-survey.sub.pruned[survey.sub.pruned$sirius =='Yes',] %>% 
-  ggplot(., aes(x=gender, fill = gender)) +
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "People who listen to sirius by gender", y = "Percent", x ='Answer') +
-  theme_minimal() +
-  scale_fill_brewer(palette="Reds")+
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-
-survey.sub.pruned[survey.sub.pruned$sirius =='Yes',] %>% 
-  ggplot(., aes(x=education, fill=education))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Self repoted listeners to SiriusXM", y = "Percent", x ='Answer') +
-  theme_minimal() +
-  scale_fill_brewer(palette="Reds")+
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-
-survey.sub.pruned[survey.sub.pruned$sirius =='Yes',] %>% 
-  ggplot(., aes(x=income, fill=income))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Self repoted listeners to SiriusXM", y = "Percent", x ='Answer') +
-  theme_minimal() +
-  scale_fill_brewer(palette="Reds")+
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+grid.arrange(sirius_pie, sirius_hist, ncol = 2)
 
 ```
+### Business Radio Powered by the Wharton School Listeners
+
+* 4% of participants listen to Business Radio Powered by the Wharton School
 
 ```{r wharton plots}
 
@@ -596,75 +474,42 @@ wharton_pie = survey.sub.pruned %>%
   coord_polar("y", start=0) + 
   theme_void()
 
-wharton_pie
-
-ggplot(survey.sub.pruned, aes(x=wharton, fill=wharton))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Self repoted listeners to wharton", y = "Percent", x ='Answer') +
+wharton_hist <- survey.sub.pruned %>%
+  summarise(pct = summary(wharton)/length(wharton),
+            wharton= levels(wharton)) %>%
+ggplot(aes(x=wharton,y=pct, fill=wharton))+
+  geom_bar(stat= "identity")  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
+  labs(title = "Participants Who Listen to Business Radio Powered by the Wharton School", y = "Percent", x ='Highest Degree') +
   theme_minimal() +
-  scale_fill_brewer(palette="Greens")
-
-survey.sub.pruned[survey.sub.pruned$wharton =='Yes',] %>% 
-  ggplot(., aes(x=gender, fill = gender)) +
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Self repoted listeners to SiriusXM", y = "Percent", x ='Answer') +
-  theme_minimal() +
-  scale_fill_brewer(palette="Reds")+
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
 
-survey.sub.pruned[survey.sub.pruned$wharton =='Yes',] %>% 
-  ggplot(., aes(x=education, fill=education))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Self repoted listeners to SiriusXM", y = "Percent", x ='Answer') +
-  theme_minimal() +
-  scale_fill_brewer(palette="Reds")+
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-
-survey.sub.pruned[survey.sub.pruned$wharton =='Yes',] %>% 
-  ggplot(., aes(x=income, fill=income))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Self repoted listeners to SiriusXM", y = "Percent", x ='Answer') +
-  theme_minimal() +
-  scale_fill_brewer(palette="Reds")+
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+grid.arrange(wharton_pie, wharton_hist, ncol = 2)
 ```
 
-```{r age worktime}
+### Worktime
+
+* average worktime 22.5 seconds
+* ranged from 8-108 seconds
+
+```{r age worktime, warning=FALSE}
 
 worktime_boxplot = survey.sub.pruned %>%
   ggplot() + 
   geom_boxplot(aes(x = "", y = worktime)) + 
   labs(title = "Boxplot of worktime in seconds", x = "")
 
-worktime_boxplot
 
 # plot looking at worktime total
-ggplot(survey.sub.pruned) +
+worktime_hist <- ggplot(survey.sub.pruned) +
   geom_histogram( aes(x=worktime, y = ..density..),
-                  bins=30, fill= "lightgreen", position="identity") 
-
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=worktime, x= gender, fill=gender),
-                  position="identity")
-
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=worktime,x= income, fill=income),
-                  position="identity") 
-ggplot(survey.sub.pruned) +
-  geom_boxplot(aes(y=worktime, x= education, fill=education),
-                  position="identity") 
-
+                  bins=30, color ="darkblue", fill = "lightblue", position="identity")  + 
+  labs(title = "Histogram of worktime in seconds", x = "",
+       subtitle = "Mean Worktime shown by red line", x = "Worktime (seconds)", y = "Percentage") +
+  geom_vline(aes(xintercept=mean(worktime)),
+             color = "red", linetype = "dashed", sixe = 1)
+grid.arrange(worktime_boxplot, worktime_hist, ncol = 2)
 ```
 
 
@@ -1584,6 +1429,8 @@ baseball_long_plot1 <- baseball %>%
        y = "Win Percentage") +
   theme_bw() +
   theme(legend.position = "none")
+
+baseball_long_plot1
 ```
 
 
@@ -1605,6 +1452,8 @@ baseball_long_plot2 <- baseball %>%
   theme_bw() +
   theme(legend.position = "none") +
   facet_wrap(~team)
+
+baseball_long_plot2
 ```
 
 
