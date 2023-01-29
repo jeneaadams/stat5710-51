@@ -1,5 +1,5 @@
 # stat5710-51: Modern Data Mining 
-Members: 
+Group 51 Members: 
 - Jenea Adams 
 - Annan Timon
 
