@@ -523,19 +523,39 @@ The population from which the sample is drawn determines where the results of ou
 
 Note: You can not provide evidence by simply looking at our data here. For example, you need to find distribution of education in our age group in US to see if the two groups match in distribution. You may need to gather some background information about the MTURK population to have a slight sense if this particular sample seem to a random sample from there... Please do not spend too much time gathering evidence. 
 
-from the Census Bureau's Annual Estimates of the Resident Population by Sex, Race, and Hispanic Origin for the United States: April 1, 2010 to July 1, 2019	
+We use several datasets from the from the US Census Bureau
 
-```{r US census Bureau data: sex}
+* `nc-est2019-sr11h`: Annual Estimates of the Resident Population by Sex, Race, and Hispanic Origin for the United States: April 1, 2010 toJuly 1, 2019	
+
+* `nc-est2019-agesex`: Annual Estimates of the Resident Population for Selected Age Groups by Sex for the United States: April 1, 2010 to July 1, 2019	
+
+* `data/table-1-01.xlsx`: Table 1.  Educational Attainment of the Population 18 Years and Over, by Age, Sex, Race, and Hispanic Origin:  2014
+
+* `data/hinc01R_1.xls`: HINC-01. Selected Characteristics of Households, by Total Money Income in 2013. (income data comes from 2013)
+
+### Gender
+Is the distribution of gender from the survey participants a random sample from the general population of the USA?
+
+Additionally we use data from [this paper](https://psyarxiv.com/jbc9d/) that sample from a total of 2,026 U.S. adults in mid-December 2019 in the MTURK database to estimate the demographic information of participants in MTURK
+
+
+```{r US census Bureau data: sex, warning=FALSE}
 # US census bureau data
+# nc-est2019-sr11h in ./data
 female_count <- 161646584
 male_count <- 156654424
 us_gender_2014 <- data.frame("gender" = c("Male", "Female"),
                              "pct" = c(male_count/(male_count+female_count),
                                        female_count/(male_count+female_count)))
 
+mturk_gender_df <- data.frame("gender" = c("Male", "Female", "Other"),
+                             "pct" = c(.4327,
+                                       .5644,
+                                       0.0030))
+
 
 # plot looking at gender
-ggplot(survey.sub.pruned, aes(x=gender, fill=gender))+
+survey_gender <- ggplot(survey.sub.pruned, aes(x=gender, fill=gender))+
   geom_bar(aes(y = (..count..)/sum(..count..)))  +
   geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
                 y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
@@ -543,7 +563,7 @@ ggplot(survey.sub.pruned, aes(x=gender, fill=gender))+
   theme_minimal() +
   scale_fill_brewer(palette="Greens")
 
-ggplot(us_gender_2014, aes(x=gender, y=pct, fill=gender))+
+us_gender <- ggplot(us_gender_2014, aes(x=gender, y=pct, fill=gender))+
   geom_bar(stat= "identity")  +
   geom_text(aes(label = scales::percent(pct),
                 y= pct, stat= "count", vjust = -.5)) +
@@ -551,9 +571,31 @@ ggplot(us_gender_2014, aes(x=gender, y=pct, fill=gender))+
   theme_minimal() +
   scale_fill_brewer(palette="Greens")
 
+mturk_gender <- ggplot(mturk_gender_df, aes(x=gender, y=pct, fill=gender))+
+  geom_bar(stat= "identity")  +
+  geom_text(aes(label = scales::percent(pct),
+                y= pct, stat= "count", vjust = -.5)) +
+  labs(title = "MTURK Gender", y = "Percent", x ='Gender') +
+  theme_minimal() +
+  scale_fill_brewer(palette="Greens")
+
+grid.arrange(us_gender, survey_gender, mturk_gender, ncol = 2)
 ```
 
-```{r US census Bureau data: age}
+### Age
+Is the distribution of ages from the survey participants a random sample from the general population of the USA?
+
+```{r US census Bureau data: age, warning=FALSE}
+
+# mturk age
+
+mturk_age <- data.frame("age" = factor(c("18-29", "30-39",
+                                         "40-49", "50-59",
+                                         "60-69", "70+")),
+                        "pct" = c(32.45, .3405,
+                                         .1617, .1072,
+                                         .0511, .0150))
+
 # US census bureau data
 
 us_census_age_values <- read_excel("data/nc-est2019-agesex.xlsx", range = "T7:T24", col_names = FALSE)
@@ -562,7 +604,8 @@ us_census_age_categories <- gsub('.','',
                                             range = "A7:A24", col_names = FALSE)[[1]],
                                  fixed = TRUE)
 us_census_age <- data.frame("ranges" = gsub('.','',us_census_age_categories, fixed = TRUE),
-                       "count" = us_census_age_values[[1]])
+                       "count" = us_census_age_values[[1]],
+                       "pct" = us_census_age_values[[1]]/sum(us_census_age_values[[1]]))
 head(us_census_age)
 names(us_census_age)
 us_census_age$ranges
@@ -599,7 +642,9 @@ survey_age <- data.frame("age" = c("Under 5 years" = 0,
                                                                 survey.sub.pruned$age < 85),
                                          "85 years and over" = sum(survey.sub.pruned$age > 84)))
 
-survey_age <- data.frame("ranges" = rownames(survey_age), "count"=survey_age$age)
+survey_age <- data.frame("ranges" = rownames(survey_age),
+                         "count"=survey_age$age,
+                         "pct"=survey_age$age/sum("count"=survey_age$age))
 
 survey_age$ranges <- factor(survey_age$ranges,
                                      levels = c("Under 5 years","5 to 9 years",
@@ -622,96 +667,149 @@ us_census_age$ranges <- factor(us_census_age$ranges,
                                                 "70 to 74 years","75 to 79 years",
                                                 "80 to 84 years","85 years and over"))
 
-ggplot(survey_age, aes(x=ranges, y=count, fill = ranges))+
+plot_survey_age <- ggplot(survey_age, aes(x=ranges, y=pct, fill = ranges))+
   geom_bar(stat= "identity")  +
   labs(title = "Survey Age", y = "Percent", x ='Age Groups') +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 
-ggplot(us_census_age, aes(x=ranges, y=count, fill = ranges))+
+plot_us_age <- ggplot(us_census_age, aes(x=ranges, y=pct, fill = ranges))+
   geom_bar(stat= "identity")  +
   labs(title = "US Census Age", y = "Percent", x ='Age Groups') +
-  theme_minimal()
-```
+  theme_minimal() +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 
-```{r US census Bureau data: education}
+plot_mturk_age <- ggplot(mturk_age, aes(x=age, y=pct, fill = age))+
+  geom_bar(stat= "identity")  +
+  labs(title = "MTURK Age", y = "Percent", x ='Age Groups') +
+  theme_minimal() +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+grid.arrange(plot_us_age, plot_mturk_age, plot_survey_age, ncol = 2)
+```
+### Education
+Is the distribution of education from the survey participants a random sample from the general population of the USA?
+
+
+
+```{r US census Bureau data: education, warning=FALSE}
 # US census bureau data
 
 us_census_education <- read_excel("data/table-1-01.xlsx", range = "C6:Q21")[-1,]
 names(us_census_education)
-us_education_2014 <- data.frame("education" = c(rep("Other", 0),
-                                             rep("Less than 12 years; no high school diploma",
-                                                 sum(us_census_education[,c(1:7)])),
-                                             rep("High school graduate (or equivalent)",
-                                                 sum(us_census_education$`High school graduate`)),
-                                             rep("Some college, no diploma; or Associate’s degree",
-                                                 sum(us_census_education[,c(9:11)])),
-                                             rep("Bachelor’s degree or other 4-year degree",
-                                                 sum(us_census_education$`Bachelor's degree`)),
-                                             rep("Graduate or professional degree",
-                                                 sum(us_census_education[,c(13:15)]))))
-
-us_education_2014$education <- factor(us_education_2014$education,
+us_education_2014 <- data.frame("count" = c("Other"= 0,
+                                             "Less than 12 years; no high school diploma"=
+                                                 sum(us_census_education[,c(1:7)]),
+                                             "High school graduate (or equivalent)"=
+                                                 sum(us_census_education$`High school graduate`),
+                                             "Some college, no diploma; or Associate’s degree"=
+                                                 sum(us_census_education[,c(9:11)]),
+                                             "Bachelor’s degree or other 4-year degree"=
+                                                 sum(us_census_education$`Bachelor's degree`),
+                                             "Graduate or professional degree"=
+                                                 sum(us_census_education[,c(13:15)])))
+us_education_2014$education <- factor(rownames(us_education_2014),
                                      levels = c("Other",
                                                 "Less than 12 years; no high school diploma",
                                                 "High school graduate (or equivalent)",
                                                 "Some college, no diploma; or Associate’s degree",
                                                 "Bachelor’s degree or other 4-year degree",
                                                 "Graduate or professional degree"))
+us_education_2014$pct <- us_education_2014$count/sum(us_education_2014$count)
 
-ggplot(survey.sub.pruned, aes(x=education, fill=education))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Survey Highest Degree", y = "Percent", x ='Highest Degree') +
-  scale_fill_brewer(palette="Greens")+
+
+mturk_eduction_df <-  data.frame("education" = factor(c("No college degree",
+                                                  "Associate degree",
+                                                  "Bachelor’s degree",
+                                                  "Graduate degree"),
+                                                  levels = c("No college degree",
+                                                             "Associate degree",
+                                                             "Bachelor’s degree",
+                                                             "Graduate degree")),
+                                 "pct" = c(.3762, .1292,
+                                           .3450, .1496))
+
+
+plot_us_education <- ggplot(us_education_2014, aes(x=education, y=pct, fill=education))+
+  geom_bar(stat= "identity")  +
+  geom_text(aes(label = scales::percent(pct), vjust = -.5)) +
+  labs(title = "US Education 2014", y = "Percent", x ='Highest Degree', fill="income bracket") +
   theme_minimal() +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
 
-ggplot(us_education_2014, aes(x=education, fill=education))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "US Education 2014", y = "Percent", x ='Highest Degree', fill="income bracket") +
-  scale_fill_brewer(palette="Greens")+
-  theme_minimal()
+plot_mturk_education <- ggplot(mturk_eduction_df, aes(x=education, y=pct, fill = education))+
+  geom_bar(stat= "identity")  +
+  labs(title = "MTURK Education", y = "Percent", x ='Education') +
+  theme_minimal() +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+grid.arrange(plot_us_education, edu_hist, plot_mturk_education,ncol = 2)
 ```
 
-```{r US census Bureau data: Income}
+### Income
+Is the distribution of income from the survey participants a random sample from the general population of the USA?
+
+
+
+```{r US census Bureau data: Income, warning=FALSE}
 # US census bureau data
 # https://www.census.gov/data/tables/time-series/demo/income-poverty/cps-hinc/hinc-01.2013.html#list-tab-HKAIF65SA26ZC3YMQB
-us_income_2013_excel <- read_excel("data/hinc01_1.xls", range = "C8:AQ10")[2,]
+us_income_2013_excel <- read_excel("data/hinc01R_1.xls", range = "C8:AQ10")[2,]
 names(us_income_2013_excel)
-us_income_2013 <- data.frame("income" = c(rep("Less than $15,000", sum(us_income_2013_excel[,c(1:3)])),
-                                          rep("$15,000 - $30,000", sum(us_income_2013_excel[,c(4:6)])),
-                                          rep("$30,000 - $50,000", sum(us_income_2013_excel[,c(7:10)])),
-                                          rep("$50,000 - $75,000", sum(us_income_2013_excel[,c(11:15)])),
-                                          rep("$75,000 - $150,000", sum(us_income_2013_excel[,c(16:30)])),
-                                          rep("Above $150,000", sum(us_income_2013_excel[,c(30:41)]))))
+us_income_2013 <- data.frame("count" = c("Less than $15,000"= sum(us_income_2013_excel[,c(1:3)]),
+                                          "$15,000 - $30,000"= sum(us_income_2013_excel[,c(4:6)]),
+                                          "$30,000 - $50,000"= sum(us_income_2013_excel[,c(7:10)]),
+                                          "$50,000 - $75,000"= sum(us_income_2013_excel[,c(11:15)]),
+                                          "$75,000 - $150,000"= sum(us_income_2013_excel[,c(16:30)]),
+                                          "Above $150,000"= sum(us_income_2013_excel[,c(30:41)])))
 
-us_income_2013$income <- factor(us_income_2013$income,
+us_income_2013$income <- factor(rownames(us_income_2013),
                                      levels = c("Less than $15,000",
                                                 "$15,000 - $30,000",
                                                 "$30,000 - $50,000",
                                                 "$50,000 - $75,000",
                                                 "$75,000 - $150,000",
                                                 "Above $150,000"))
+us_income_2013$pct <- us_income_2013$count/sum(us_income_2013$count)
 
-ggplot(survey.sub.pruned, aes(x=income, fill=income))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
-  labs(title = "Survey Household Income 2013", y = "Percent", x ='income', fill="income bracket") +
-  scale_fill_brewer(palette="Greens")+
-  theme_minimal()
+mturk_income_df <- data.frame("income" = factor(c("$10k-$19,999", "$20k-$29,999",
+                                                  "$30k-$39,999", "$40k-$49,999",
+                                                  "$50k-$59,999","$60k-$69,999",
+                                                  "$70k-$79,999","$80k-$89,999",
+                                                  "$90k-$99,999","$100k-$149k",
+                                                  ">$150k"),
+                                                  levels =c("$10k-$19,999", "$20k-$29,999",
+                                                            "$30k-$39,999", "$40k-$49,999",
+                                                            "$50k-$59,999","$60k-$69,999",
+                                                            "$70k-$79,999","$80k-$89,999",
+                                                            "$90k-$99,999","$100k-$149k",
+                                                            ">$150k") ),
+                                 "pct" = c(.0660,.1167,.1082,.1102,.1122,
+                                           .0794,.0730,.0506,.0516,.1197,.0492))
 
-ggplot(us_income_2013, aes(x=income, fill=income))+
-  geom_bar(aes(y = (..count..)/sum(..count..)))  +
-  geom_text(aes(label = scales::percent((..count..)/sum(..count..)),
-                y = ((..count..)/sum(..count..))), stat= "count", vjust = -.5) +
+
+plot_us_income <- ggplot(us_income_2013, aes(x=income, y=pct, fill=income))+
+  geom_bar(stat="identity")  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
   labs(title = "US Household Income 2013", y = "Percent", x ='income', fill="income bracket") +
-  scale_fill_brewer(palette="Greens")+
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+plot_mturk_income <- ggplot(mturk_income_df, aes(x=income, y=pct, fill = income))+
+  geom_bar(stat= "identity")  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
+  labs(title = "MTURK Income", y = "Percent", x ='Income') +
+  theme_minimal() +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+grid.arrange(plot_us_income, income_hist, plot_mturk_income , ncol = 2)
 ```
 
 
@@ -723,14 +821,22 @@ Give a final estimate of the Wharton audience size in January 2014. Assume that 
 total_sirius_liteners <- survey.sub.pruned[survey.sub.pruned$sirius == "Yes",]
 total_wharton_liteners <- total_sirius_liteners[total_sirius_liteners$wharton == "Yes",]
 
-prop_listeners <- nrow(total_wharton_liteners)/nrow(total_sirius_liteners)
-prop_listeners
+n <- nrow(total_sirius_liteners)
+p <- nrow(total_wharton_liteners)/n
+q <- 1 - p
 
-51600000 * prop_listeners
+lower_bound <- p - 1.96*sqrt((p*q)/n)
+upper_bound <- p + 1.96*sqrt((p*q)/n)
+print(paste0("Wharton audience size in January 2014 is between [",
+             round(lower_bound*51600000), ", ",
+             round(upper_bound*51600000), "]",
+             ". Here, we estimate it to be ", round(p*51600000),
+             "."))
+
+#pbinom(51600000, prop_listeners)
+
+#rbinom(, size, prob)
 ```
-
-
-The final estimate is that there are 2,585,789 Wharton listeners. 
 
 
 To be specific, you should include:
@@ -739,6 +845,17 @@ To be specific, you should include:
 2. Method used: data gathering, estimation methods
 3. Findings
 4. Limitations of the study. 
+
+Wharton launched a talk show called [Business Radio Powered by the Wharton School](https://businessradio.wharton.upenn.edu/) through the Sirius Radio station in January of 2014. To find out the audience size for the show, a survey was designed and collected a data set via MTURK in May of 2014. The goal was to **estimate the audience size**. 
+
+To do so, launched a survey via Amazon Mechanical Turk ([MTurk](https://www.mturk.com/)) was launched on May 24, 2014 at an offered price of \$0.05 for each answered survey.  WIt was set to be run for 6 days with a target maximum sample size of 2000 as the goal. Most of the observations came in within the first two days. The main questions of interest are "Have you ever listened to Sirius Radio" and "Have you ever listened to Sirius Business Radio by Wharton?". A few demographic features used as control variables were also collected; these include Gender, Age and Household Income.
+
+It was requested that only people in United States answer the questions. Each person can only fill in the questionnaire once to avoid duplicates. Aside from these restrictions, the survey was open to everyone in MTurk with a hope that the sample would be more randomly chosen. 
+
+We Assume that the sample is a random sample of the MTURK population, and that the proportion of Wharton listeners vs. Sirius listeners in the general population is the same as that in the MTURK population.
+
+There were 51.6 million Sirius Radio listeners then. One approach is to estimate the proportion of the Wharton listeners to that of the Sirius listeners, $p$, so that we will come up with an audience size estimate of approximately 51.6 million times $p$. **Using this method, we estimated that the Wharton audience size in January 2014 is between [1,982,330, 3,189,248], specifically 2,585,789**.
+
 
 
 ## New task
