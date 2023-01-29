@@ -1,4 +1,6 @@
 # Homework 1; Due 1/29/2023
+Jenea Adams 
+Annan Timon
 
 ## TOC 
 1. [Rmd]()
