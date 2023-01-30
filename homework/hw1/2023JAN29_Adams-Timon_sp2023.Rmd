@@ -194,6 +194,7 @@ missing.survey <- data.frame(rbind("Missing or NA Values" = apply(survey.sub,2,
 sum(missing.survey)
 missing.survey
 ```
+
 #### **Summary of missing values**
 Before this point, we thought there were just blanks and NAs in the data, but discovered there were unchanged entire fields in the form os "select one" for at least the education column and incorrect values in the age column. Here we tabulate these missing entries. 
 
@@ -918,7 +919,7 @@ A major limitation of this study is that the population sampled from MTURK is no
 
 Now suppose you are asked to design a study to estimate the audience size of Wharton Business Radio Show as of today: You are given a budget of $1000. You need to present your findings in two months. 
 
-### Write a proposal for this study which includes:
+Write a proposal for this study which includes:
 
 1. Method proposed to estimate the audience size.
   - Since we know that most participants have some sort of college experience, we could poll audiences within and adjacent to those speces with a qualtrics survey sent across the country. The incentive to participate would be cash prizes raffled off to the top N participants and/or one year of subscription service to Sirus XM radio. 
@@ -932,8 +933,6 @@ A good proposal will give an accurate estimation with the least amount of money 
 
 
 
-
-
 # Case study 2: Women in Science
 
 
@@ -944,7 +943,7 @@ Our goal is to answer the above questions only through EDA (Exploratory Data Ana
 
 ## Data preparation  
 
-### Understand and clean the data
+Understand and clean the data
 
 
 Notice the data came in as an Excel file. We need to use the package `readxl` and the function `read_excel()` to read the data `WomenData_06_16.xlsx` into R. 
@@ -1304,8 +1303,7 @@ Do the number of degrees change by gender, field, and time? --> **Females appear
 
 Finally, is there evidence showing that women are underrepresented in data science? Data science is an interdisciplinary field of computer science, math, and statistics. You may include year and/or degree.
 
-```{r eval = FALSE, echo = FALSE}
-## by sex, field (Social Sciences and Psychology), degree, and time
+```{r echo = FALSE, message=FALSE,fig.height=6, fig.width=12, results='asis'}
 
 # sex and field
 wsci %>%
@@ -1321,7 +1319,7 @@ wsci %>%
 ```
 
 
-```{r eval = FALSE, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+```{r, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
 # Sex, Field, Degree
 wsci %>%
   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
@@ -1335,7 +1333,7 @@ wsci %>%
 ```
 
 
-```{r eval = FALSE, echo = FALSE, message=FALSE}
+```{r, echo = FALSE, message=FALSE,fig.height=10, fig.width=12, results='asis'}
 # Sex, Field, Degree, Time
 wsci %>%
   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
@@ -1562,7 +1560,9 @@ a). To describe the increment of payroll in each year there are several possible
 
 Explain why the log difference is more appropriate in this setup.
 
-# needs answer
+The log difference is appropriate to use in this step because it will scale the differences in a way that is more comparable across teams given the high variability of the year-to-year differences. 
+
+
 
 b). Create a new variable `diff_log=log(payroll_2013) - log(payroll_2012)`. Hint: use `dplyr::lag()` function.
 
