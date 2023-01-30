@@ -1038,9 +1038,6 @@ Other variables included in this study are Sex, Male or Female, and Number, the 
 Is there evidence that more males are in science-related fields vs `Non-S&E`? Provide summary statistics and a plot which shows the number of people by gender and by field. Write a brief summary to describe your findings.
 
 
-**There are more people overall in Non-S&E fields, in which there are more women. However, there are more men in the S&E fields from these plots.**
-
-
 
 ```{r}
 # by field (S&E and Non-S&E) only
@@ -1377,7 +1374,11 @@ Overall, we believe there is enough graphical evidence that women are underrepre
 
 Summarize your findings focusing on answering the questions regarding if we see consistent patterns that more males pursue science-related fields. Any concerns with the data set? How could we improve on the study?
 
-# Needs answer
+In general, there are more people overall in Non-S&E fields, in which there are more women. However, we consistently see that there are more men in the S&E fields. The proportion of non s&e fields and the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females.
+
+We believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men. 
+
+We can improve on this study by also including people who pursued stem degrees but did not follow through, o2 switched to another field. 
 
 <!-- ## Appendix
 
@@ -1644,6 +1645,7 @@ baseball2 <- baseball %>%
 
 fit = lm(win_pct ~ payroll + diff_log, data = baseball2)
 summary(fit)
+
 ```
 
 **This linear model shows that raw payroll more significantly predicts performance that log payroll, although the R^2 overall is still quite weak.** 
