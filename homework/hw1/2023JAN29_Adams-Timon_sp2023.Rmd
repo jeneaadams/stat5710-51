@@ -368,7 +368,10 @@ edu_pie <- survey.sub.pruned %>%
   geom_bar(stat ="identity", width = 1) + 
   coord_polar("y", start=0) + 
   theme_void()
-  
+```
+
+
+```{r}
 edu_hist <- survey.sub.pruned %>%
   summarise(pct = summary(education)/length(education),
             education= levels(education)) %>%
@@ -379,6 +382,7 @@ edu_hist <- survey.sub.pruned %>%
                                "Some college, no diploma; or Associate’s degree",
                                "Bachelor’s degree or other 4-year degree",
                                "Graduate or professional degree"))) %>%
+
 ggplot(aes(x=education,y=pct, fill=education))+
   geom_bar(stat= "identity")  +
   geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
@@ -386,9 +390,11 @@ ggplot(aes(x=education,y=pct, fill=education))+
   theme_minimal() +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
+```
 
 
-grid.arrange(edu_pie, edu_hist, ncol = 2)
+```{r}
+grid.arrange(edu_pie, edu_hist, nrow = 2, ncol = 1)
 ```
 
 ### Income
@@ -1310,7 +1316,7 @@ wsci %>%
 
 ```
 
-Overall, we believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men. 
+**Overall, we believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men.**
 
 
 
@@ -1356,6 +1362,17 @@ Overall, we believe there is enough graphical evidence that women are underrepre
 Summarize your findings focusing on answering the questions regarding if we see consistent patterns that more males pursue science-related fields. Any concerns with the data set? How could we improve on the study?
 
 # Needs answer
+
+
+**There are more people overall in Non-S&E fields, in which there are more women. However, there are more men in the S&E fields from these plots.**
+
+**The proportion of non s&e fields and the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.**
+
+**Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females.**
+
+Overall, we believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men.
+
+
 
 <!-- ## Appendix
 
