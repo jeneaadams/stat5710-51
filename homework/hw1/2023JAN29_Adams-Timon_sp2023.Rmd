@@ -718,7 +718,7 @@ Is the distribution of education from the survey participants a random sample fr
 # US census bureau data
 
 us_census_education <- read_excel("data/table-1-01.xlsx", range = "C6:Q21")[-1,]
-names(us_census_education)
+#names(us_census_education)
 us_education_2014 <- data.frame("count" = c("Other"= 0,
                                              "Less than 12 years; no high school diploma"=
                                                  sum(us_census_education[,c(1:7)]),
