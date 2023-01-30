@@ -811,6 +811,8 @@ plot_mturk_income <- ggplot(mturk_income_df, aes(x=income, y=pct, fill = income)
 
 grid.arrange(plot_us_income, income_hist, plot_mturk_income , ncol = 2)
 ```
+
+
 1. Does this sample appear to be a random sample from the general population of the USA?
 + This sample slightly differs from the population of the USA in some demographic information, but appears to be a random sample. We would have to do more analysis outside of looking at percentages to quantify the magnitude of the difference
 + The participants completely exclude anyone younger than 18, and the prticipants included are younger than the US population
@@ -881,7 +883,7 @@ Now suppose you are asked to design a study to estimate the audience size of Wha
 ### Write a proposal for this study which includes:
 
 1. Method proposed to estimate the audience size.
-  - Since we know that most participants have some sort of college experience, we could poll audiences within and adjecnt tot hose speces with a qualtrics survey senct across the country. The incentive to participate would be cash prizes raffled off to the top N participants and/or one year of subscription service to Sirus XM radio. 
+  - Since we know that most participants have some sort of college experience, we could poll audiences within and adjacent to those speces with a qualtrics survey sent across the country. The incentive to participate would be cash prizes raffled off to the top N participants and/or one year of subscription service to Sirus XM radio. 
   
 2. What data should be collected and where it should be sourced from.
 - The Data collected should be Age, Education, Gender, Location, Experience with Wharton Radio, How they found out abotu Wharton Radio. 
@@ -904,13 +906,13 @@ Our goal is to answer the above questions only through EDA (Exploratory Data Ana
 
 ## Data preparation  
 
-1. Understand and clean the data
+### Understand and clean the data
 
 
 Notice the data came in as an Excel file. We need to use the package `readxl` and the function `read_excel()` to read the data `WomenData_06_16.xlsx` into R. 
 
 
-### a). Read the data into R.
++ Read the data into R.
 ```{r}
 wsci <- read_excel("data/WomenData_06_16.xlsx")
 ```
@@ -934,13 +936,13 @@ str(wsci)
 ```
 
 
-### b). Clean the names of each variables. (Change variable names to  `Field`,`Degree`, `Sex`, `Year` and `Number` )
++ Clean the names of each variables. (Change variable names to  `Field`,`Degree`, `Sex`, `Year` and `Number` )
 ```{r  }
 colnames(wsci) = c("Field","Degree", "Sex", "Year", "Number")
 ```
 
 
-### c). Set the variable natures properly. 
++ Set the variable natures properly. 
 ```{r  }
 wsci = wsci %>% mutate(Field = as.factor(Field),
          Sex = as.factor(Sex),
@@ -952,9 +954,9 @@ glimpse(wsci)
 ```
 
 
-### d). Any missing values?
++ Any missing values?
 
-We can count the number of `NA` values, if there are any
+We can count the number of `NA` values, if there are any. In this dataset, there are no missing values.
 ```{r}
 missing = wsci %>%
   summarise(count = sum(is.na(wsci)))
@@ -962,12 +964,9 @@ missing
 
 ```
 
-There are no missing values
+## Write a summary describing the data set provided here. 
 
-### 2. Write a summary describing the data set provided here. 
-
-### a). How many fields are there in this data?
-5 fields: Field, Degree, Sex, Year, Number
++ How many fields are there in this data?
 
 ```{r summary, echo = FALSE, warning = FALSE}
 str(wsci)
@@ -986,32 +985,37 @@ We can count the amount of unique entries in the Field variable
 length(unique(wsci$Field))
 ```
 
-There are 10 Fields possible 
+There are 10 Fields possible: Agricultural sciences; Biological sciences; Computer sciences; Earth, atmospheric, and ocean sciences; Engineering; Mathematics and statistics; Non-S&E; Physical sciences; Psychology; and Social sciences 
 
 
-### b). What are the degree types? 
++ What are the degree types? 
 
 ```{r}
 unique(wsci$Degree)
 ```
 
-BS MS PhD 
+There are 3 degree types: BS, MS, and PhD 
 
 
-### c). How many year's statistics are being reported here? 
++ How many year's statistics are being reported here? 
 
 ```{r}
 length(unique(wsci$Year))
+unique(wsci$Year)
 ```
 
-11
+There are statistics for 11 years from 2006 to 2016
 
++ Other Variables
+
+Other variables included in this study are Sex, Male or Female, and Number, the number of degrees awarded.
 
 ## BS degrees in 2015
 
 Is there evidence that more males are in science-related fields vs `Non-S&E`? Provide summary statistics and a plot which shows the number of people by gender and by field. Write a brief summary to describe your findings.
 
-### answer 
+
+**There are more people overall in Non-S&E fields, in which there are more women. However, there are more men in the S&E fields from these plots.**
 
 
 
@@ -1028,7 +1032,7 @@ p1 = wsci %>%
 ```
 
 
-```{r}
+```{r, message=FALSE}
 # by sex and field (S&E and Non-S&E)
 p2 = wsci %>%
   mutate(SE = ifelse(Field!="Non-S&E" , "S&E", "Non-S&E")) %>%
@@ -1049,9 +1053,7 @@ ggarrange(p1, p2 + rremove("x.text"),
           ncol=1, nrow = 2)
 ```
 
-
-Is there evidence that more males are in science-related fields vs `Non-S&E`? --> There are more people overall in nons&e fields, in which there are more women. However, there are more men in the S&E fields from these plots. 
-
+Is there evidence that more males are in science-related fields vs `Non-S&E`? --> **There are more people overall in Non-S&E fields, in which there are more women. However, there are more men in the S&E fields from these plots.**
 
 
 ## EDA bringing type of degree, field and gender in 2015
@@ -1157,8 +1159,9 @@ dfg2015%>%
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   ggtitle("Degrees granted across fields by degree and gender in 2015")
 ```
-### answer 
-The proportion of non s&e fields and the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.
+
+
+**The proportion of non s&e fields and the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.**
 
 ## EDA bring all variables 
 
@@ -1256,7 +1259,8 @@ wsci %>%
   labs(Title="Degrees by gender, field, and time") + 
   facet_grid(~Degree + Sex, scale = "free")
 ```
-Do the number of degrees change by gender, field, and time? --> Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females. 
+
+Do the number of degrees change by gender, field, and time? --> **Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females.**
 
 ## Women in Data Science
 
@@ -1351,9 +1355,9 @@ Overall, we believe there is enough graphical evidence that women are underrepre
 
 Summarize your findings focusing on answering the questions regarding if we see consistent patterns that more males pursue science-related fields. Any concerns with the data set? How could we improve on the study?
 
+# Needs answer
 
-
-## Appendix
+<!-- ## Appendix
 
 <!-- To help out, we have included some R-codes here as references. You should make your own chunks filled with texts going through each items listed above. Make sure to hide the unnecessary outputs/code etc.  -->
 
@@ -1506,6 +1510,8 @@ a). To describe the increment of payroll in each year there are several possible
 
 Explain why the log difference is more appropriate in this setup.
 
+# needs answer
+
 b). Create a new variable `diff_log=log(payroll_2013) - log(payroll_2012)`. Hint: use `dplyr::lag()` function.
 
 ```{r}
@@ -1516,6 +1522,7 @@ baseball %>%
 ```
 
 c). Create a long data table including: team, year, diff_log, win_pct
+
 ```{r}
 baseball_long <- baseball %>%
   group_by(team) %>%
@@ -1528,20 +1535,25 @@ head(baseball_long)
 
 a). Which five teams had highest increase in their payroll between years 2010 and 2014, inclusive?
 
-```{r}
+The Los Angeles Dodgers, Miami Marlins, Houston Astros, Kansas City Royals, and the Texas Rangers
+
+```{r, eval=TRUE, results='asis'}
 baseball_long %>% 
   filter(year >= 2010 & year <=2014) %>%
-  arrange(desc(diff_log)) %>% head()
+  arrange(desc(diff_log)) %>% head(5) %>% kable(caption = "Top Five teams with the highest increase in their payroll between years 2010 and 2014, inclusive")
 ```
 
 
 b). Between 2010 and 2014, inclusive, which team(s) "improved" the most? That is, had the biggest percentage gain in wins?
+
+The Arizona Diamondbacks, Boston Red Sox, Houston Astros, Cleveland Indians, and Baltimore Orioles
+
 ```{r}
 baseball_long %>%
   group_by(team) %>%
   mutate(diff_log_win =log(win_pct) - log(lag(win_pct, default = win_pct[1], order_by = team))) %>% 
   filter(year >= 2010 & year <=2014) %>%
-  arrange(desc(diff_log_win)) %>% head()
+  arrange(desc(diff_log_win)) %>%  head(5) %>% kable(caption = "Top Five teams with the biggest percentage gain in wins between years 2010 and 2014, inclusive")
 
 ```
 
@@ -1594,7 +1606,7 @@ baseball_long_plot2
 
 
 
-Is there evidence to support the hypothesis that higher increases in payroll on the log scale lead to increased performance? Pick up a few statistics, accompanied with some data visualization, to support your answer.  --> All R^2 are less than 0.5 indicating a weak linear relationship between team-to-team log increase in payroll and their performance.
+Is there evidence to support the hypothesis that higher increases in payroll on the log scale lead to increased performance? Pick up a few statistics, accompanied with some data visualization, to support your answer.  --> **All R^2 are less than 0.5 indicating a weak linear relationship between team-to-team log increase in payroll and their performance.**
 
 
 
@@ -1612,7 +1624,7 @@ fit = lm(win_pct ~ payroll + diff_log, data = baseball2)
 summary(fit)
 ```
 
-This linear model shows that raw payroll more significantly predicts performance that log payroll, although the R^2 overall is still quite weak. 
+**This linear model shows that raw payroll more significantly predicts performance that log payroll, although the R^2 overall is still quite weak.** 
 
 
 
