@@ -1560,7 +1560,7 @@ a). To describe the increment of payroll in each year there are several possible
 
 Explain why the log difference is more appropriate in this setup.
 
-The log difference is appropriate to use in this step because it will scale the differences in a way that is more comparable across teams given the high variability of the year-to-year differences. This is especially important since the pay scale for all the teams is also very different
+The log difference is appropriate to use in this step because it will scale the differences in a way that is more comparable across teams given the high variability of the year-to-year differences. This is especially important since the pay scale for all the teams is also very different. 
 
 
 
