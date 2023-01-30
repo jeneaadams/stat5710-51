@@ -27,7 +27,7 @@ urlcolor: blue
 # Packages
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, results = "hide", fig.width=8, fig.height=4)
+knitr::opts_chunk$set(echo = FALSE, results = "hide", fig.width=8, fig.height=6)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
@@ -282,7 +282,7 @@ This study received 1,764 surveys. We removed 37 of those after conductiong qual
 We can see the distribution of ages with a histogram and examine how this distribution is distributed by other variables
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, results='asis'}
 age_hist <- survey.sub.pruned %>%
   ggplot() + 
   geom_histogram(aes(x = age), bins = 30, color ="darkblue", fill = "lightblue") + 
@@ -315,7 +315,8 @@ age_education <- ggplot(survey.sub.pruned) +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
 
-grid.arrange(age_hist, age_gender, age_income, age_education, ncol = 2)
+#grid.arrange(age_hist, age_gender, age_income, age_education, ncol = 2)
+age_hist
 ```
 
 
@@ -331,7 +332,7 @@ str(survey.sub.pruned)
 table(survey.sub.pruned$gender)
 ```
 
-```{r}
+```{r, fig.dim = c(8, 9)}
 gender_pie <-  survey.sub.pruned %>%
   ggplot(aes(x = "", y = gender, fill = gender)) + 
   geom_bar(stat ="identity", width = 1) + 
@@ -344,14 +345,14 @@ gender_histogram <- survey.sub.pruned %>%
             gender = levels(gender)) %>%
   ggplot(aes(x=gender, y=pct, fill=gender))+
   geom_bar(stat= "identity")  +
-  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.25) +
   labs(title = "Participants by Gender", y = "Percent", x ='Gender') +
   theme_minimal()
 
 grid.arrange(gender_pie, gender_histogram, ncol = 2)
 ```
 
-### education 
+### Education 
 
 Most participants have completed some college education.
 
@@ -372,6 +373,11 @@ edu_pie <- survey.sub.pruned %>%
 
 
 ```{r}
+
+  # theme_void() + # phantom section? 
+  # theme(legend.position="none")
+  
+
 edu_hist <- survey.sub.pruned %>%
   summarise(pct = summary(education)/length(education),
             education= levels(education)) %>%
@@ -393,8 +399,17 @@ ggplot(aes(x=education,y=pct, fill=education))+
 ```
 
 
-```{r}
-grid.arrange(edu_pie, edu_hist, nrow = 2, ncol = 1)
+```{r, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+# grid.arrange(edu_pie, edu_hist, nrow = 2, ncol = 1,
+#         axis.ticks.x=element_blank(),
+#         legend.position="bottom",
+#         legend.key.size = unit(1, 'mm'),
+#         legend.text = element_text(size=5),
+#         legend.title = element_text(size=6))
+
+
+grid.arrange(edu_hist, edu_pie, ncol = 1, nrow =2)
+
 ```
 
 ### Income
@@ -415,7 +430,8 @@ income_pie = survey.sub.pruned %>%
   ggplot(aes(x = "", y = income, fill = income)) + 
   geom_bar(stat ="identity", width = 1) + 
   coord_polar("y", start=0) + 
-  theme_void()
+  theme_void() +
+  theme(legend.position="none")
 
 
 income_hist <- survey.sub.pruned %>%
@@ -434,10 +450,14 @@ ggplot(aes(x=income,y=pct, fill=income))+
   labs(title = "Participants by income", y = "Percent", x ='Highest Degree') +
   theme_minimal() +
   theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(),
+        legend.position="bottom",
+        legend.key.size = unit(1, 'mm'),
+        legend.text = element_text(size=7),
+        legend.title = element_text(size=7))
 
 
-grid.arrange(income_pie, income_hist, ncol = 2)
+grid.arrange(income_hist, income_pie, ncol = 2)
 
 ```
 
@@ -545,7 +565,7 @@ Is the distribution of gender from the survey participants a random sample from 
 Additionally we use data from [this paper](https://psyarxiv.com/jbc9d/) that sample from a total of 2,026 U.S. adults in mid-December 2019 in the MTURK database to estimate the demographic information of participants in MTURK
 
 
-```{r US census Bureau data: sex, warning=FALSE}
+```{r US census Bureau data: sex, warning=FALSE, fig.height=10, fig.width=12}
 # US census bureau data
 # nc-est2019-sr11h in ./data
 female_count <- 161646584
@@ -591,7 +611,7 @@ grid.arrange(us_gender, survey_gender, mturk_gender, ncol = 2)
 ### Age
 Is the distribution of ages from the survey participants a random sample from the general population of the USA?
 
-```{r US census Bureau data: age, warning=FALSE}
+```{r US census Bureau data: age, warning=FALSE, fig.height=10, fig.width=12, results='asis', message=FALSE}
 
 # mturk age
 
@@ -612,9 +632,9 @@ us_census_age_categories <- gsub('.','',
 us_census_age <- data.frame("ranges" = gsub('.','',us_census_age_categories, fixed = TRUE),
                        "count" = us_census_age_values[[1]],
                        "pct" = us_census_age_values[[1]]/sum(us_census_age_values[[1]]))
-head(us_census_age)
-names(us_census_age)
-us_census_age$ranges
+#head(us_census_age)
+#names(us_census_age)
+#us_census_age$ranges
 
 survey_age <- data.frame("age" = c("Under 5 years" = 0,
                                          "5 to 9 years"= 0,
@@ -678,14 +698,22 @@ plot_survey_age <- ggplot(survey_age, aes(x=ranges, y=pct, fill = ranges))+
   labs(title = "Survey Age", y = "Percent", x ='Age Groups') +
   theme_minimal() +
   theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(),
+        legend.position="bottom",
+        legend.key.size = unit(1, 'mm'),
+        legend.text = element_text(size=10),
+        legend.title = element_text(size=10))
 
 plot_us_age <- ggplot(us_census_age, aes(x=ranges, y=pct, fill = ranges))+
   geom_bar(stat= "identity")  +
   labs(title = "US Census Age", y = "Percent", x ='Age Groups') +
   theme_minimal() +
   theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(),
+        legend.position="bottom",
+        legend.key.size = unit(1, 'mm'),
+        legend.text = element_text(size=10),
+        legend.title = element_text(size=10))
 
 plot_mturk_age <- ggplot(mturk_age, aes(x=age, y=pct, fill = age))+
   geom_bar(stat= "identity")  +
@@ -701,11 +729,11 @@ Is the distribution of education from the survey participants a random sample fr
 
 
 
-```{r US census Bureau data: education, warning=FALSE}
+```{r US census Bureau data: education, warning=FALSE, fig.height=10, fig.width=12, results='asis'}
 # US census bureau data
 
 us_census_education <- read_excel("data/table-1-01.xlsx", range = "C6:Q21")[-1,]
-names(us_census_education)
+#names(us_census_education)
 us_education_2014 <- data.frame("count" = c("Other"= 0,
                                              "Less than 12 years; no high school diploma"=
                                                  sum(us_census_education[,c(1:7)]),
@@ -742,10 +770,14 @@ mturk_eduction_df <-  data.frame("education" = factor(c("No college degree",
 plot_us_education <- ggplot(us_education_2014, aes(x=education, y=pct, fill=education))+
   geom_bar(stat= "identity")  +
   geom_text(aes(label = scales::percent(pct), vjust = -.5)) +
-  labs(title = "US Education 2014", y = "Percent", x ='Highest Degree', fill="income bracket") +
+  labs(title = "US Education 2014", y = "Percent", x ='Highest Degree', fill="Highest Degree") +
   theme_minimal() +
   theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(),
+        legend.position="bottom",
+        legend.key.size = unit(1, 'mm'),
+        legend.text = element_text(size=7),
+        legend.title = element_text(size=7))
 
 plot_mturk_education <- ggplot(mturk_eduction_df, aes(x=education, y=pct, fill = education))+
   geom_bar(stat= "identity")  +
@@ -762,11 +794,11 @@ Is the distribution of income from the survey participants a random sample from 
 
 
 
-```{r US census Bureau data: Income, warning=FALSE}
+```{r US census Bureau data: Income, warning=FALSE , fig.height=10, fig.width=12, results='asis'}
 # US census bureau data
 # https://www.census.gov/data/tables/time-series/demo/income-poverty/cps-hinc/hinc-01.2013.html#list-tab-HKAIF65SA26ZC3YMQB
 us_income_2013_excel <- read_excel("data/hinc01R_1.xls", range = "C8:AQ10")[2,]
-names(us_income_2013_excel)
+#names(us_income_2013_excel)
 us_income_2013 <- data.frame("count" = c("Less than $15,000"= sum(us_income_2013_excel[,c(1:3)]),
                                           "$15,000 - $30,000"= sum(us_income_2013_excel[,c(4:6)]),
                                           "$30,000 - $50,000"= sum(us_income_2013_excel[,c(7:10)]),
@@ -809,7 +841,7 @@ plot_us_income <- ggplot(us_income_2013, aes(x=income, y=pct, fill=income))+
 
 plot_mturk_income <- ggplot(mturk_income_df, aes(x=income, y=pct, fill = income))+
   geom_bar(stat= "identity")  +
-  geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, size=3) +
   labs(title = "MTURK Income", y = "Percent", x ='Income') +
   theme_minimal() +
   theme(axis.text.x=element_blank(),
@@ -892,7 +924,7 @@ Now suppose you are asked to design a study to estimate the audience size of Wha
   - Since we know that most participants have some sort of college experience, we could poll audiences within and adjacent to those speces with a qualtrics survey sent across the country. The incentive to participate would be cash prizes raffled off to the top N participants and/or one year of subscription service to Sirus XM radio. 
   
 2. What data should be collected and where it should be sourced from.
-- The Data collected should be Age, Education, Gender, Location, Experience with Wharton Radio, How they found out abotu Wharton Radio. 
+- The Data collected should be Age, Education, Gender, Location, Experience with Wharton Radio, How they found out about Wharton Radio. 
 
 Please fill in the google form to list your platform where surveys will be launched and collected [HERE](https://forms.gle/8SmjFQ1tpqr6c4sa8) 
 
@@ -1053,7 +1085,7 @@ p2 = wsci %>%
 
 ```
 
-```{r}
+```{r, fig.height=10, fig.width=12, results='asis'}
 ggarrange(p1, p2 + rremove("x.text"),
           labels = c("A", "B"),
           ncol=1, nrow = 2)
@@ -1148,7 +1180,7 @@ dfg2015 = wsci %>%
 ```
 
 
-```{r}
+```{r, fig.height=10, fig.width=12, results='asis'}
 dfg2015%>%
   ggplot(aes(x = Field, y = Number, fill = Sex)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -1157,7 +1189,7 @@ dfg2015%>%
   ggtitle("Degrees granted across fields by degree and gender in 2015")
 ```
 
-```{r}
+```{r, fig.height=10, fig.width=12, results='asis'}
 dfg2015%>%
   ggplot(aes(x = science.i, y = Number, fill = Sex)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -1183,86 +1215,86 @@ In this last portion of the EDA, we ask you to provide evidence numerically and 
 #   ggtitle("Degrees awarded across years by Field")
 
 # time series: degrees awarded by sex
-wsci %>%
-  group_by(Sex, Year) %>%
-  summarise(sex_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = sex_number, color = Sex)) +
-  geom_point() + geom_line() +
-  ggtitle("Degrees awarded across years by Sex")
-
-# time series: degrees awarded by degree type
-wsci %>%
-  group_by(Degree, Year) %>%
-  summarise(degree_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = degree_number, color = Degree)) +
-  geom_point() + geom_line() +
-  ggtitle("Degrees awarded across years by Degree")
+# wsci %>%
+#   group_by(Sex, Year) %>%
+#   summarise(sex_number = sum(Number)) %>%
+#   ggplot(aes(x = Year, y = sex_number, color = Sex)) +
+#   geom_point() + geom_line() +
+#   ggtitle("Degrees awarded across years by Sex")
+# 
+# # time series: degrees awarded by degree type
+# wsci %>%
+#   group_by(Degree, Year) %>%
+#   summarise(degree_number = sum(Number)) %>%
+#   ggplot(aes(x = Year, y = degree_number, color = Degree)) +
+#   geom_point() + geom_line() +
+#   ggtitle("Degrees awarded across years by Degree")
 ```
 
 
 ```{r eval = FALSE, echo = FALSE}
 # time series: degrees awarded by Field and sex
-wsci %>%
-  group_by(Field, Sex, Year) %>%
-  summarise(field_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = field_number, color = Sex)) +
-  geom_point() + geom_line() +
-  facet_wrap(~Field)+
-  ggtitle("Degrees awarded across years by Degree")
+# wsci %>%
+#   group_by(Field, Sex, Year) %>%
+#   summarise(field_number = sum(Number)) %>%
+#   ggplot(aes(x = Year, y = field_number, color = Sex)) +
+#   geom_point() + geom_line() +
+#   facet_wrap(~Field)+
+#   ggtitle("Degrees awarded across years by Degree")
 ```
 
 
 ```{r eval = FALSE, echo = FALSE}
 # time series: degrees awarded by Field and Degree
-wsci %>%
-  group_by(Field, Degree, Year) %>%
-  summarise(field_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = field_number, color = Degree)) +
-  geom_point() + geom_line() +
-  facet_wrap(~Field)+
-  ggtitle("Degrees awarded across years by Degree")
-
-# time series: degrees awarded by Sex and Degree
-wsci %>%
-  group_by(Sex, Degree, Year) %>%
-  summarise(sex_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = sex_number, color = Sex)) +
-  geom_point() + geom_line() +
-  facet_wrap(~Degree)+
-  ggtitle("Degrees awarded across years by Degree")
-
-# time series: degrees awarded by Sex and Field and Degree
-wsci %>%
-  group_by(Sex, Degree, Field, Year) %>%
-  summarise(sex_number = sum(Number)) %>%
-  ggplot(aes(x = Year, y = sex_number, color = Sex)) +
-  geom_point() + geom_line() +
-  facet_grid(Field~Degree)+
-  ggtitle("Degrees awarded across years by Degree")
+# wsci %>%
+#   group_by(Field, Degree, Year) %>%
+#   summarise(field_number = sum(Number)) %>%
+#   ggplot(aes(x = Year, y = field_number, color = Degree)) +
+#   geom_point() + geom_line() +
+#   facet_wrap(~Field)+
+#   ggtitle("Degrees awarded across years by Degree")
+# 
+# # time series: degrees awarded by Sex and Degree
+# wsci %>%
+#   group_by(Sex, Degree, Year) %>%
+#   summarise(sex_number = sum(Number)) %>%
+#   ggplot(aes(x = Year, y = sex_number, color = Sex)) +
+#   geom_point() + geom_line() +
+#   facet_wrap(~Degree)+
+#   ggtitle("Degrees awarded across years by Degree")
+# 
+# # time series: degrees awarded by Sex and Field and Degree
+# wsci %>%
+#   group_by(Sex, Degree, Field, Year) %>%
+#   summarise(sex_number = sum(Number)) %>%
+#   ggplot(aes(x = Year, y = sex_number, color = Sex)) +
+#   geom_point() + geom_line() +
+#   facet_grid(Field~Degree)+
+#   ggtitle("Degrees awarded across years by Degree")
 ```
 
 
-```{r}
-wsci%>% 
+```{r, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+wsci%>%
   ggplot(aes(x = Year,
-             y = Number, 
-             color = Field, 
-             shape = Sex)) + 
-  geom_point(size = 3, alpha = 0.6) + 
+             y = Number,
+             color = Field,
+             shape = Sex)) +
+  geom_point(size = 3, alpha = 0.6) +
   geom_line() +
-  labs(Title="Degrees by gender, field, and time") + 
+  labs(Title="Degrees by gender, field, and time") +
   facet_grid(~Degree + Sex, scale = "free")
 ```
 
 
-```{r}
-wsci %>% 
+```{r, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+wsci %>%
   ggplot(aes(x = Year,
-             y = Number, 
-             fill = Field, 
-             shape = Sex)) + 
-  geom_bar(position="stack", stat="identity") + 
-  labs(Title="Degrees by gender, field, and time") + 
+             y = Number,
+             fill = Field,
+             shape = Sex)) +
+  geom_bar(position="stack", stat="identity") +
+  labs(Title="Degrees by gender, field, and time") +
   facet_grid(~Degree + Sex, scale = "free")
 ```
 
@@ -1289,7 +1321,7 @@ wsci %>%
 ```
 
 
-```{r eval = FALSE, echo = FALSE}
+```{r eval = FALSE, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
 # Sex, Field, Degree
 wsci %>%
   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
@@ -1303,7 +1335,7 @@ wsci %>%
 ```
 
 
-```{r eval = FALSE, echo = FALSE}
+```{r eval = FALSE, echo = FALSE, message=FALSE}
 # Sex, Field, Degree, Time
 wsci %>%
   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
@@ -1361,7 +1393,6 @@ wsci %>%
 
 Summarize your findings focusing on answering the questions regarding if we see consistent patterns that more males pursue science-related fields. Any concerns with the data set? How could we improve on the study?
 
-# Needs answer
 
 
 **There are more people overall in Non-S&E fields, in which there are more women. However, there are more men in the S&E fields from these plots.**
@@ -1370,7 +1401,11 @@ Summarize your findings focusing on answering the questions regarding if we see 
 
 **Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females.**
 
-Overall, we believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men.
+**We believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men.**
+
+**We do see more males represented in the dataset, but one concern is that this is only capturing individuals with degrees granted in these fields, and not actually those who intiially pursue those degrees. We hypothesize that given culture, environment, and systemic factors, a measurable number of women pursuing STEM fields may not end up staying within them through conferall of a degree. So while women are less represetned in the data, there is not enough evidence to condlude that women are less interested in STEM fields in geenral.**
+
+
 
 
 
@@ -1565,7 +1600,7 @@ b). Between 2010 and 2014, inclusive, which team(s) "improved" the most? That is
 
 The Arizona Diamondbacks, Boston Red Sox, Houston Astros, Cleveland Indians, and Baltimore Orioles
 
-```{r}
+```{r eval=TRUE, results='asis'}
 baseball_long %>%
   group_by(team) %>%
   mutate(diff_log_win =log(win_pct) - log(lag(win_pct, default = win_pct[1], order_by = team))) %>% 
@@ -1576,7 +1611,7 @@ baseball_long %>%
 
 ## Do log increases in payroll imply better performance? 
 
-```{r}
+```{r, warning=FALSE}
 baseball_long_plot1 <- baseball %>%
   group_by(team) %>%
   mutate(diff_log =log(payroll) - log(lag(payroll, default = payroll[1], order_by = team))) %>%
@@ -1598,7 +1633,7 @@ baseball_long_plot1
 
 Log increases in payroll have a very weak linear relationship to performance overall. 
 
-```{r}
+```{r, warning=FALSE}
 baseball_long_plot2 <- baseball %>%
   group_by(team) %>%
   mutate(diff_log =log(payroll) - log(lag(payroll, default = payroll[1], order_by = team))) %>%
