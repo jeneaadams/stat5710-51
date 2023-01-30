@@ -194,6 +194,7 @@ missing.survey <- data.frame(rbind("Missing or NA Values" = apply(survey.sub,2,
 sum(missing.survey)
 missing.survey
 ```
+
 #### **Summary of missing values**
 Before this point, we thought there were just blanks and NAs in the data, but discovered there were unchanged entire fields in the form os "select one" for at least the education column and incorrect values in the age column. Here we tabulate these missing entries. 
 
@@ -352,7 +353,7 @@ gender_histogram <- survey.sub.pruned %>%
 grid.arrange(gender_pie, gender_histogram, ncol = 2)
 ```
 
-### education 
+### Education 
 
 Most participants have completed some college education.
 
@@ -368,9 +369,16 @@ edu_pie <- survey.sub.pruned %>%
   ggplot(aes(x = "", y = education, fill = education)) + 
   geom_bar(stat ="identity", width = 1) + 
   coord_polar("y", start=0) + 
-  theme_void() +
-  theme(legend.position="none")
+  theme_void()
+```
+
+
+```{r}
+
+  # theme_void() + # phantom section? 
+  # theme(legend.position="none")
   
+
 edu_hist <- survey.sub.pruned %>%
   summarise(pct = summary(education)/length(education),
             education= levels(education)) %>%
@@ -381,20 +389,28 @@ edu_hist <- survey.sub.pruned %>%
                                "Some college, no diploma; or Associate’s degree",
                                "Bachelor’s degree or other 4-year degree",
                                "Graduate or professional degree"))) %>%
+
 ggplot(aes(x=education,y=pct, fill=education))+
   geom_bar(stat= "identity")  +
   geom_text(aes(label = scales::percent(pct)), vjust = -.5) +
   labs(title = "Participants by Education", y = "Percent", x ='Highest Degree') +
   theme_minimal() +
   theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        legend.position="bottom",
-        legend.key.size = unit(1, 'mm'),
-        legend.text = element_text(size=5),
-        legend.title = element_text(size=6))
+        axis.ticks.x=element_blank())
+```
 
 
-grid.arrange(edu_hist, edu_pie, ncol = 2)
+```{r, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+# grid.arrange(edu_pie, edu_hist, nrow = 2, ncol = 1,
+#         axis.ticks.x=element_blank(),
+#         legend.position="bottom",
+#         legend.key.size = unit(1, 'mm'),
+#         legend.text = element_text(size=5),
+#         legend.title = element_text(size=6))
+
+
+grid.arrange(edu_hist, edu_pie, ncol = 1, nrow =2)
+
 ```
 
 ### Income
@@ -903,19 +919,17 @@ A major limitation of this study is that the population sampled from MTURK is no
 
 Now suppose you are asked to design a study to estimate the audience size of Wharton Business Radio Show as of today: You are given a budget of $1000. You need to present your findings in two months. 
 
-### Write a proposal for this study which includes:
+Write a proposal for this study which includes:
 
 1. Method proposed to estimate the audience size.
   - Since we know that most participants have some sort of college experience, we could poll audiences within and adjacent to those speces with a qualtrics survey sent across the country. The incentive to participate would be cash prizes raffled off to the top N participants and/or one year of subscription service to Sirus XM radio. 
   
 2. What data should be collected and where it should be sourced from.
-- The Data collected should be Age, Education, Gender, Location, Experience with Wharton Radio, How they found out abotu Wharton Radio. 
+- The Data collected should be Age, Education, Gender, Location, Experience with Wharton Radio, How they found out about Wharton Radio. 
 
 Please fill in the google form to list your platform where surveys will be launched and collected [HERE](https://forms.gle/8SmjFQ1tpqr6c4sa8) 
 
 A good proposal will give an accurate estimation with the least amount of money used. 
-
-
 
 
 
@@ -929,7 +943,7 @@ Our goal is to answer the above questions only through EDA (Exploratory Data Ana
 
 ## Data preparation  
 
-### Understand and clean the data
+Understand and clean the data
 
 
 Notice the data came in as an Excel file. We need to use the package `readxl` and the function `read_excel()` to read the data `WomenData_06_16.xlsx` into R. 
@@ -1329,7 +1343,7 @@ wsci %>%
 
 ```
 
-Overall, we believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men. 
+**Overall, we believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men.**
 
 
 
@@ -1374,11 +1388,29 @@ Overall, we believe there is enough graphical evidence that women are underrepre
 
 Summarize your findings focusing on answering the questions regarding if we see consistent patterns that more males pursue science-related fields. Any concerns with the data set? How could we improve on the study?
 
+<<<<<<< HEAD
 In general, there are more people overall in Non-S&E fields, in which there are more women. However, we consistently see that there are more men in the S&E fields. The proportion of non s&e fields and the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females.
 
 We believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men. 
 
 We can improve on this study by also including people who pursued stem degrees but did not follow through, o2 switched to another field. 
+=======
+
+
+**There are more people overall in Non-S&E fields, in which there are more women. However, there are more men in the S&E fields from these plots.**
+
+**The proportion of non s&e fields and the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.**
+
+**Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females.**
+
+**We believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men.**
+
+**We do see more males represented in the dataset, but one concern is that this is only capturing individuals with degrees granted in these fields, and not actually those who intiially pursue those degrees. We hypothesize that given culture, environment, and systemic factors, a measurable number of women pursuing STEM fields may not end up staying within them through conferall of a degree. So while women are less represetned in the data, there is not enough evidence to condlude that women are less interested in STEM fields in geenral.**
+
+
+
+
+>>>>>>> 6522559915f2292cadc2669cd099f04ccbe6341f
 
 <!-- ## Appendix
 
@@ -1533,7 +1565,9 @@ a). To describe the increment of payroll in each year there are several possible
 
 Explain why the log difference is more appropriate in this setup.
 
-# needs answer
+The log difference is appropriate to use in this step because it will scale the differences in a way that is more comparable across teams given the high variability of the year-to-year differences. This is especially important since the pay scale for all the teams is also very different. 
+
+
 
 b). Create a new variable `diff_log=log(payroll_2013) - log(payroll_2012)`. Hint: use `dplyr::lag()` function.
 
