@@ -1289,8 +1289,7 @@ Do the number of degrees change by gender, field, and time? --> **Females appear
 
 Finally, is there evidence showing that women are underrepresented in data science? Data science is an interdisciplinary field of computer science, math, and statistics. You may include year and/or degree.
 
-```{r eval = FALSE, echo = FALSE}
-## by sex, field (Social Sciences and Psychology), degree, and time
+```{r echo = FALSE, message=FALSE,fig.height=6, fig.width=12, results='asis'}
 
 # sex and field
 wsci %>%
@@ -1306,7 +1305,7 @@ wsci %>%
 ```
 
 
-```{r eval = FALSE, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+```{r, echo = FALSE,message=FALSE,fig.height=10, fig.width=12, results='asis'}
 # Sex, Field, Degree
 wsci %>%
   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
@@ -1320,7 +1319,7 @@ wsci %>%
 ```
 
 
-```{r eval = FALSE, echo = FALSE, message=FALSE}
+```{r, echo = FALSE, message=FALSE,fig.height=10, fig.width=12, results='asis'}
 # Sex, Field, Degree, Time
 wsci %>%
   filter(Field %in% c("Computer sciences", "Mathematics and statistics")) %>%
