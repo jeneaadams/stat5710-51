@@ -3,7 +3,6 @@ title: " Modern Data Mining, HW 1"
 author:
 - Group Member 1 Jenea Adams
 - Group Member 2 Annan timon
-- Group Member 3
 date: 'Due: 11:59PM,  Jan. 29th, 2023'
 output:
   html_document:
@@ -1388,15 +1387,6 @@ wsci %>%
 
 Summarize your findings focusing on answering the questions regarding if we see consistent patterns that more males pursue science-related fields. Any concerns with the data set? How could we improve on the study?
 
-<<<<<<< HEAD
-In general, there are more people overall in Non-S&E fields, in which there are more women. However, we consistently see that there are more men in the S&E fields. The proportion of non s&e fields and the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.Females appear to have more degrees overall at the BS and MS level, but Males have more PhDs in STEM fields, compared to women. Males also have more STEM MS degrees than Females.
-
-We believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men. 
-
-We can improve on this study by also including people who pursued stem degrees but did not follow through, o2 switched to another field. 
-=======
-
-
 **There are more people overall in Non-S&E fields, in which there are more women. However, there are more men in the S&E fields from these plots.**
 
 **The proportion of non s&e fields and the degree types is relatively the same, but more variability in the s&e degrees. males and females obtain about the same science BS degrees (females slightly more), but males have more science MS and PhDs.**
@@ -1405,12 +1395,9 @@ We can improve on this study by also including people who pursued stem degrees b
 
 **We believe there is enough graphical evidence that women are underrepresented in data science related fields. In computer science, that disparity is ony getting worse with time. Overall, there are less people in math and statistics at the BS and MS level; however, with more oerall degress in math a the PhD level, women still get about half the amount of math PhDs as men.**
 
-**We do see more males represented in the dataset, but one concern is that this is only capturing individuals with degrees granted in these fields, and not actually those who intiially pursue those degrees. We hypothesize that given culture, environment, and systemic factors, a measurable number of women pursuing STEM fields may not end up staying within them through conferall of a degree. So while women are less represetned in the data, there is not enough evidence to condlude that women are less interested in STEM fields in geenral.**
+**We do see more males represented in the dataset, but one concern is that this is only capturing individuals with degrees granted in these fields, and not actually those who intiially pursue those degrees. We hypothesize that given culture, environment, and systemic factors, a measurable number of women pursuing STEM fields may not end up staying within them through conferall of a degree. So while women are less represetned in the data, there is not enough evidence to condlude that women are less interested in STEM fields in general.**
 
 
-
-
->>>>>>> 6522559915f2292cadc2669cd099f04ccbe6341f
 
 <!-- ## Appendix
 
