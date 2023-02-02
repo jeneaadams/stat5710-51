@@ -1,9 +1,8 @@
 ---
 title: "Modern Data Mining, HW 2"
 author:
-- Group Member 1
-- Group Member 2
-- Group Member 3
+- Group Jenea Adams
+- Group Annan Timon
 date: 'Due: 11:59 PM,  Sunday, 02/12'
 output:
   pdf_document:
@@ -220,7 +219,7 @@ We will try to use mRNA expression data alone without the labels to classify 4 s
 We first read the data using `data.table::fread()` which is a faster way to read in big data than `read.csv()`. 
 
 ```{r}
-brca <- fread("data/brca_subtype.csv")
+brca <- fread("data/brca_subtype.csv.gz")
 
 # get the sub-type information
 brca_subtype <- brca$BRCA_Subtype_PAM50
@@ -255,7 +254,7 @@ brca <- brca[,-1]
     d) Now we have an x patient with breast cancer but with unknown sub-type. We have this patient's mRNA sequencing data. Project this x patient to the space of PC1 and PC2. (Hint: remember we remove some gene with no counts or no variablity, take log and centered) Plot this patient in the plot in iv) with a black dot. Calculate the Euclidean distance between this patient and each of centroid of the cluster. Can you tell which sub-type this patient might have? 
     
 ```{r}
-x_patient <- fread("data/brca_x_patient.csv")
+x_patient <- fread("data/brca_x_patient.csv.gz")
 ```
 
 
@@ -265,6 +264,11 @@ This question utilizes the `Auto` dataset from ISLR. The original dataset contai
 Original data source is here: https://archive.ics.uci.edu/ml/datasets/auto+mpg
 
 Get familiar with this dataset first. Tip: you can use the command `?ISLR::Auto` to view a description of the dataset. 
+
+```{r}
+?ISLR::Auto
+```
+
 
 ## EDA
 Explore the data, with particular focus on pairwise plots and summary statistics. Briefly summarize your findings and any peculiarities in the data.
