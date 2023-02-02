@@ -29,7 +29,7 @@ knitr::opts_chunk$set(echo = FALSE, fig.width=8, fig.height=4)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, tidyverse, data.table) # add the packages needed
+pacman::p_load(ISLR, tidyverse, data.table, gridExtra) # add the packages needed
 ```
 
 
@@ -273,6 +273,93 @@ Get familiar with this dataset first. Tip: you can use the command `?ISLR::Auto`
 ## EDA
 Explore the data, with particular focus on pairwise plots and summary statistics. Briefly summarize your findings and any peculiarities in the data.
 
+
+```{r auto mpg}
+summary(Auto$cylinders)
+
+mpg_box <- ggplot(Auto, aes(y=mpg)) +
+  geom_boxplot()
+```
+
+```{r auto cylinders}
+summary(Auto$cylinders)
+
+cyl_box <- ggplot(Auto, aes(y=cylinders)) +
+  geom_boxplot()
+```
+
+```{r auto displacement}
+summary(Auto$displacement)
+
+disp_box <- ggplot(Auto, aes(y=displacement)) +
+  geom_boxplot()
+```
+
+```{r auto horsepower}
+summary(Auto$horsepower)
+
+horse_box <- ggplot(Auto, aes(y=horsepower)) +
+  geom_boxplot()
+```
+
+```{r auto weight}
+summary(Auto$weight)
+
+weight_box <- ggplot(Auto, aes(y=weight)) +
+  geom_boxplot()
+```
+
+```{r auto acceleration}
+summary(Auto$acceleration)
+
+acc_box <- ggplot(Auto, aes(y=acceleration)) +
+  geom_boxplot()
+```
+
+```{r auto year}
+length(unique(Auto$year))
+summary(as.factor(Auto$year))
+```
+Model year
+total 13 years
+from 1970-1982
+
+```{r auto origin}
+length(unique(Auto$origin))
+summary(as.factor(Auto$origin))
+```
+
+Origin of car 
+American: 245
+European: 68
+Japanese: 79
+
+```{r auto name}
+length(unique(Auto$name))
+#unique(Auto$name) %>% .[order(.)]
+```
+
+
+```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+# omit top panels to display correlation
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- abs(cor(x, y))
+    txt <- format(c(r, 0.123456789), digits = digits)[1]
+    txt <- paste0(prefix, txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+?select
+select(Auto, colnames(Auto)[!(colnames(Auto) %in% c("name"))]) %>%
+  pairs(lower.panel = panel.smooth,
+      upper.panel = panel.cor, main="Scatterplot Matrix")
+
+grid.arrange(mpg_box, cyl_box, disp_box,
+             horse_box, weight_box, acc_box,
+             ncol = 3)
+```
 
 ## What effect does `time` have on `MPG`?
 
