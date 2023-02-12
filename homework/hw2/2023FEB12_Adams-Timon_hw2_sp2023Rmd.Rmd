@@ -3,9 +3,13 @@ title: "Modern Data Mining, HW 2"
 author:
 - Group Member 1 - Jenea Adams
 - Group Member 2 - Annan Timon
-- Group Member 3
 date: 'Due: 11:59 PM,  Sunday, 02/12'
 output:
+  pdf_document:
+    extra_dependencies: ["dcolumn"]
+    number_sections: yes
+    toc: yes
+    toc_depth: '4'
   html_document:
     code_folding: show
     highlight: haddock
@@ -14,10 +18,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  pdf_document:
-    number_sections: yes
-    toc: yes
-    toc_depth: '4'
   word_document:
     toc: yes
     toc_depth: '4'
@@ -27,11 +27,25 @@ urlcolor: blue
 # Packages
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, fig.width=8, fig.height=4)
+knitr::opts_chunk$set(echo = TRUE, results = "hide", fig.width=8, fig.height=4)
+# get the output format for stargazer only:
+# results = `asis`
+# stargazer( type = ) one of the following:
+## if run in studio, set as "text"
+## if knit to PDF, set as "latex"
+## if knit to HTML, set as "html"
+# We made it automatic:
+
+output_format <- ifelse(is.null(knitr::opts_knit$get("rmarkdown.pandoc.to")),
+                        "text", knitr::opts_knit$get("rmarkdown.pandoc.to"))
+
 options(scipen = 0, digits = 3)  # controls base R output
-# check if you have ISLR package, if not, install it
-if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, tidyverse, data.table, ggpubr, ggbiplot, ggplot2, factoextra) # add the packages needed
+if(!require('pacman')) {
+  install.packages('pacman')
+}
+pacman::p_load(ISLR, tidyverse, data.table, ggpubr, ggbiplot, ggplot2, factoextra,
+               dplyr, knitr, gridExtra, ggrepel, leaps, car, tidyverse,
+               stargazer, cluster, ) # add the packages needed
 ```
 
 
@@ -966,43 +980,250 @@ We will try to use mRNA expression data alone without the labels to classify 4 s
 
 We first read the data using `data.table::fread()` which is a faster way to read in big data than `read.csv()`. 
 
-```{r}
-brca <- fread("data/brca_subtype.csv")
+```{r  message=FALSE, warning=FALSE, eval = TRUE}
+brca <- fread("data/brca_subtype.csv.gz")
 
 # get the sub-type information
-brca_subtype <- brca$BRCA_Subtype_PAM50
+brca_subtype <- brca$BRCA_Subtype_PAM50 %>% factor
 brca <- brca[,-1]
 ```
 
 1. Summary and transformation
 
-    a) How many patients are there in each sub-type? 
+a) How many patients are there in each sub-type? 
+    
+```{rmessage=FALSE, warning=FALSE, results='asis', echo=FALSE}
+kable(data.frame(t(summary((brca_subtype)))),
+     caption = "Patients in each sub-type")
+```
+    
 
-    b) Randomly pick 5 genes and plot the histogram by each sub-type.
+b) Randomly pick 5 genes and plot the histogram by each sub-type.
+    
+```{r, warning=FALSE, fig.height=10, fig.width=12, echo=FALSE}
+num_gene <- ncol(brca)
 
-    c) Remove gene with zero count and no variability. Then apply logarithmic transform.
+# randomly select 10 gene
+set.seed(10)
+sample_idx <- sample(num_gene, 5)
+
+# plot count number histogram for each gene
+brca %>%
+  select(c(all_of(sample_idx))) %>%
+  cbind(.,brca_subtype) %>% # select column by index
+  pivot_longer(-brca_subtype) %>%     # for facet(0)
+  ggplot(aes(x = value, y = ..density..)) +
+  geom_histogram(aes(fill = brca_subtype)) +
+  facet_wrap(~name, scales = "free") +
+  theme(legend.position = "none")
+```
+
+
+c) Remove gene with zero count and no variability. Then apply logarithmic transform.
+    
+278 genes were removed
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+# remove genes with 0 counts
+subset_bool <-colSums(abs(brca)) != 0 & apply(brca,2,var) !=0
+sel_cols <- which(subset_bool)
+brca_sub <- brca[, sel_cols, with=F]
+
+# log
+brca_sub <- log2(as.matrix(brca_sub+1e-10))
+
+dim(brca)
+dim(brca_sub)
+```
 
 
 2. Apply kmeans on the transformed dataset with 4 centers and output the discrepancy table between the real sub-type `brca_subtype` and the cluster labels.
 
+```{r message=FALSE, warning=FALSE, results='asis', echo=FALSE}
+# system.time() get how long it runs
+# it can take several minutes.
+system.time({brca_sub_kmeans <- kmeans(x = brca_sub, 4)})
+
+# save the results as RDS
+saveRDS(brca_sub_kmeans, "data/tcga_kmeans.RDS")
+
+# discrepancy table
+kable(table(brca_subtype, brca_sub_kmeans$cluster))
+```
+
+
 3. Spectrum clustering: to scale or not to scale?
 
-    a) Apply PCA on the centered and scaled dataset. How many PCs should we use and why? You are encouraged to use `irlba::irlba()`.
+a) Apply PCA on the centered and scaled dataset. How many PCs should we use and why? You are encouraged to use `irlba::irlba()`.
     
-    b) Plot PC1 vs PC2 of the centered and scaled data and PC1 vs PC2 of the centered but unscaled data side by side. Should we scale or not scale for clustering process? Why? (Hint: to put plots side by side, use `gridExtra::grid.arrange()` or `ggpubr::ggrrange()` or `egg::ggrrange()` for ggplots; use `fig.show="hold"` as chunk option for base plots)
+Will use 2 PCs for the centered and scaled and 4 for the centered but not scaled
+```{r centered and scaled, message=FALSE, warning=FALSE, echo=FALSE}
+# center and scale the data
+brca_sub_scaled_centered <- scale(as.matrix(brca_sub), center = T, scale = T)
+brca_sub_unscaled_centered <- scale(as.matrix(brca_sub), center = T, scale = F)
+
+# only calculate first few components using SVD by irlba()
+## nv = 10: only calculate leading 10
+svd_ret <- irlba::irlba(brca_sub_scaled_centered, nv = 10)
+svd_ret_us <- irlba::irlba(brca_sub_unscaled_centered, nv = 10)
+
+# Approximate the PVE
+svd_var <- svd_ret$d^2/(nrow(brca_sub_scaled_centered)-1)
+pve_apx <- svd_var/ncol(brca_sub)
+
+svd_var_us <- svd_ret_us$d^2/(nrow(brca_sub_unscaled_centered)-1)
+pve_apx_us <- svd_var_us/ncol(brca_sub)
+
+
+
+qplot(c(1:10), pve_apx) +
+  geom_line()+
+  xlab("Principal Component") +
+  ylab("Percentage Variance Explained") +
+  ggtitle("Scree Plot Centered and Scaled")
+
+qplot(c(1:10), pve_apx_us) +
+  geom_line()+
+  xlab("Principal Component") +
+  ylab("Percentage Variance Explained") +
+  ggtitle("Scree Plot Centered and Unscaled")
+```
+    
+    
+b) Plot PC1 vs PC2 of the centered and scaled data and PC1 vs PC2 of the centered but unscaled data side by side. Should we scale or not scale for clustering process? Why? (Hint: to put plots side by side, use `gridExtra::grid.arrange()` or `ggpubr::ggrrange()` or `egg::ggrrange()` for ggplots; use `fig.show="hold"` as chunk option for base plots)
+    
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
+# pc scores
+pc_score <- (svd_ret$u[, 1:10])*(svd_ret$d[1:10])
+pc_score_us <- (svd_ret_us$u[, 1:10])*(svd_ret_us$d[1:10])
+
+scaled_centered <- data.table(x = pc_score[,1],
+                y = pc_score[,2],
+                col = as.factor(brca_subtype)) %>%
+  ggplot() +
+  geom_point(aes(x = x, y = y, col = col)) +
+  theme_bw() +
+  labs(color = "Cancer SubType") +
+  xlab("PC1") +
+  ylab("PC2") +
+  ggtitle("Scaled and Centered")
+
+unscaled_centered <- data.table(x = pc_score_us[,1],
+                y = pc_score_us[,2],
+                col = as.factor(brca_subtype)) %>%
+  ggplot() +
+  geom_point(aes(x = x, y = y, col = col)) +
+  theme_bw() +
+  labs(color = "Cancer Subtype") +
+  xlab("PC1") +
+  ylab("PC2") +
+  ggtitle("Unscaled and Centered")
+
+grid.arrange(scaled_centered, unscaled_centered, ncol = 2)
+```
+    
 
 4. Spectrum clustering: center but do not scale the data
 
-    a) Use the first 4 PCs of the centered and unscaled data and apply kmeans. Find a reasonable number of clusters using within sum of squared with the elbow rule.
+a) Use the first 4 PCs of the centered and unscaled data and apply kmeans. Find a reasonable number of clusters using within sum of squared with the elbow rule.
     
-    b) Choose an optimal cluster number and apply kmeans. Compare the real sub-type and the clustering label as follows: Plot scatter plot of PC1 vs PC2. Use point color to indicate the true cancer type and point shape to indicate the clustering label. Plot the kmeans centroids with black dots. Summarize how good is clustering results compared to the real sub-type.
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+# elbow methodfor optimal number of clusters
+pca_elbow <- fviz_nbclust(pc_score_us[, 1:4], kmeans, method = "wss")
+
+# 4 clusters
+kmean_unscaled <- kmeans(x = pc_score_us[, 1:4], 3)
+```
     
-    c) Compare the clustering result from applying kmeans to the original data and the clustering result from applying kmeans to 4 PCs. Does PCA help in kmeans clustering? What might be the reasons if PCA helps?
     
-    d) Now we have an x patient with breast cancer but with unknown sub-type. We have this patient's mRNA sequencing data. Project this x patient to the space of PC1 and PC2. (Hint: remember we remove some gene with no counts or no variablity, take log and centered) Plot this patient in the plot in iv) with a black dot. Calculate the Euclidean distance between this patient and each of centroid of the cluster. Can you tell which sub-type this patient might have? 
+b) Choose an optimal cluster number and apply kmeans. Compare the real sub-type and the clustering label as follows: Plot scatter plot of PC1 vs PC2. Use point color to indicate the true cancer type and point shape to indicate the clustering label. Plot the kmeans centroids with black dots. Summarize how good is clustering results compared to the real sub-type.
     
-```{r}
-x_patient <- fread("data/brca_x_patient.csv")
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
+centroids <- data.frame(x = kmean_unscaled$centers[,1],
+                        y = kmean_unscaled$centers[,2],
+                        col =levels(brca_subtype)[3],
+                        cl = factor(1:3))
+
+kmeans_pca_plot <- data.table(x = pc_score_us[,1],
+                y = pc_score_us[,2],
+                col = as.factor(brca_subtype),
+                cl = as.factor(kmean_unscaled$cluster)) %>%
+  ggplot(aes(x = x, y = y, col = col)) +
+  geom_point(aes(shape = cl))+
+  geom_point(data = centroids,color = "black", size = 3, stroke = 1)+
+  theme_bw() +
+  labs(color = "Cancer Subtype", shape = "Cluster") +
+  xlab("PC1") +
+  ylab("PC2") +
+  ggtitle("Unscaled and Centered")
+
+kmeans_pca_plot
+
+
+```
+    
+c) Compare the clustering result from applying kmeans to the original data and the clustering result from applying kmeans to 4 PCs. Does PCA help in kmeans clustering? What might be the reasons if PCA helps?
+    
+```{r, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
+# elbow methodfor optimal number of clusters
+orig_elbow <- fviz_nbclust(brca_sub, kmeans, method = "wss")
+
+grid.arrange(orig_elbow, pca_elbow, ncol = 2)
+
+```
+```{r message=FALSE, warning=FALSE, fig.height=10, fig.width=12, results='asis', echo=FALSE}
+kmean_brca <- kmeans(x = brca_sub, 4)
+
+centroids_brca <- data.frame(x = kmean_brca$centers[,1],
+                        y = kmean_brca$centers[,2],
+                        col =levels(brca_subtype),
+                        cl = factor(1:4))
+
+# run kmeans on data but what x and y should you use??
+
+kmeans_orig_plot<- data.table(x = pc_score_us[,1],
+                y = pc_score_us[,2],
+                col = as.factor(brca_subtype),
+                cl = as.factor(kmean_brca$cluster)) %>%
+  ggplot(aes(x = x, y = y, col = col)) +
+  geom_point(aes(shape = cl))+
+  geom_point(data = centroids_brca,color = "black", size = 3, stroke = 1)+
+  theme_bw() +
+  labs(color = "Cancer Subtype", shape = "Cluster") +
+  xlab("PC1") +
+  ylab("PC2") +
+  ggtitle("Unscaled and Centered, kmeans Original")
+
+grid.arrange(kmeans_orig_plot, kmeans_pca_plot, ncol = 2)
+```
+    
+d) Now we have an x patient with breast cancer but with unknown sub-type. We have this patient's mRNA sequencing data. Project this x patient to the space of PC1 and PC2. (Hint: remember we remove some gene with no counts or no variablity, take log and centered) Plot this patient in the plot in iv) with a black dot. Calculate the Euclidean distance between this patient and each of centroid of the cluster. Can you tell which sub-type this patient might have? 
+    
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
+x_patient <- read.csv("data/brca_x_patient.csv.gz", header = T) %>%
+  select(which(subset_bool))
+x_patient <- log2(x_patient+1e-10)
+
+scaled_x_patient<- scale(x_patient, center= colMeans(brca_sub))
+x_patient_pred <- scaled_x_patient %*% svd_ret$v
+
+
+x_patient_projection <- data.frame(x = x_patient_pred[,1],
+                        y = x_patient_pred[,2],
+                        col =levels(brca_subtype)[1],
+                        cl = 1)
+
+data.table(x = pc_score_us[,1],
+                y = pc_score_us[,2],
+                col = as.factor(brca_subtype),
+                cl = as.factor(kmean_unscaled$cluster)) %>%
+  ggplot(aes(x = x, y = y, col = col)) +
+  geom_point(aes(shape = cl))+
+  geom_point(data = x_patient_projection,color = "black", size = 3, stroke = 1)+
+  theme_bw() +
+  labs(color = "Cancer Subtype", shape = "Cluster") +
+  xlab("PC1") +
+  ylab("PC2") +
+  ggtitle("Unscaled and Centered")
 ```
 
 
@@ -1013,19 +1234,158 @@ Original data source is here: https://archive.ics.uci.edu/ml/datasets/auto+mpg
 
 Get familiar with this dataset first. Tip: you can use the command `?ISLR::Auto` to view a description of the dataset. 
 
+```{r echo=FALSE}
+?ISLR::Auto
+```
+
+
 ## EDA
 Explore the data, with particular focus on pairwise plots and summary statistics. Briefly summarize your findings and any peculiarities in the data.
 
 
++ mpg summary
+```{r auto mpg,  echo=FALSE}
+summary(Auto$mpg)
+
+mpg_box <- ggplot(Auto, aes(y=mpg)) +
+  geom_boxplot()
+```
+
++ cylinders summary
+```{r auto cylinders,  echo=FALSE}
+summary(Auto$cylinders)
+
+cyl_box <- ggplot(Auto, aes(y=cylinders)) +
+  geom_boxplot()
+```
+
++ displacement summary
+```{r auto displacement,  echo=FALSE}
+summary(Auto$displacement)
+
+disp_box <- ggplot(Auto, aes(y=displacement)) +
+  geom_boxplot()
+```
+
++ horsepower summary
+```{r auto horsepower,  echo=FALSE}
+summary(Auto$horsepower)
+
+horse_box <- ggplot(Auto, aes(y=horsepower)) +
+  geom_boxplot()
+```
+
++ weight summary
+```{r auto weight,  echo=FALSE}
+summary(Auto$weight)
+
+weight_box <- ggplot(Auto, aes(y=weight)) +
+  geom_boxplot()
+```
+
++ acceleration summary
+```{r auto acceleration,  echo=FALSE}
+summary(Auto$acceleration)
+
+acc_box <- ggplot(Auto, aes(y=acceleration)) +
+  geom_boxplot()
+```
+
++ year summary
+
+    total 13 years
+    from 1970-1982
+
+```{r auto origin,  echo=FALSE}
+length(unique(Auto$origin))
+summary(as.factor(Auto$origin))
+```
+
++ Origin of car 
+American: 245
+European: 68
+Japanese: 79
+
+```{r auto name, echo =FALSE,  echo=FALSE}
+length(unique(Auto$name))
+#unique(Auto$name) %>% .[order(.)]
+```
+
++ Auto names
+    
+    unique auto names: 301
+
+
+```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis',  echo=FALSE}
+# omit top panels to display correlation
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- abs(cor(x, y))
+    txt <- format(c(r, 0.123456789), digits = digits)[1]
+    txt <- paste0(prefix, txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+select(Auto, colnames(Auto)[!(colnames(Auto) %in% c("name"))]) %>%
+  pairs(lower.panel = panel.smooth,
+      upper.panel = panel.cor, main="Scatterplot Matrix")
+```
+
+```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis',  echo=FALSE}
+grid.arrange(mpg_box, cyl_box, disp_box,
+             horse_box, weight_box, acc_box,
+             ncol = 3)
+```
+
+
 ## What effect does `time` have on `MPG`?
 
-a) Start with a simple regression of `mpg` vs. `year` and report R's `summary` output. Is `year` a significant variable at the .05 level? State what effect `year` has on `mpg`, if any, according to this model. 
+a) Start with a simple regression of `mpg` vs. `year` and report R's `summary` output. Is `year` a significant variable at the .05 level? State what effect `year` has on `mpg`, if any, according to this model.
+    
 
-b) Add `horsepower` on top of the variable `year` to your linear model. Is `year` still a significant variable at the .05 level? Give a precise interpretation of the `year`'s effect found here. 
+
+
+```{r message=FALSE, warning=FALSE,results='asis',  echo=FALSE}
+fit1 <- lm(mpg ~ year, data = Auto) 
+stargazer(fit1, align=TRUE, ci = TRUE, type = "latex") 
+
+```
+
+
+      
+_Year is significant at the 0.01 level. Our model is saying that for every year that goes by, there is about a 1.230 increase in the mpg of a car._
+
+ b) Add `horsepower` on top of the variable `year` to your linear model. Is `year` still a significant variable at the .05 level? Give a precise interpretation of the `year`'s effect found here. (Table 4)_
+
+
+
+
+```{r message=FALSE, warning=FALSE, results='asis',  echo=FALSE}
+fit2 <- lm(mpg ~ year + horsepower, data = Auto) 
+stargazer(fit2, align=TRUE, ci = TRUE, type = "latex") 
+```
+
+
+_Year is significant at the 0.01 level. Our model is saying that for every year that passes by, there is about a .657 increase in the mpg of a car. This effect size decreases from the previous one since we added horsepower to the dataset. (Table 5)_
 
 c) The two 95% CI's for the coefficient of year differ among (i) and (ii). How would you explain the difference to a non-statistician?
+    
+_The confidence intervals got a lot smaller going from (i) to (ii). Since we added more information to the model (`horspower`) this reduces some of the variability that we see when we examine year alone. This reduction in conifidence interval means that we are likely getting more precise._
 
 d) Create a model with interaction by fitting `lm(mpg ~ year * horsepower)`. Is the interaction effect significant at .05 level? Explain the year effect (if any). 
+
+
+ 
+
+```{r message=FALSE, warning=FALSE, results='asis',  echo=FALSE}
+fit2 <- lm(mpg ~ year * horsepower, data = Auto) 
+stargazer(fit2, align=TRUE, ci = TRUE, type = type = output_format) 
+```
+
+
+
+_All of the variables are significant at the 0.01 level. Year is an extremely significant variable. Our model is saying that for every year that passes by, there is about a 2.190 increase in the mpg of a car. This effect size increases dramatically from the previous models. (Table 6)_
 
 ## Categorical predictors
 
@@ -1033,11 +1393,33 @@ Remember that the same variable can play different roles! Take a quick look at t
 
 a) Fit a model that treats `cylinders` as a continuous/numeric variable. Is `cylinders` significant at the 0.01 level? What effect does `cylinders` play in this model?
 
+```{r message=FALSE, warning=FALSE,  echo=FALSE}
+fit3 <- lm(mpg ~ cylinders, data = Auto) 
+stargazer(fit3, align=TRUE, ci = TRUE, type = output_format) 
+```
+_Cylinders is significant at the 0.01 level. Our model is saying that for every 1 cylinder added, there is about a 3.560 increase in the mpg of a car. (Table 7)_
+
 b) Fit a model that treats `cylinders` as a categorical/factor. Is `cylinders` significant at the .01 level? What is the effect of `cylinders` in this model? Describe the `cylinders` effect over `mpg`. 
+
+```{r message=FALSE, warning=FALSE,  echo=FALSE}
+fit4 <- lm(mpg ~ factor(cylinders), data = Auto) 
+stargazer(fit4, align=TRUE, ci = TRUE, type = output_format) 
+```
+
+_Only 4 Cylinders is significant at the 0.01 level. Our model is saying that for every 1 cylinder added, there is about a 3.560 increase in the mpg of a car. (Table 7)_
+
 
 c) What are the fundamental differences between treating `cylinders` as a continuous and categorical variable in your models? 
 
 d) Can you test the null hypothesis: fit0: `mpg` is linear in `cylinders` vs. fit1: `mpg` relates to `cylinders` as a categorical variable at .01 level?  
+
+_Yes you can using anova(H_0, H_1). There is strong evidence of rejecting the null hypothesis that fit0: `mpg` is linear in `cylinders` vs. fit1: `mpg` relates to `cylinders` as a categorical variable_
+
+```{r message=FALSE, warning=FALSE, results='hold',  echo=FALSE}
+test_anova <- anova(fit3, fit4)
+test_anova
+```
+
 
 
 ## Results
@@ -1061,7 +1443,7 @@ Presume that $\mathbf{x}$ and $\mathbf{y}$ are linearly related with a normal er
 
 We can create a sample input vector ($n = 40$) for $\mathbf{x}$ with the following code:
 
-```{r, eval = F, echo = TRUE}
+```{r, eval = T, echo = TRUE}
 # Generates a vector of size 40 with equally spaced values between 0 and 1, inclusive
 x = seq(0, 1, length = 40)
 x
