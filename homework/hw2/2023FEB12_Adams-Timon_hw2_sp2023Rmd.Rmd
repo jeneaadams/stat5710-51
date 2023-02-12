@@ -896,7 +896,7 @@ fit12 = nlsy %>%
   filter(Income87 >0) %>%
   mutate(logincome = log(Income87)) %>%
   lm(formula = PC1.esteem ~ Gender + logincome + MotherEd + Job05 + bmi + intelligence + FamilyIncome78)
-summary(fit12)
+# summary(fit12)
 ```
 
 ```{r}
@@ -905,7 +905,7 @@ fit13 = nlsy %>%
   filter(Income87 >0) %>%
   mutate(logincome = log(Income87)) %>%
   lm(formula = PC1.esteem ~ Gender + logincome + MotherEd + Inewspaper + Imagazine + Ilibrary + Job05 + bmi + intelligence + FamilyIncome78)
-summary(fit13)
+# summary(fit13)
 ```
 
 ```{r}
@@ -914,7 +914,7 @@ fit14 = nlsy %>%
   filter(Income87 >0) %>%
   mutate(logincome = log(Income87)) %>%
   lm(formula = PC1.esteem ~ Gender + logincome + MotherEd + Education05 + Inewspaper + Imagazine + Ilibrary + Job05 + bmi + intelligence + FamilyIncome78)
-summary(fit14)
+# summary(fit14)
 ```
 
 ```{r}
@@ -1047,7 +1047,7 @@ system.time({brca_sub_kmeans <- kmeans(x = brca_sub, 4)})
 saveRDS(brca_sub_kmeans, "data/tcga_kmeans.RDS")
 
 # discrepancy table
-kable(table(brca_subtype, brca_sub_kmeans$cluster))
+knitr::kable(table(brca_subtype, brca_sub_kmeans$cluster))
 ```
 
 
@@ -1532,14 +1532,25 @@ abline(h=0, lwd=4, col="red")
 ii. Provide a normal QQ plot of the residuals.
 
 ```{r}
-plot(fit0$fitted, fit0$residuals, 
-     pch  = 16,
-     main = "residual plot")
-abline(h=0, lwd=4, col="red")
+qqnorm(fit0$residuals)
+  qqline(fit0$residuals, lwd=4, col="blue")
 ```
 
 
 iii. Comment on how well the model assumptions are met for the sample you used. 
+_We observe relatively favorable homoscedastic data as well as quantiles which mostly follow a normal reference line. Another way to qualitatively check for normality is with a histogram._
+
+```{r}
+set.seed(1)
+sim.data %>%
+  ggplot() + 
+  geom_histogram(aes(x = x), bins = 10, color ="white", fill = "pink") + 
+  labs(title = "Historgram of X", subtitle = "Mean X shown by red line", x = "X", y = "frequency") +
+  geom_vline(aes(xintercept=mean(x)),
+             color = "red", linetype = "dashed", size = 1)
+```
+
+_From this we can see the data is relatively normal and most likely follows linear model assumptions, but, conservatively, interpretation should proceed with caution as the distribution of the data may not be unimodal._
 
 
 
@@ -1575,7 +1586,53 @@ rm(se, b1, upper_ci, lower_ci, x, n_sim, b1, t_star, lse, lse_out)
 
 i. Summarize the LS estimates of $\boldsymbol{\beta}_1$ (stored in `results$b1`). Does the sampling distribution agree with theory? 
 
+
+```{r}
+summary(results$b1)
+```
+
+_The mean of the sampling distribution of LS estimates for $\boldsymbol{\beta}_1$ is 1.15, which is very close too the true $\boldsymbol{\beta}_1$ of 1.2. Therefore, this sampling distribution shows strong support for the theory._
+
 ii.  How many of your 95% confidence intervals capture the true $\boldsymbol{\beta}_1$? Display your confidence intervals graphically. 
+
+```{r}
+CIs = cbind(results$lower_ci, results$upper_ci)
+```
+
+
+_Given that this is the 95% confidnce interval, we expect that 95% of our 100 confidence intervals will capture the true value of $\boldsymbol{\beta}_1$ _
+
+```{r}
+mean(CIs[, 1] <= 1.2 & 1.2 <= CIs[, 2])
+```
+
+_Currently we see this is closer to 94%, which is relatively close. Whis intervals don't cover the treu value?_
+
+```{r}
+ID = which(!(CIs[, 1] <= 1.2 & 1.2 <= CIs[, 2]))
+```
+
+```{r}
+plot(0, 
+     xlim = c(-5,5), 
+     ylim = c(1, 100), 
+     ylab = "Sample", 
+     xlab = "B1", 
+     main = "Confidence Intervals")
+
+colors = rep(gray(0.6), 100)
+colors[ID] = "red"
+abline(v = 1.2, lty = 2)
+for(j in 1:100) {
+  
+  lines(c(CIs[j, 1], CIs[j, 2]), 
+        c(j, j), 
+        col = colors[j], 
+        lwd = 2)
+}
+```
+
+_Given the previously established 94% proportion of tru-value confidence intervals, the 6 red intervals out of hte 100 total intervals are an accurate deficiton of the 6% of intervals which do not contain the true value of $\boldsymbol{\beta}_1$ _
 
 
 
