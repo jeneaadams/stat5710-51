@@ -967,11 +967,11 @@ We will try to use mRNA expression data alone without the labels to classify 4 s
 We first read the data using `data.table::fread()` which is a faster way to read in big data than `read.csv()`. 
 
 ```{r}
-brca <- fread("data/brca_subtype.csv")
-
-# get the sub-type information
-brca_subtype <- brca$BRCA_Subtype_PAM50
-brca <- brca[,-1]
+# brca <- fread("data/brca_subtype.csv")
+# 
+# # get the sub-type information
+# brca_subtype <- brca$BRCA_Subtype_PAM50
+# brca <- brca[,-1]
 ```
 
 1. Summary and transformation
@@ -1002,7 +1002,7 @@ brca <- brca[,-1]
     d) Now we have an x patient with breast cancer but with unknown sub-type. We have this patient's mRNA sequencing data. Project this x patient to the space of PC1 and PC2. (Hint: remember we remove some gene with no counts or no variablity, take log and centered) Plot this patient in the plot in iv) with a black dot. Calculate the Euclidean distance between this patient and each of centroid of the cluster. Can you tell which sub-type this patient might have? 
     
 ```{r}
-x_patient <- fread("data/brca_x_patient.csv")
+# x_patient <- fread("data/brca_x_patient.csv")
 ```
 
 
@@ -1061,10 +1061,27 @@ Presume that $\mathbf{x}$ and $\mathbf{y}$ are linearly related with a normal er
 
 We can create a sample input vector ($n = 40$) for $\mathbf{x}$ with the following code:
 
-```{r, eval = F, echo = TRUE}
+```{r}
+
+set.seed(1)
+knitr::opts_chunk$set(cache = T)
+
 # Generates a vector of size 40 with equally spaced values between 0 and 1, inclusive
 x = seq(0, 1, length = 40)
 x
+y = 1 + 1.2*x + rnorm(40, 0, 2)
+y
+
+
+# sim.data = data.frame(x, y)
+# sim.data
+
+# sim.data.plot = ggplot(sim.data) + 
+#   geom_point(aes(x, y)) + 
+#   labs(title = "Simulated Data", x = "x", y = "y")
+# 
+# sim.data.plot
+
 ```
 
 
@@ -1073,20 +1090,23 @@ x
 Create a corresponding output vector for $\mathbf{y}$ according to the equation given above. Use `set.seed(1)`. Then, create a scatterplot with $(x_i, y_i)$ pairs. Base R plotting is acceptable, but if you can, please attempt to use `ggplot2` to create the plot. Make sure to have clear labels and sensible titles on your plots.
 
 ```{r}
-set.seed(1)
+# set.seed(1)
+# knitr::opts_chunk$set(cache = T)
+
 y = 1 + 1.2*x + rnorm(40, 0, 2)
 y
 ```
 
 ```{r}
+
 sim.data = data.frame(x, y)
 sim.data
 ```
 
 
 ```{r}
-sim.data.plot = ggplot(sim.data) + 
-  geom_point(aes(x, y)) + 
+sim.data.plot = ggplot(sim.data) +
+  geom_point(aes(x, y)) +
   labs(title = "Simulated Data", x = "x", y = "y")
 
 sim.data.plot
@@ -1099,6 +1119,7 @@ sim.data.plot
 i. Find the LS estimates of $\boldsymbol{\beta}_0$ and $\boldsymbol{\beta}_1$, using the `lm()` function. What are the true values of $\boldsymbol{\beta}_0$ and $\boldsymbol{\beta}_1$? Do the estimates look to be good? 
 
 ```{r}
+# set.seed(1)
 fit0 = sim.data %>%
   lm(formula = y ~ x)
 summary(fit0)
@@ -1123,6 +1144,7 @@ _The 95% confidence interval for $\boldsymbol{\beta}_1$ is 0.906 +/- 0.959 = [-0
 
 iii. Overlay the LS estimates and the true lines of the mean function onto a copy of the scatterplot you made above.
 ```{r}
+# set.seed(1)
 sim.data.plot2 = ggplot(sim.data, aes(x, y)) + 
   geom_point() + 
   labs(title = "Simulated Data", x = "x", y = "y") + 
@@ -1140,6 +1162,7 @@ sim.data.plot2
 i. Provide residual plot where fitted $\mathbf{y}$-values are on the x-axis and residuals are on the y-axis. 
 
 ```{r}
+set.seed(1)
 plot(fit0$fitted, fit0$residuals, 
      pch  = 16,
      main = "residual plot")
@@ -1150,15 +1173,25 @@ abline(h=0, lwd=4, col="red")
 ii. Provide a normal QQ plot of the residuals.
 
 ```{r}
-plot(fit0$fitted, fit0$residuals, 
-     pch  = 16,
-     main = "residual plot")
-abline(h=0, lwd=4, col="red")
+set.seed(1)
+qqnorm(fit0$residuals)
+  qqline(fit0$residuals, lwd=4, col="blue")
 ```
 
-
 iii. Comment on how well the model assumptions are met for the sample you used. 
+_We observe relatively favorable homoscedastic data as well as quantiles which mostly follow a normal reference line. Another way to qualitatively check for normality is with a histogram._
 
+```{r}
+set.seed(1)
+sim.data %>%
+  ggplot() + 
+  geom_histogram(aes(x = x), bins = 10, color ="white", fill = "pink") + 
+  labs(title = "Historgram of X", subtitle = "Mean X shown by red line", x = "X", y = "frequency") +
+  geom_vline(aes(xintercept=mean(x)),
+             color = "red", linetype = "dashed", size = 1)
+```
+
+_From this we can see the data is relatively normal and most likely follows linear model assumptions, but, conservatively, interpretation should proceed with caution as the distribution of the data may not be unimodal._
 
 
 ## Understand sampling distribution and confidence intervals
@@ -1166,7 +1199,7 @@ iii. Comment on how well the model assumptions are met for the sample you used.
 This part aims to help you understand the notion of sampling statistics and confidence intervals. Let's concentrate on estimating the slope only.  
 
 Generate 100 samples of size $n = 40$, and estimate the slope coefficient from each sample. We include some sample code below, which should guide you in setting up the simulation. Note: this code is easier to follow but suboptimal; see the appendix for a more optimal R-like way to run this simulation.
-```{r, eval = F, echo = TRUE}
+```{r}
 # Inializing variables. Note b_1, upper_ci, lower_ci are vectors
 x <- seq(0, 1, length = 40) 
 n_sim <- 100              # number of simulations
@@ -1176,7 +1209,7 @@ lower_ci <- 0             # lower bound for beta_1. Initialize to 0 for now.
 t_star <- qt(0.975, 38)   # Food for thought: why 38 instead of 40? What is t_star?
 
 # Perform the simulation
-for (i in 1:n_sim){I l
+for (i in 1:n_sim){
   y <- 1 + 1.2 * x + rnorm(40, sd = 2)
   lse <- lm(y ~ x)
   lse_output <- summary(lse)$coefficients
@@ -1188,12 +1221,59 @@ for (i in 1:n_sim){I l
 results <- as.data.frame(cbind(se, b1, upper_ci, lower_ci))
 
 # remove unecessary variables from our workspace
-rm(se, b1, upper_ci, lower_ci, x, n_sim, b1, t_star, lse, lse_out) 
+rm(se, b1, upper_ci, lower_ci, x, n_sim, t_star, lse, lse_output) 
 ```
 
 i. Summarize the LS estimates of $\boldsymbol{\beta}_1$ (stored in `results$b1`). Does the sampling distribution agree with theory? 
 
+```{r}
+summary(results$b1)
+```
+
+_The mean of the sampling distribution of LS estimates for $\boldsymbol{\beta}_1$ is 1.15, which is very close too the true $\boldsymbol{\beta}_1$ of 1.2. Therefore, this sampling distribution shows strong support for the theory._
+
+
 ii.  How many of your 95% confidence intervals capture the true $\boldsymbol{\beta}_1$? Display your confidence intervals graphically. 
+
+```{r}
+CIs = cbind(results$lower_ci, results$upper_ci)
+```
+
+
+_Given that this is the 95% confidnce interval, we expect that 95% of our 100 confidence intervals will capture the true value of $\boldsymbol{\beta}_1$ _
+
+```{r}
+mean(CIs[, 1] <= 1.2 & 1.2 <= CIs[, 2])
+```
+
+_Currently we see this is closer to 94%, which is relatively close. Whis intervals don't cover the treu value?_
+
+```{r}
+ID = which(!(CIs[, 1] <= 1.2 & 1.2 <= CIs[, 2]))
+```
+
+```{r}
+plot(0, 
+     xlim = c(-5,5), 
+     ylim = c(1, 100), 
+     ylab = "Sample", 
+     xlab = "B1", 
+     main = "Confidence Intervals")
+
+colors = rep(gray(0.6), 100)
+colors[ID] = "red"
+abline(v = 1.2, lty = 2)
+for(j in 1:100) {
+  
+  lines(c(CIs[j, 1], CIs[j, 2]), 
+        c(j, j), 
+        col = colors[j], 
+        lwd = 2)
+}
+```
+
+
+_Given the previously established 94% proportion of tru-value confidence intervals, the 6 red intervals out of hte 100 total intervals are an accurate deficiton of the 6% of intervals which do not contain the true value of $\boldsymbol{\beta}_1$ _
 
 
 
