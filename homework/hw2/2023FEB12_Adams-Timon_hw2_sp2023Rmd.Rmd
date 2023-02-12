@@ -983,7 +983,7 @@ We will try to use mRNA expression data alone without the labels to classify 4 s
 
 We first read the data using `data.table::fread()` which is a faster way to read in big data than `read.csv()`. 
 
-```{r  message=FALSE, warning=FALSE, eval = TRUE}
+```{r  message=FALSE, warning=FALSE, eval = TRUE, echo = F}
 brca <- fread("data/brca_subtype.csv.gz")
 
 # get the sub-type information
@@ -995,7 +995,7 @@ brca <- brca[,-1]
 
 a) How many patients are there in each sub-type? 
     
-```{rmessage=FALSE, warning=FALSE, results='asis', echo=FALSE}
+```{r message=FALSE, warning=FALSE, results='asis', echo=FALSE}
 kable(data.frame(t(summary((brca_subtype)))),
      caption = "Patients in each sub-type")
 ```
@@ -1003,7 +1003,7 @@ kable(data.frame(t(summary((brca_subtype)))),
 
 b) Randomly pick 5 genes and plot the histogram by each sub-type.
     
-```{r, warning=FALSE, fig.height=10, fig.width=12, echo=FALSE}
+```{r message=FALSE, warning=FALSE, fig.height=10, fig.width=12, echo=FALSE}
 num_gene <- ncol(brca)
 
 # randomly select 10 gene
@@ -1044,7 +1044,7 @@ dim(brca_sub)
 ```{r message=FALSE, warning=FALSE, results='asis', echo=FALSE}
 # system.time() get how long it runs
 # it can take several minutes.
-system.time({brca_sub_kmeans <- kmeans(x = brca_sub, 4)})
+brca_sub_kmeans <- kmeans(x = brca_sub, 4)
 
 # save the results as RDS
 saveRDS(brca_sub_kmeans, "data/tcga_kmeans.RDS")
@@ -1058,7 +1058,7 @@ knitr::kable(table(brca_subtype, brca_sub_kmeans$cluster))
 
 a) Apply PCA on the centered and scaled dataset. How many PCs should we use and why? You are encouraged to use `irlba::irlba()`.
     
-Will use 2 PCs for the centered and scaled and 4 for the centered but not scaled
+_We will use 2 PCs for the centered and scaled and 4 for the centered but not scaled_
 ```{r centered and scaled, message=FALSE, warning=FALSE, echo=FALSE}
 # center and scale the data
 brca_sub_scaled_centered <- scale(as.matrix(brca_sub), center = T, scale = T)
@@ -1093,8 +1093,9 @@ qplot(c(1:10), pve_apx_us) +
     
     
 b) Plot PC1 vs PC2 of the centered and scaled data and PC1 vs PC2 of the centered but unscaled data side by side. Should we scale or not scale for clustering process? Why? (Hint: to put plots side by side, use `gridExtra::grid.arrange()` or `ggpubr::ggrrange()` or `egg::ggrrange()` for ggplots; use `fig.show="hold"` as chunk option for base plots)
-    
-```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
+
+_We should not scale the because scaling reduces the separation of clusters_
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=6, fig.width=12, results='asis'}
 # pc scores
 pc_score <- (svd_ret$u[, 1:10])*(svd_ret$d[1:10])
 pc_score_us <- (svd_ret_us$u[, 1:10])*(svd_ret_us$d[1:10])
@@ -1128,17 +1129,22 @@ grid.arrange(scaled_centered, unscaled_centered, ncol = 2)
 4. Spectrum clustering: center but do not scale the data
 
 a) Use the first 4 PCs of the centered and unscaled data and apply kmeans. Find a reasonable number of clusters using within sum of squared with the elbow rule.
+
+_We choose 3 clusters after looking at the elbow plot_
     
-```{r message=FALSE, warning=FALSE, echo=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
 # elbow methodfor optimal number of clusters
 pca_elbow <- fviz_nbclust(pc_score_us[, 1:4], kmeans, method = "wss")
 
 # 4 clusters
 kmean_unscaled <- kmeans(x = pc_score_us[, 1:4], 3)
+pca_elbow
 ```
     
     
 b) Choose an optimal cluster number and apply kmeans. Compare the real sub-type and the clustering label as follows: Plot scatter plot of PC1 vs PC2. Use point color to indicate the true cancer type and point shape to indicate the clustering label. Plot the kmeans centroids with black dots. Summarize how good is clustering results compared to the real sub-type.
+
+_Clustering is able to separate basal fairly well; however, it doesn't do as well for Luminal A, Lumnial B and HER2_
     
 ```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
 centroids <- data.frame(x = kmean_unscaled$centers[,1],
@@ -1165,8 +1171,10 @@ kmeans_pca_plot
 ```
     
 c) Compare the clustering result from applying kmeans to the original data and the clustering result from applying kmeans to 4 PCs. Does PCA help in kmeans clustering? What might be the reasons if PCA helps?
+
+_PCA yields better clustering than applying kmeans to the original data. PCA helps because it is able to capture the variance of the data._
     
-```{r, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
+```{r, echo=FALSE, fig.height=6, fig.width=12, results='asis'}
 # elbow methodfor optimal number of clusters
 orig_elbow <- fviz_nbclust(brca_sub, kmeans, method = "wss")
 
@@ -1174,7 +1182,7 @@ grid.arrange(orig_elbow, pca_elbow, ncol = 2)
 
 ```
 
-```{r message=FALSE, warning=FALSE, fig.height=10, fig.width=12, results='asis', echo=FALSE}
+```{r message=FALSE, warning=FALSE, fig.height=6, fig.width=12, results='asis', echo=FALSE}
 kmean_brca <- kmeans(x = brca_sub, 4)
 
 centroids_brca <- data.frame(x = kmean_brca$centers[,1],
@@ -1201,6 +1209,8 @@ grid.arrange(kmeans_orig_plot, kmeans_pca_plot, ncol = 2)
 ```
     
 d) Now we have an x patient with breast cancer but with unknown sub-type. We have this patient's mRNA sequencing data. Project this x patient to the space of PC1 and PC2. (Hint: remember we remove some gene with no counts or no variablity, take log and centered) Plot this patient in the plot in iv) with a black dot. Calculate the Euclidean distance between this patient and each of centroid of the cluster. Can you tell which sub-type this patient might have? 
+
+_It is difficult to tell which subtype it is since Luminal A, Lumnial B and HER2 are tightly clustered together, but we can definitely rule ot basal. It is Probably LiminalB or HER2 _
     
 ```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
 x_patient <- read.csv("data/brca_x_patient.csv.gz", header = T) %>%
@@ -1248,48 +1258,49 @@ Explore the data, with particular focus on pairwise plots and summary statistics
 
 
 + mpg summary
-```{r auto mpg,  echo=FALSE}
-summary(Auto$mpg)
+```{r auto mpg,  echo=FALSE, eval=T, results='asis'}
+kable(data.frame(summary(Auto$mpg)))
+
 
 mpg_box <- ggplot(Auto, aes(y=mpg)) +
   geom_boxplot()
 ```
 
 + cylinders summary
-```{r auto cylinders,  echo=FALSE}
-summary(Auto$cylinders)
+```{r auto cylinders,  echo=FALSE, eval=T, results='asis'}
+kable(data.frame(summary(Auto$cylinders)))
 
 cyl_box <- ggplot(Auto, aes(y=cylinders)) +
   geom_boxplot()
 ```
 
 + displacement summary
-```{r auto displacement,  echo=FALSE}
-summary(Auto$displacement)
+```{r auto displacement,  echo=FALSE, eval=T, results='asis'}
+kable(data.frame(summary(Auto$displacement)))
 
 disp_box <- ggplot(Auto, aes(y=displacement)) +
   geom_boxplot()
 ```
 
 + horsepower summary
-```{r auto horsepower,  echo=FALSE}
-summary(Auto$horsepower)
+```{r auto horsepower,  echo=FALSE, eval=T, results='asis'}
+kable(data.frame(summary(Auto$horsepower)))
 
 horse_box <- ggplot(Auto, aes(y=horsepower)) +
   geom_boxplot()
 ```
 
 + weight summary
-```{r auto weight,  echo=FALSE}
-summary(Auto$weight)
+```{r auto weight,  echo=FALSE, eval=T, results='asis'}
+kable(data.frame(summary(Auto$weight)))
 
 weight_box <- ggplot(Auto, aes(y=weight)) +
   geom_boxplot()
 ```
 
 + acceleration summary
-```{r auto acceleration,  echo=FALSE}
-summary(Auto$acceleration)
+```{r auto acceleration,  echo=FALSE, eval=T, results='asis'}
+kable(data.frame(summary(Auto$acceleration)))
 
 acc_box <- ggplot(Auto, aes(y=acceleration)) +
   geom_boxplot()
@@ -1298,9 +1309,10 @@ acc_box <- ggplot(Auto, aes(y=acceleration)) +
 + year summary
 
     total 13 years
+    
     from 1970-1982
 
-```{r auto origin,  echo=FALSE}
+```{r auto origin,  echo=FALSE, eval=T}
 length(unique(Auto$origin))
 summary(as.factor(Auto$origin))
 
@@ -1314,11 +1326,14 @@ levels(Auto$origin) <- c('1' = 'American',
 ```
 
 + Origin of car 
-American: 245
-European: 68
-Japanese: 79
 
-```{r auto name, echo =FALSE,  echo=FALSE}
+    American: 245
+    
+    European: 68
+    
+    Japanese: 79
+
+```{r auto name, echo =FALSE,  echo=FALSE, eval=T}
 length(unique(Auto$name))
 #unique(Auto$name) %>% .[order(.)]
 ```
@@ -1358,7 +1373,7 @@ a) Start with a simple regression of `mpg` vs. `year` and report R's `summary` o
 
 
 
-```{r message=FALSE, warning=FALSE,results='asis'}
+```{r message=FALSE, warning=FALSE,results='asis', echo = F}
 fit1 <- lm(mpg ~ year, data = Auto) 
 stargazer(fit1, align=TRUE, ci = TRUE, type = output_format) 
 
@@ -1373,7 +1388,7 @@ _Year is significant at the 0.01 level. Our model is saying that for every year 
 
 
 
-```{r message=FALSE, warning=FALSE, results='asis'}
+```{r message=FALSE, warning=FALSE, results='asis', echo = F}
 fit2 <- lm(mpg ~ year + horsepower, data = Auto) 
 stargazer(fit2, align=TRUE, ci = TRUE, type = output_format) 
 ```
@@ -1390,7 +1405,7 @@ d) Create a model with interaction by fitting `lm(mpg ~ year * horsepower)`. Is 
 
  
 
-```{r message=FALSE, warning=FALSE, results='asis'}
+```{r message=FALSE, warning=FALSE, results='asis', echo = F}
 fit2 <- lm(mpg ~ year * horsepower, data = Auto) 
 stargazer(fit2, align=TRUE, ci = TRUE, type = output_format) 
 ```
@@ -1405,7 +1420,7 @@ Remember that the same variable can play different roles! Take a quick look at t
 
 a) Fit a model that treats `cylinders` as a continuous/numeric variable. Is `cylinders` significant at the 0.01 level? What effect does `cylinders` play in this model?
 
-```{r message=FALSE, warning=FALSE}
+```{r  message=FALSE, warning=FALSE, echo=FALSE, results='asis'}
 fit3 <- lm(mpg ~ cylinders, data = Auto) 
 stargazer(fit3, align=TRUE, ci = TRUE, type = output_format) 
 ```
@@ -1413,7 +1428,7 @@ _Cylinders is significant at the 0.01 level. Our model is saying that for every 
 
 b) Fit a model that treats `cylinders` as a categorical/factor. Is `cylinders` significant at the .01 level? What is the effect of `cylinders` in this model? Describe the `cylinders` effect over `mpg`. 
 
-```{r message=FALSE, warning=FALSE}
+```{r  message=FALSE, warning=FALSE, echo=FALSE, results='asis'}
 fit4 <- lm(mpg ~ factor(cylinders), data = Auto) 
 stargazer(fit4, align=TRUE, ci = TRUE, type = output_format) 
 ```
@@ -1422,6 +1437,8 @@ _Only 4 Cylinders is significant at the 0.01 level. Our model is saying that for
 
 
 c) What are the fundamental differences between treating `cylinders` as a continuous and categorical variable in your models? 
+
+_From a practical sense it's not feasible to consider cylinders as a continuous variable because it'll out put results that don't make sense. It will assume that the more cylinders you have, the lower your mpg will be. However, considering cylinders as a categorical variable allows you to see that having different numbers of cylinders is not a linear relationship._
 
 d) Can you test the null hypothesis: fit0: `mpg` is linear in `cylinders` vs. fit1: `mpg` relates to `cylinders` as a categorical variable at .01 level?  
 
@@ -1442,14 +1459,14 @@ a) Describe the final model. Include diagnostic plots with particular focus on t
 
 In this final model, we consider both cylinders and origin as categorical variables. We remove acceleration and we assume interaction between year-horsepower and origin-displacemnt
 
-```{r message=FALSE, warning=FALSE, echo=False, results='asis', fig.height=8, fig.width=12}
+```{r message=FALSE, warning=FALSE, echo=F, results='asis', fig.height=8, fig.width=12}
 ggplot(Auto, aes(x = horsepower, y = mpg, color=year)) +
   geom_point() +
   geom_smooth(method = "lm" , se =F) +
   facet_wrap(~ year) + labs(title="mpg and horsepower by year")
 ```
 
-```{r message=FALSE, warning=FALSE, echo=False, results='asis', fig.height=8, fig.width=12}
+```{r message=FALSE, warning=FALSE, echo=F, results='asis', fig.height=8, fig.width=12}
 ggplot(Auto, aes(x = displacement, y = mpg, color = origin)) +
   geom_point() +
   geom_smooth(method = "lm" , se =F) +
@@ -1457,7 +1474,7 @@ ggplot(Auto, aes(x = displacement, y = mpg, color = origin)) +
   labs(title="mpg and displacement by cylinders")
 ```
 
-```{r message=FALSE, warning=FALSE, echo=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='asis'}
 # everything
 fit6 <- lm(mpg ~ cylinders + displacement + horsepower + weight + acceleration + year + origin, data = Auto) 
 
@@ -1490,6 +1507,12 @@ plot(fit11, 2)
 
 
 b) Summarize the effects found.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+stargazer(fit11,  type = output_format, ci=TRUE, ci.level = .95,
+                     keep.stat = c("n", "rsq", "sigma2", "ser"))
+```
+
 
 c) Predict the `mpg` of the following car: A red car built in the US in 1983 that is 180 inches long, has eight cylinders, displaces 350 cu. inches, weighs 4000 pounds, and has a horsepower of 260. Also give a 95% CI for your prediction.
 
