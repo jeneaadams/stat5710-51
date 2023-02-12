@@ -1170,6 +1170,7 @@ orig_elbow <- fviz_nbclust(brca_sub, kmeans, method = "wss")
 grid.arrange(orig_elbow, pca_elbow, ncol = 2)
 
 ```
+
 ```{r message=FALSE, warning=FALSE, fig.height=10, fig.width=12, results='asis', echo=FALSE}
 kmean_brca <- kmeans(x = brca_sub, 4)
 
@@ -1380,7 +1381,7 @@ d) Create a model with interaction by fitting `lm(mpg ~ year * horsepower)`. Is 
 
 ```{r message=FALSE, warning=FALSE, results='asis',  echo=FALSE}
 fit2 <- lm(mpg ~ year * horsepower, data = Auto) 
-stargazer(fit2, align=TRUE, ci = TRUE, type = type = output_format) 
+stargazer(fit2, align=TRUE, ci = TRUE, type = output_format) 
 ```
 
 
@@ -1559,7 +1560,7 @@ _From this we can see the data is relatively normal and most likely follows line
 This part aims to help you understand the notion of sampling statistics and confidence intervals. Let's concentrate on estimating the slope only.  
 
 Generate 100 samples of size $n = 40$, and estimate the slope coefficient from each sample. We include some sample code below, which should guide you in setting up the simulation. Note: this code is easier to follow but suboptimal; see the appendix for a more optimal R-like way to run this simulation.
-```{r, eval = F, echo = TRUE}
+```{r}
 # Inializing variables. Note b_1, upper_ci, lower_ci are vectors
 x <- seq(0, 1, length = 40) 
 n_sim <- 100              # number of simulations
@@ -1569,7 +1570,7 @@ lower_ci <- 0             # lower bound for beta_1. Initialize to 0 for now.
 t_star <- qt(0.975, 38)   # Food for thought: why 38 instead of 40? What is t_star?
 
 # Perform the simulation
-for (i in 1:n_sim){I l
+for (i in 1:n_sim){
   y <- 1 + 1.2 * x + rnorm(40, sd = 2)
   lse <- lm(y ~ x)
   lse_output <- summary(lse)$coefficients
@@ -1581,7 +1582,7 @@ for (i in 1:n_sim){I l
 results <- as.data.frame(cbind(se, b1, upper_ci, lower_ci))
 
 # remove unecessary variables from our workspace
-rm(se, b1, upper_ci, lower_ci, x, n_sim, b1, t_star, lse, lse_out) 
+rm(se, b1, upper_ci, lower_ci, x, n_sim, t_star, lse, lse_out) 
 ```
 
 i. Summarize the LS estimates of $\boldsymbol{\beta}_1$ (stored in `results$b1`). Does the sampling distribution agree with theory? 
