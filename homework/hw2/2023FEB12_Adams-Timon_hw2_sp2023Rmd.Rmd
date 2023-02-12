@@ -5,11 +5,6 @@ author:
 - Group Member 2 - Annan Timon
 date: 'Due: 11:59 PM,  Sunday, 02/12'
 output:
-  pdf_document:
-    extra_dependencies: ["dcolumn"]
-    number_sections: yes
-    toc: yes
-    toc_depth: '4'
   html_document:
     code_folding: show
     highlight: haddock
@@ -18,6 +13,11 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    extra_dependencies: ["dcolumn"]
+    number_sections: yes
+    toc: yes
+    toc_depth: '4'
   word_document:
     toc: yes
     toc_depth: '4'
@@ -382,10 +382,13 @@ data.esteem[,  c(1, 2, 4, 6, 7)]  = 5 - data.esteem[,  c(1, 2, 4, 6, 7)]
 ```{r}
 plot(data.esteem)
 ```
-
+```{r}
+cov(data.esteem)
+```
+_The esteem scores are all positively correlated._
 
 ```{r}
-# corrplot::corrplot(data.esteem, is.corr = F)
+# corrplot::corrplot(data.esteem)
 ```
 
 
