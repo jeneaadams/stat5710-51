@@ -31,7 +31,7 @@ knitr::opts_chunk$set(echo = FALSE, fig.width=8, fig.height=4)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, tidyverse, data.table, ggpubr, ggbiplot, ggplot2, factoextra, units) # add the packages needed
+pacman::p_load(ISLR, tidyverse, data.table, ggpubr, ggbiplot, ggplot2, factoextra) # add the packages needed
 ```
 
 
@@ -1074,7 +1074,7 @@ Create a corresponding output vector for $\mathbf{y}$ according to the equation 
 
 ```{r}
 set.seed(1)
-y = 1 + 1.2*x
+y = 1 + 1.2*x + rnorm(40, 0, 2)
 y
 ```
 
@@ -1099,22 +1099,63 @@ sim.data.plot
 i. Find the LS estimates of $\boldsymbol{\beta}_0$ and $\boldsymbol{\beta}_1$, using the `lm()` function. What are the true values of $\boldsymbol{\beta}_0$ and $\boldsymbol{\beta}_1$? Do the estimates look to be good? 
 
 ```{r}
-
+fit0 = sim.data %>%
+  lm(formula = y ~ x)
+summary(fit0)
 ```
 
 
+_LS estimate of $\boldsymbol{\beta}_0$ is 1.3 and $\boldsymbol{\beta}_1$ is 0.906._
+
+  _The true value of $\boldsymbol{\beta}_0$ is 1_  
+
+  _The true value of $\boldsymbol{\beta}_1$ is 1.2_
+
+_The estimates appears to be slightly off from the true values, but they are relatively close._
+
 ii. What is your RSE for this linear model fit? Is it close to $\sigma = 2$? 
+
+_The RSE for this model is 1.79 which is pretty close to 2, slightly smaller._
 
 ii. What is the 95% confidence interval for $\boldsymbol{\beta}_1$? Does this confidence interval capture the true $\boldsymbol{\beta}_1$?
 
+_The 95% confidence interval for $\boldsymbol{\beta}_1$ is 0.906 +/- 0.959 = [-0.053, 1.865]. This confidence interval does capture the true $\boldsymbol{\beta}_1$ of 1.2. If we had more samples (higher N), this confidence interval would become narrower and more precise around the true value._
+
 iii. Overlay the LS estimates and the true lines of the mean function onto a copy of the scatterplot you made above.
+```{r}
+sim.data.plot2 = ggplot(sim.data, aes(x, y)) + 
+  geom_point() + 
+  labs(title = "Simulated Data", x = "x", y = "y") + 
+  geom_abline(slope = 1.2, intercept = 1, color = "blue", show.legend = T) + 
+  geom_smooth(method = "lm", se = T, color = "red", show.legend = T) + 
+  annotate("text", x=0, y =.7, color = "blue", label = "True model") +
+  annotate("text", x=0.12, y =1.7, color = "red", label = "Predicted model")
+
+sim.data.plot2
+```
 
 
 ### diagnoses
 
 i. Provide residual plot where fitted $\mathbf{y}$-values are on the x-axis and residuals are on the y-axis. 
 
+```{r}
+plot(fit0$fitted, fit0$residuals, 
+     pch  = 16,
+     main = "residual plot")
+abline(h=0, lwd=4, col="red")
+```
+
+
 ii. Provide a normal QQ plot of the residuals.
+
+```{r}
+plot(fit0$fitted, fit0$residuals, 
+     pch  = 16,
+     main = "residual plot")
+abline(h=0, lwd=4, col="red")
+```
+
 
 iii. Comment on how well the model assumptions are met for the sample you used. 
 
