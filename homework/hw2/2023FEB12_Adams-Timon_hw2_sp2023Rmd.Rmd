@@ -1299,6 +1299,14 @@ acc_box <- ggplot(Auto, aes(y=acceleration)) +
 ```{r auto origin,  echo=FALSE}
 length(unique(Auto$origin))
 summary(as.factor(Auto$origin))
+
+length(unique(Auto$origin))
+summary(as.factor(Auto$origin))
+
+Auto$origin <- factor(Auto$origin)
+levels(Auto$origin) <- c('1' = 'American',
+                         '2' =  'European',
+                         '3' = 'Japanese')
 ```
 
 + Origin of car 
@@ -1316,7 +1324,7 @@ length(unique(Auto$name))
     unique auto names: 301
 
 
-```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis',  echo=FALSE}
+```{r echo = FALSE, warning=F,message=FALSE,fig.height=8, fig.width=12, results='asis'}
 # omit top panels to display correlation
 panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
     usr <- par("usr"); on.exit(par(usr))
@@ -1327,12 +1335,12 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
     if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
     text(0.5, 0.5, txt, cex = cex.cor * r)
 }
-select(Auto, colnames(Auto)[!(colnames(Auto) %in% c("name"))]) %>%
+select(Auto, colnames(Auto)[!(colnames(Auto) %in% c("name", "origin"))]) %>%
   pairs(lower.panel = panel.smooth,
       upper.panel = panel.cor, main="Scatterplot Matrix")
 ```
 
-```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis',  echo=FALSE}
+```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis'}
 grid.arrange(mpg_box, cyl_box, disp_box,
              horse_box, weight_box, acc_box,
              ncol = 3)
@@ -1346,9 +1354,9 @@ a) Start with a simple regression of `mpg` vs. `year` and report R's `summary` o
 
 
 
-```{r message=FALSE, warning=FALSE,results='asis',  echo=FALSE}
+```{r message=FALSE, warning=FALSE,results='asis'}
 fit1 <- lm(mpg ~ year, data = Auto) 
-stargazer(fit1, align=TRUE, ci = TRUE, type = "latex") 
+stargazer(fit1, align=TRUE, ci = TRUE, type = output_format) 
 
 ```
 
@@ -1361,9 +1369,9 @@ _Year is significant at the 0.01 level. Our model is saying that for every year 
 
 
 
-```{r message=FALSE, warning=FALSE, results='asis',  echo=FALSE}
+```{r message=FALSE, warning=FALSE, results='asis'}
 fit2 <- lm(mpg ~ year + horsepower, data = Auto) 
-stargazer(fit2, align=TRUE, ci = TRUE, type = "latex") 
+stargazer(fit2, align=TRUE, ci = TRUE, type = output_format) 
 ```
 
 
@@ -1378,9 +1386,9 @@ d) Create a model with interaction by fitting `lm(mpg ~ year * horsepower)`. Is 
 
  
 
-```{r message=FALSE, warning=FALSE, results='asis',  echo=FALSE}
+```{r message=FALSE, warning=FALSE, results='asis'}
 fit2 <- lm(mpg ~ year * horsepower, data = Auto) 
-stargazer(fit2, align=TRUE, ci = TRUE, type = type = output_format) 
+stargazer(fit2, align=TRUE, ci = TRUE, type = output_format) 
 ```
 
 
@@ -1393,7 +1401,7 @@ Remember that the same variable can play different roles! Take a quick look at t
 
 a) Fit a model that treats `cylinders` as a continuous/numeric variable. Is `cylinders` significant at the 0.01 level? What effect does `cylinders` play in this model?
 
-```{r message=FALSE, warning=FALSE,  echo=FALSE}
+```{r message=FALSE, warning=FALSE}
 fit3 <- lm(mpg ~ cylinders, data = Auto) 
 stargazer(fit3, align=TRUE, ci = TRUE, type = output_format) 
 ```
@@ -1401,7 +1409,7 @@ _Cylinders is significant at the 0.01 level. Our model is saying that for every 
 
 b) Fit a model that treats `cylinders` as a categorical/factor. Is `cylinders` significant at the .01 level? What is the effect of `cylinders` in this model? Describe the `cylinders` effect over `mpg`. 
 
-```{r message=FALSE, warning=FALSE,  echo=FALSE}
+```{r message=FALSE, warning=FALSE}
 fit4 <- lm(mpg ~ factor(cylinders), data = Auto) 
 stargazer(fit4, align=TRUE, ci = TRUE, type = output_format) 
 ```
@@ -1415,7 +1423,7 @@ d) Can you test the null hypothesis: fit0: `mpg` is linear in `cylinders` vs. fi
 
 _Yes you can using anova(H_0, H_1). There is strong evidence of rejecting the null hypothesis that fit0: `mpg` is linear in `cylinders` vs. fit1: `mpg` relates to `cylinders` as a categorical variable_
 
-```{r message=FALSE, warning=FALSE, results='hold',  echo=FALSE}
+```{r message=FALSE, warning=FALSE, results='hold', echo = F}
 test_anova <- anova(fit3, fit4)
 test_anova
 ```
@@ -1428,9 +1436,75 @@ Final modeling question: we want to explore the effects of each feature as best 
   
 a) Describe the final model. Include diagnostic plots with particular focus on the model residuals and diagnoses.
 
+In this final model, we consider both cylinders and origin as categorical variables. We remove acceleration and we assume interaction between year-horsepower and origin-displacemnt
+
+```{r message=FALSE, warning=FALSE, echo=False, results='asis', fig.height=8, fig.width=12}
+ggplot(Auto, aes(x = horsepower, y = mpg, color=year)) +
+  geom_point() +
+  geom_smooth(method = "lm" , se =F) +
+  facet_wrap(~ year) + labs(title="mpg and horsepower by year")
+```
+
+```{r message=FALSE, warning=FALSE, echo=False, results='asis', fig.height=8, fig.width=12}
+ggplot(Auto, aes(x = displacement, y = mpg, color = origin)) +
+  geom_point() +
+  geom_smooth(method = "lm" , se =F) +
+  facet_wrap(~ origin) +
+  labs(title="mpg and displacement by cylinders")
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+# everything
+fit6 <- lm(mpg ~ cylinders + displacement + horsepower + weight + acceleration + year + origin, data = Auto) 
+
+# everything with cylinders as factor
+fit7 <- lm(mpg ~ factor(cylinders) + displacement + horsepower + weight + acceleration + year + origin, data = Auto) 
+
+# year horse power interactions
+fit8<- lm(mpg ~ cylinders + displacement + year*horsepower + weight + acceleration + origin, data = Auto) 
+
+# year horse power interactions and cylinders as factor
+fit9<- lm(mpg ~ factor(cylinders) + displacement + year*horsepower + weight + acceleration + origin, data = Auto) 
+
+# year horse power interactions and cylinders as factor and remove displacement
+fit10<- lm(mpg ~ factor(cylinders) + year*horsepower + weight + acceleration + origin + displacement, data = Auto)
+
+# year horse power interactions and cylinders as factor and remove acceleration
+fit11<- lm(mpg ~ factor(cylinders) + year*horsepower + weight + origin + displacement, data = Auto)
+
+stargazer(fit6, fit7, fit8, fit9, fit10, fit11,  type = output_format, ci=TRUE, ci.level = .95,
+                     keep.stat = c("n", "rsq", "sigma2", "ser"))
+
+```
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='asis', fig.height=6, fig.width=10}
+par(mfrow=c(1,2))
+plot(fit11, 1)
+plot(fit11, 2)
+```
+
+
 b) Summarize the effects found.
 
 c) Predict the `mpg` of the following car: A red car built in the US in 1983 that is 180 inches long, has eight cylinders, displaces 350 cu. inches, weighs 4000 pounds, and has a horsepower of 260. Also give a 95% CI for your prediction.
+
+From these specifications we predict that the mpg will be 2.91 with a CI of [-4.37, 10.2]
+
+```{r, echo = F}
+newcar <- Auto[1, ] 
+newcar$mpg <- "NA"
+newcar$name <- "NA"
+newcar$acceleration <- "NA"
+newcar$year <- 83
+newcar$origin <- 'American'
+newcar$ycylinders <- 8
+newcar$displacement <- 350
+newcar$weight <- 4000
+newcar$horsepower <- 260
+
+predict(fit11, newcar, interval = "predict", se.fit = TRUE)
+```
 
 
 # [Case Study 4] Simple Regression through simulations
