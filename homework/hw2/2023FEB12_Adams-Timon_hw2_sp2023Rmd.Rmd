@@ -90,11 +90,11 @@ In the well-cited National Longitudinal Study of Youth (NLSY79), it follows abou
 
 The data is store in `NLSY79.csv`.
 
-```{r}
+```{r  message=F, echo =F}
 nlsy = read.csv("data/NLSY79.csv", header = T)
 ```
 
-```{r}
+```{r  message=F, echo =F}
 # head(nlsy)
 ```
 
@@ -170,7 +170,7 @@ levels(as.factor(nlsy$Job05))
 table(as.factor(nlsy$Job05))
 ```
 
-```{r}
+```{r  message=F, echo =F}
 names(nlsy)
 ```
 
@@ -213,7 +213,7 @@ job_bar
 
 
 paired visualization of income in 87 and income in 05 
-```{r}
+```{r  message=F, echo =F}
 
 nlsy %>%
   filter(!Income87 == "" & !Income05 == "" & !Job05 =="") %>%
@@ -224,7 +224,7 @@ nlsy %>%
 
 Family income to 87 and 2005 income + gender + weight
 
-```{r}
+```{r  message=F, echo =F}
 nlsy %>%
   ggplot(aes(x=Income05, y = FamilyIncome78, col = Gender, size = Weight05, shape = , alpha = 0.3)) + 
   geom_point()
@@ -233,14 +233,14 @@ nlsy %>%
 
 
   
-```{r}
+```{r  message=F, echo =F}
 nlsy %>%
   ggplot(aes(x=MotherEd, y = FatherEd, col = Gender, size = Income05 , alpha = 0.3)) + 
   geom_point()
 
 ```
   
-```{r}
+```{r  message=F, echo =F}
 nlsy %>%
   ggplot(aes(x=Income05, y = FamilyIncome78, col = Gender, size = Weight05, shape = as.factor(Ilibrary) , alpha = 0.3)) + 
   geom_point()
@@ -250,7 +250,7 @@ nlsy %>%
 
 _How many people believe they are a person of worth in 87, and how is this affected by gender and income in 05?_
 
-```{r}
+```{r  message=F, echo =F}
 nlsy %>%
   ggplot(aes(x = Esteem87_1, fill = Gender)) +
   geom_bar(position = "dodge") +
@@ -261,7 +261,7 @@ nlsy %>%
 
 
 _by parents reading the newspaper_
-```{r}
+```{r  message=F, echo =F}
 
 nlsy %>%
   ggplot(aes(x = Esteem87_1, fill = Gender)) +
@@ -272,7 +272,7 @@ nlsy %>%
 ```
 
 _feeling useless: 1: strongly agree, 2: agree, 3: disagree, 4: strongly disagree_
-```{r}
+```{r  message=F, echo =F}
 nlsy %>%
   ggplot(aes(x = Esteem87_9, fill = Gender)) +
   geom_bar(position = "dodge") +
@@ -281,7 +281,7 @@ nlsy %>%
   ggtitle("")
 ```
 
-```{r}
+```{r  message=F, echo =F}
 nlsy %>%
   ggplot(aes(x = Esteem87_9, fill = Gender)) +
   geom_bar(position = "dodge") +
@@ -292,7 +292,7 @@ nlsy %>%
 
 
 _Of those who agreed with feeling useless in 87, what was their income in 87 and weight_
-```{r}
+```{r  message=F, echo =F}
 nlsy %>%
   filter(Esteem87_9 <=2) %>%
   ggplot(aes(x=Income87, y = Weight05, col = Gender, size = FamilyIncome78, alpha = 0.3)) + 
@@ -303,7 +303,7 @@ nlsy %>%
 
 
 ### Missing values 
-```{r}
+```{r  message=F, echo =F}
 missing.nlsy = nlsy %>%
   summarise(nas = sum(is.na(nlsy)),
             blanks = sum(nlsy == ""))
@@ -331,14 +331,14 @@ The following 10 questions are answered as 1: strongly agree, 2: agree, 3: disag
 * Esteem 9: “I feel useless at times”
 * Esteem 10: “I think I am no good at all”
 _
-```{r}
+```{r  message=F, echo =F}
 labels = c("person of worth","good qualities", "feel like a failure", "do things as well as others", "not proud of much", "positive toward self & others", "satisfied w/self", "wish more self-respect", "feel useless", "I'm no good")
 ```
 
 
 0. First do a quick summary over all the `Esteem` variables. Pay attention to missing values, any peculiar numbers etc. How do you fix problems discovered if there is any? Briefly describe what you have done for the data preparation. 
 
-```{r}
+```{r  message=F, echo =F}
 nlsy %>%
   select(contains("Esteem87"), ) %>%
   summarise(nas = sum(is.na(.)),
@@ -352,7 +352,7 @@ _There appear to be no blanks or NAs_
 
 1. Reverse Esteem 1, 2, 4, 6, and 7 so that a higher score corresponds to higher self-esteem. (Hint: if we store the esteem data in `data.esteem`, then `data.esteem[,  c(1, 2, 4, 6, 7)]  <- 5 - data.esteem[,  c(1, 2, 4, 6, 7)]` to reverse the score.)
 
-```{r}
+```{r  message=F, echo =F}
 data.esteem[,  c(1, 2, 4, 6, 7)]  = 5 - data.esteem[,  c(1, 2, 4, 6, 7)]
 
 ```
@@ -360,14 +360,14 @@ data.esteem[,  c(1, 2, 4, 6, 7)]  = 5 - data.esteem[,  c(1, 2, 4, 6, 7)]
 
 2. Write a brief summary with necessary plots about the 10 esteem measurements.
 
-```{r}
+```{r  message=F, echo =F}
 # data.esteem
 ```
 
-```{r}
+```{r  message=F, echo =F}
 
 ```
-```{r}
+```{r  message=F, echo =F}
 # data.esteem%>%
 #   ggplot(aes(x = Esteem87_1, fill = Gender)) +
 #   geom_bar(position = "dodge") +
@@ -379,15 +379,15 @@ data.esteem[,  c(1, 2, 4, 6, 7)]  = 5 - data.esteem[,  c(1, 2, 4, 6, 7)]
 
 3. Are esteem scores all positively correlated? Report the pairwise correlation table and write a brief summary.
 
-```{r}
+```{r  message=F, echo =F}
 plot(data.esteem)
 ```
-```{r}
+```{r  message=F, echo =F}
 cov(data.esteem)
 ```
 _The esteem scores are all positively correlated._
 
-```{r}
+```{r  message=F, echo =F}
 # corrplot::corrplot(data.esteem)
 ```
 
@@ -412,16 +412,16 @@ sapply(data.esteem, sd) # col sd
     
   _Here we see the new mean centered at 0 but the standard deviation is the same as the uncentered data_
     
-```{r}
+```{r  message=F, echo =F}
 pc.data.esteem.centered = data.esteem.centered %>%
   prcomp(scale.= F)
 
 pc.data.esteem.centered
 ```
-```{r}
+```{r  message=F, echo =F}
 summary(pc.data.esteem.centered)
 ```
-```{r}
+```{r  message=F, echo =F}
 loadings.esteem = data.frame(pc1 = abs(pc.data.esteem.centered$rotation[,1]),
                       pc2 = abs(pc.data.esteem.centered$rotation[,2]))
 
@@ -431,15 +431,15 @@ loadings.esteem
 ```
 
 
-```{r}
+```{r  message=F, echo =F}
 pc.data.esteem.centered$rotation
 ```
     
-```{r}
+```{r  message=F, echo =F}
 round(t(loadings.esteem) %*% loadings.esteem) 
 ```
  
-```{r}
+```{r  message=F, echo =F}
 colSums((loadings.esteem)^2)
 ```
  
@@ -463,11 +463,11 @@ colSums((loadings.esteem)^2)
     
     d) Are PC1 scores and PC2 scores in the data uncorrelated? 
   
-```{r}
+```{r  message=F, echo =F}
 round(cov(pc.data.esteem.centered$x), 4) 
 ```
   
-```{r}
+```{r  message=F, echo =F}
 pairs(pc.data.esteem.centered$x, xlim=c(-4, 4), ylim=c(-4, 4), col=rainbow(6), pch=16)
 ```
   
@@ -476,20 +476,20 @@ pairs(pc.data.esteem.centered$x, xlim=c(-4, 4), ylim=c(-4, 4), col=rainbow(6), p
     
     e) Plot PVE (Proportion of Variance Explained) and summarize the plot. 
     
-```{r}
+```{r  message=F, echo =F}
 round((pc.data.esteem.centered$sdev)^2, 2)
 ```
-```{r}
+```{r  message=F, echo =F}
 summary(pc.data.esteem.centered)$importance
 ```
-```{r}
+```{r  message=F, echo =F}
 plot(pc.data.esteem.centered)
 ```
     
     
   _PC1 captures a large percetnage of the variance and each subsequent princial component explaines lessa variance than the preceeding one._
   
-```{r}
+```{r  message=F, echo =F}
 plot(summary(pc.data.esteem.centered)$importance[2, ],  # PVE
      ylab="PVE",
      xlab="Number of PCs",
@@ -502,7 +502,7 @@ plot(summary(pc.data.esteem.centered)$importance[2, ],  # PVE
   
     f) Also plot CPVE (Cumulative Proportion of Variance Explained). What proportion of the variance in the data is explained by the first two principal components?
     
-```{r}
+```{r  message=F, echo =F}
 plot(summary(pc.data.esteem.centered)$importance[3, ], pch=16,
      ylab="Cumulative PVE",
      xlab="Number of PCs",
@@ -513,7 +513,7 @@ plot(summary(pc.data.esteem.centered)$importance[3, ], pch=16,
   
     g) PC’s provide us with a low dimensional view of the self-esteem scores. Use a biplot with the first two PC's to display the data.  Give an interpretation of PC1 and PC2 from the plot. (try `ggbiplot` if you could, much prettier!)
     
-```{r}
+```{r  message=F, echo =F}
 library("devtools")
 install_github("kassambara/factoextra")
 devtools::install_github("sinhrks/ggfortify")
@@ -521,11 +521,11 @@ library(ggfortify)
 ```
     
     
-```{r}
+```{r  message=F, echo =F}
 # fviz_pca_biplot(pc.data.esteem.centered)
 ```
     
-```{r}
+```{r  message=F, echo =F}
 autoplot(pc.data.esteem.centered, label = TRUE, loadings.label = TRUE)
 ```
     
@@ -535,7 +535,7 @@ autoplot(pc.data.esteem.centered, label = TRUE, loadings.label = TRUE)
 
     a) Find a reasonable number of clusters using within sum of squares with elbow rules.
     
-```{r}
+```{r  message=F, echo =F}
 wss =  function(data.esteem, k) {
 kmeans(data.esteem, k, nstart = 10)$tot.withinss
 }
@@ -550,13 +550,13 @@ plot(k.values, wss_values,
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
 ```
-```{r}
+```{r  message=F, echo =F}
 library(factoextra)
 fviz_nbclust(data.esteem[,-1], kmeans, method = "wss")
 ```
     
     b) Can you summarize common features within each cluster?
-```{r}
+```{r  message=F, echo =F}
 # system.time({esteem.kmeans = kmeans(x = data.esteem, 2)})
 esteem.kmeans = kmeans(x = data.esteem, 2)
 # names(esteem.kmeans)
@@ -564,20 +564,20 @@ esteem.kmeans = kmeans(x = data.esteem, 2)
 print(esteem.kmeans)
 
 ```
-```{r}
+```{r  message=F, echo =F}
 head(esteem.kmeans$cluster, 4)
 ```
   
-```{r}
+```{r  message=F, echo =F}
 esteem.kmeans$size
 ```
   
-```{r}
+```{r  message=F, echo =F}
 fviz_cluster(esteem.kmeans, data = data.esteem)
 ```
   
     
-```{r}
+```{r  message=F, echo =F}
 data.esteem %>%
   as_tibble() %>%
   mutate(cluster = esteem.kmeans$cluster,
@@ -589,7 +589,7 @@ data.esteem %>%
     
     c) Can you visualize the clusters with somewhat clear boundaries? You may try different pairs of variables and different PC pairs of the esteem scores. 
     
-```{r}
+```{r  message=F, echo =F}
 as.data.frame(pc.data.esteem.centered$x) %>% 
   mutate(cluster = esteem.kmeans$cluster,
          question = row.names(data.esteem)) %>%
@@ -602,7 +602,7 @@ as.data.frame(pc.data.esteem.centered$x) %>%
 ```
     
     
-```{r}
+```{r  message=F, echo =F}
 as.data.frame(pc.data.esteem.centered$x) %>% 
   mutate(cluster = esteem.kmeans$cluster,
          question = row.names(data.esteem)) %>%
@@ -614,7 +614,7 @@ as.data.frame(pc.data.esteem.centered$x) %>%
   theme_bw()
 ```
     
-```{r}
+```{r  message=F, echo =F}
 as.data.frame(pc.data.esteem.centered$x) %>% 
   mutate(cluster = esteem.kmeans$cluster,
          question = row.names(data.esteem)) %>%
@@ -626,7 +626,7 @@ as.data.frame(pc.data.esteem.centered$x) %>%
   theme_bw()
 ```
     
-```{r}
+```{r  message=F, echo =F}
 as.data.frame(pc.data.esteem.centered$x) %>% 
   mutate(cluster = esteem.kmeans$cluster,
          question = row.names(data.esteem)) %>%
@@ -638,7 +638,7 @@ as.data.frame(pc.data.esteem.centered$x) %>%
   theme_bw()
 ```
     
-```{r}
+```{r  message=F, echo =F}
 data.esteem %>%
   as_tibble() %>%
   mutate(cluster = esteem.kmeans$cluster,
@@ -647,7 +647,7 @@ data.esteem %>%
   geom_text()
 ```
     
-```{r}
+```{r  message=F, echo =F}
 data.esteem %>%
   as_tibble() %>%
   mutate(cluster = esteem.kmeans$cluster,
@@ -660,7 +660,7 @@ data.esteem %>%
 
 6. We now try to find out what factors are related to self-esteem? PC1 of all the Esteem scores is a good variable to summarize one's esteem scores. We take PC1 as our response variable. 
 
-```{r}
+```{r  message=F, echo =F}
 nlsy = nlsy %>%
   mutate(PC1.esteem = pc.data.esteem.centered$x[,1])
 ```
@@ -673,7 +673,7 @@ nlsy = nlsy %>%
       - Personal information: gender, education (05), log(income) in 87, job type in 87. Weight05 (lb) and HeightFeet05 together with Heightinch05. One way to summarize one's weight and height is via Body Mass Index which is defined as the body mass divided by the square of the body height, and is universally expressed in units of kg/m². Note, you need to create BMI first. Then may include it as one possible predictor. 
       
 
-```{r}
+```{r  message=F, echo =F}
 nlsy = nlsy %>%
   mutate(ft2m = HeightFeet05 / 3.281,
          in2m = HeightFeet05 / 39.37,
@@ -686,7 +686,7 @@ head(nlsy)
       
           
       - Household environment: Imagazine, Inewspaper, Ilibrary, MotherEd, FatherEd, FamilyIncome78. Do set indicators `Imagazine`, `Inewspaper` and `Ilibrary` as factors. 
-```{r}
+```{r  message=F, echo =F}
 nlsy$Imagazine = as.factor(nlsy$Imagazine)
 nlsy$Inewspaper = as.factor(nlsy$Inewspaper)
 nlsy$Ilibrary = as.factor(nlsy$Ilibrary)
@@ -712,7 +712,7 @@ Word | score on the Word Knowledge Test in 1981
 Parag | score on the Paragraph Comprehension test in 1981
 Numer | score on the Numerical Operations test in 1981
 
-```{r}
+```{r  message=F, echo =F}
 asvab = nlsy %>%
   select(AFQT, Coding, Auto, Mechanic, Elec, Science, Number)
 
@@ -729,7 +729,7 @@ asvab = nlsy %>%
 asvab = as.data.frame(scale(asvab, center = T, scale = T))
 ```
       
-```{r}
+```{r  message=F, echo =F}
 pc.asvab = prcomp(asvab, scale = T)
 
 names(pc.asvab)
@@ -738,14 +738,14 @@ pc.asvab.loading = pc.asvab$rotation
 pc.asvab.loading
 ```
 
-```{r}
+```{r  message=F, echo =F}
 head(pc.asvab$x)
 ```
-```{r}
+```{r  message=F, echo =F}
 
 ```
 
-```{r}
+```{r  message=F, echo =F}
 plot(summary(pc.asvab)$importance[2, ],  # PVE
      ylab="PVE",
      xlab="Number of PCs",
@@ -753,11 +753,11 @@ plot(summary(pc.asvab)$importance[2, ],  # PVE
      main="Scree Plot of PVE for ASVAB")
 ```
 
-```{r}
+```{r  message=F, echo =F}
 autoplot(pc.asvab, label = TRUE, loadings.label = TRUE)
 ```
 
-```{r}
+```{r  message=F, echo =F}
 as.data.frame(pc.asvab$x) %>% 
   ggplot(aes(x=PC1, y=PC2)) +
   geom_point()+
@@ -768,12 +768,12 @@ as.data.frame(pc.asvab$x) %>%
 ```
 
       
-```{r}
+```{r  message=F, echo =F}
 asvab.nlsy.PC.Scores = cbind(scale(asvab, scale = TRUE), pc.asvab$x)
 arrange(as.data.frame(asvab.nlsy.PC.Scores), desc(PC1)) %>%
      head()
 ```
-```{r}
+```{r  message=F, echo =F}
 nlsy = nlsy %>%
   mutate(intelligence = pc.asvab$x[,1])
 
@@ -785,37 +785,37 @@ head(nlsy)
   
     b)   Run a few regression models between PC1 of all the esteem scores and suitable variables listed in a). Find a final best model with your own criterion. 
     
-```{r}
+```{r  message=F, echo =F}
 nlsy$Gender = as.factor(nlsy$Gender)
 ```
     
 _bmi_
-```{r}
+```{r  message=F, echo =F}
 fit1 = lm(data = nlsy, formula = PC1.esteem ~ bmi)
 summary(fit1)
 ```
 _intelligence_
-```{r}
+```{r  message=F, echo =F}
 fit2 = nlsy %>%
   lm(formula = PC1.esteem ~ intelligence)
 summary(fit2)
 ```
     
   _Gender_
-```{r}
+```{r  message=F, echo =F}
 fit3 = nlsy %>%
   lm(formula = PC1.esteem ~ Gender)
 summary(fit3)
 ```
  _Since we saw slight diffferences in esteem scores across gender and newspaper indicators, we can run a model against these features _
-```{r}
+```{r  message=F, echo =F}
 fit4a = nlsy %>%
   lm(formula = PC1.esteem ~ Inewspaper)
 summary(fit4a)
 
 ```
   
-```{r}
+```{r  message=F, echo =F}
 fit4b = nlsy %>%
   lm(formula = PC1.esteem ~ Inewspaper + Gender)
 summary(fit4b)
@@ -829,13 +829,13 @@ Personal information: gender, education (05), log(income) in 87, job type in 87.
 
 _combing Personal info_
 
-```{r}
+```{r  message=F, echo =F}
 fit5 = nlsy %>%
   lm(formula = PC1.esteem ~ Gender + Education05)
 summary(fit5)
 ```
 
-```{r}
+```{r  message=F, echo =F}
 fit6 = nlsy %>%
   drop_na() %>%
   filter(Income87 >0) %>%
@@ -845,7 +845,7 @@ summary(fit6)
 ```
 _Here we see the effect of Male gender become insignificant when we control for log(income) in 87._
 
-```{r}
+```{r  message=F, echo =F}
 fit7 = nlsy %>%
   drop_na() %>%
   lm(formula = PC1.esteem ~ Gender + Education05 + Job05)
@@ -856,7 +856,7 @@ _These models are only explaining less than 1% of the variation in the esteem da
 
     - Household environment: Imagazine, Inewspaper, Ilibrary, MotherEd, FatherEd, FamilyIncome78. Do set indicators `Imagazine`, `Inewspaper` and `Ilibrary` as factors. 
 
-```{r}
+```{r  message=F, echo =F}
 fit8 = nlsy %>%
   drop_na() %>%
   lm(formula = PC1.esteem ~ Imagazine + Inewspaper + Ilibrary + MotherEd + FatherEd + FamilyIncome78)
@@ -864,7 +864,7 @@ summary(fit8)
 
 ```
 
-```{r}
+```{r  message=F, echo =F}
 fit9 = nlsy %>%
   drop_na() %>%
   lm(formula = PC1.esteem ~ Inewspaper + MotherEd + Ilibrary + FamilyIncome78)
@@ -874,7 +874,7 @@ summary(fit9)
 
 _Combining more personal info with home environment_ 
 
-```{r}
+```{r  message=F, echo =F}
 fit10 = nlsy %>%
   drop_na() %>%
   filter(Income87 >0) %>%
@@ -885,7 +885,7 @@ summary(fit10)
 ```
 
 
-```{r}
+```{r  message=F, echo =F}
 fit11 = nlsy %>%
   drop_na() %>%
   filter(Income87 >0) %>%
@@ -893,7 +893,7 @@ fit11 = nlsy %>%
   lm(formula = PC1.esteem ~ Gender + logincome  + FatherEd + MotherEd + Imagazine + bmi)
 summary(fit11)
 ```
-```{r}
+```{r  message=F, echo =F}
 fit12 = nlsy %>%
   drop_na() %>%
   filter(Income87 >0) %>%
@@ -902,7 +902,7 @@ fit12 = nlsy %>%
 # summary(fit12)
 ```
 
-```{r}
+```{r  message=F, echo =F}
 fit13 = nlsy %>%
   drop_na() %>%
   filter(Income87 >0) %>%
@@ -911,7 +911,7 @@ fit13 = nlsy %>%
 # summary(fit13)
 ```
 
-```{r}
+```{r  message=F, echo =F}
 fit14 = nlsy %>%
   drop_na() %>%
   filter(Income87 >0) %>%
@@ -920,7 +920,7 @@ fit14 = nlsy %>%
 # summary(fit14)
 ```
 
-```{r}
+```{r  message=F, echo =F}
 fit15 = nlsy %>%
   drop_na() %>%
   filter(Income87 >0) %>%
@@ -938,7 +938,7 @@ _fit15 seems to be the best model so far_
   _We are choosing ``fit15`` as our best model given the relatively higher R^2 value and features spanning home envrionment and personal demographics which have a significant linear relationship with PC1._
   
 Residual Plot 
-```{r}
+```{r  message=F, echo =F}
 plot(fit15$fitted, fit15$residuals, 
      pch  = 16,
      main = "residual plot")
@@ -949,7 +949,7 @@ _There appear to be heteroscedasticity within the model as the variance is not e
 
 Check for Normality
   
-```{r}
+```{r  message=F, echo =F}
 qqnorm(fit15$residuals)
   qqline(fit15$residuals, lwd=4, col="blue")
 ```
@@ -1458,19 +1458,19 @@ x
 
 Create a corresponding output vector for $\mathbf{y}$ according to the equation given above. Use `set.seed(1)`. Then, create a scatterplot with $(x_i, y_i)$ pairs. Base R plotting is acceptable, but if you can, please attempt to use `ggplot2` to create the plot. Make sure to have clear labels and sensible titles on your plots.
 
-```{r}
+```{r  message=F, echo =F}
 set.seed(1)
 y = 1 + 1.2*x + rnorm(40, 0, 2)
 y
 ```
 
-```{r}
+```{r  message=F, echo =F}
 sim.data = data.frame(x, y)
 sim.data
 ```
 
 
-```{r}
+```{r  message=F, echo =F}
 sim.data.plot = ggplot(sim.data) + 
   geom_point(aes(x, y)) + 
   labs(title = "Simulated Data", x = "x", y = "y")
@@ -1484,7 +1484,7 @@ sim.data.plot
 ### Understand the model
 i. Find the LS estimates of $\boldsymbol{\beta}_0$ and $\boldsymbol{\beta}_1$, using the `lm()` function. What are the true values of $\boldsymbol{\beta}_0$ and $\boldsymbol{\beta}_1$? Do the estimates look to be good? 
 
-```{r}
+```{r  message=F, echo =F}
 fit0 = sim.data %>%
   lm(formula = y ~ x)
 summary(fit0)
@@ -1508,7 +1508,7 @@ ii. What is the 95% confidence interval for $\boldsymbol{\beta}_1$? Does this co
 _The 95% confidence interval for $\boldsymbol{\beta}_1$ is 0.906 +/- 0.959 = [-0.053, 1.865]. This confidence interval does capture the true $\boldsymbol{\beta}_1$ of 1.2. If we had more samples (higher N), this confidence interval would become narrower and more precise around the true value._
 
 iii. Overlay the LS estimates and the true lines of the mean function onto a copy of the scatterplot you made above.
-```{r}
+```{r  message=F, echo =F}
 sim.data.plot2 = ggplot(sim.data, aes(x, y)) + 
   geom_point() + 
   labs(title = "Simulated Data", x = "x", y = "y") + 
@@ -1525,7 +1525,7 @@ sim.data.plot2
 
 i. Provide residual plot where fitted $\mathbf{y}$-values are on the x-axis and residuals are on the y-axis. 
 
-```{r}
+```{r  message=F, echo =F}
 plot(fit0$fitted, fit0$residuals, 
      pch  = 16,
      main = "residual plot")
@@ -1535,7 +1535,7 @@ abline(h=0, lwd=4, col="red")
 
 ii. Provide a normal QQ plot of the residuals.
 
-```{r}
+```{r  message=F, echo =F}
 qqnorm(fit0$residuals)
   qqline(fit0$residuals, lwd=4, col="blue")
 ```
@@ -1544,7 +1544,7 @@ qqnorm(fit0$residuals)
 iii. Comment on how well the model assumptions are met for the sample you used. 
 _We observe relatively favorable homoscedastic data as well as quantiles which mostly follow a normal reference line. Another way to qualitatively check for normality is with a histogram._
 
-```{r}
+```{r  message=F, echo =F}
 set.seed(1)
 sim.data %>%
   ggplot() + 
@@ -1563,7 +1563,7 @@ _From this we can see the data is relatively normal and most likely follows line
 This part aims to help you understand the notion of sampling statistics and confidence intervals. Let's concentrate on estimating the slope only.  
 
 Generate 100 samples of size $n = 40$, and estimate the slope coefficient from each sample. We include some sample code below, which should guide you in setting up the simulation. Note: this code is easier to follow but suboptimal; see the appendix for a more optimal R-like way to run this simulation.
-```{r}
+```{r  message=F, echo =F}
 # Inializing variables. Note b_1, upper_ci, lower_ci are vectors
 x <- seq(0, 1, length = 40) 
 n_sim <- 100              # number of simulations
@@ -1591,7 +1591,7 @@ rm(se, b1, upper_ci, lower_ci, x, n_sim, t_star, lse, lse_out)
 i. Summarize the LS estimates of $\boldsymbol{\beta}_1$ (stored in `results$b1`). Does the sampling distribution agree with theory? 
 
 
-```{r}
+```{r  message=F, echo =F}
 summary(results$b1)
 ```
 
@@ -1599,24 +1599,24 @@ _The mean of the sampling distribution of LS estimates for $\boldsymbol{\beta}_1
 
 ii.  How many of your 95% confidence intervals capture the true $\boldsymbol{\beta}_1$? Display your confidence intervals graphically. 
 
-```{r}
+```{r  message=F, echo =F}
 CIs = cbind(results$lower_ci, results$upper_ci)
 ```
 
 
 _Given that this is the 95% confidnce interval, we expect that 95% of our 100 confidence intervals will capture the true value of $\boldsymbol{\beta}_1$ _
 
-```{r}
+```{r  message=F, echo =F}
 mean(CIs[, 1] <= 1.2 & 1.2 <= CIs[, 2])
 ```
 
 _Currently we see this is closer to 94%, which is relatively close. Whis intervals don't cover the treu value?_
 
-```{r}
+```{r  message=F, echo =F}
 ID = which(!(CIs[, 1] <= 1.2 & 1.2 <= CIs[, 2]))
 ```
 
-```{r}
+```{r  message=F, echo =F}
 plot(0, 
      xlim = c(-5,5), 
      ylim = c(1, 100), 
