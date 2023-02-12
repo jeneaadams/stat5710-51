@@ -1,8 +1,8 @@
 ---
 title: "Modern Data Mining, HW 2"
 author:
-- Group Jenea Adams
-- Group Annan Timon
+- Group Member 1 - Jenea Adams
+- Group Member 2 - Annan Timon
 date: 'Due: 11:59 PM,  Sunday, 02/12'
 output:
   pdf_document:
@@ -24,6 +24,7 @@ output:
 urlcolor: blue
 ---
 
+# Packages
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, results = "hide", fig.width=8, fig.height=4)
@@ -34,6 +35,7 @@ knitr::opts_chunk$set(echo = TRUE, results = "hide", fig.width=8, fig.height=4)
 ## if knit to PDF, set as "latex"
 ## if knit to HTML, set as "html"
 # We made it automatic:
+
 output_format <- ifelse(is.null(knitr::opts_knit$get("rmarkdown.pandoc.to")),
                         "text", knitr::opts_knit$get("rmarkdown.pandoc.to"))
 
@@ -41,8 +43,9 @@ options(scipen = 0, digits = 3)  # controls base R output
 if(!require('pacman')) {
   install.packages('pacman')
 }
-pacman::p_load(dplyr, knitr, ggplot2, gridExtra, ggrepel, leaps, car, tidyverse,
-               contrast, sandwich, stargazer, ISLR,factoextra,cluster, data.table)
+pacman::p_load(ISLR, tidyverse, data.table, ggpubr, ggbiplot, ggplot2, factoextra,
+               dplyr, knitr, gridExtra, ggrepel, leaps, car, tidyverse,
+               stargazer, cluster, ) # add the packages needed
 ```
 
 
@@ -78,6 +81,7 @@ For supervised learning, we try to find out how does a set of predictors relate 
 - `brca_subtype.csv`
 - `brca_x_patient.csv`
 
+
 # Case study 1: Self-seteem 
 
 Self-esteem generally describes a person's overall sense of self-worthiness and personal value. It can play significant role in one's motivation and success throughout the life. Factors that influence self-esteem can be inner thinking, health condition, age, life experiences etc. We will try to identify possible factors in our data that are related to the level of self-esteem. 
@@ -85,6 +89,14 @@ Self-esteem generally describes a person's overall sense of self-worthiness and 
 In the well-cited National Longitudinal Study of Youth (NLSY79), it follows about 13,000 individuals and numerous individual-year information has been gathered through surveys. The survey data is open to public [here](https://www.nlsinfo.org/investigator/). Among many variables we assembled a subset of variables including personal demographic variables in different years, household environment in 79, ASVAB test Scores in 81 and Self-Esteem scores in 81 and 87 respectively. 
 
 The data is store in `NLSY79.csv`.
+
+```{r}
+nlsy = read.csv("data/NLSY79.csv", header = T)
+```
+
+```{r}
+# head(nlsy)
+```
 
 
 
@@ -146,73 +158,810 @@ The following 10 questions are answered as 1: strongly agree, 2: agree, 3: disag
 
 ## Data preparation
 
-Load the data. Do a quick EDA to get familiar with the data set. Pay attention to the unit of each variable. Are there any missing values? 
+_Load the data. Do a quick EDA to get familiar with the data set. Pay attention to the unit of each variable. Are there any missing values?_
 
 ```{r quick skim of the data}
 # temp <- read.csv('data/NLSY79.csv', header = T, stringsAsFactors = F)
 # # missing values? real variables vs. factors? are varable values reasonable?
-# str(temp)
-# summary(temp)
-# levels(as.factor(temp$Job05))
-# table(as.factor(temp$Job05))
+str(nlsy)
+summary(nlsy)
+
+levels(as.factor(nlsy$Job05))
+table(as.factor(nlsy$Job05))
 ```
+
+```{r}
+names(nlsy)
+```
+
+### Subject demographics 
+```{r gender pie chart}
+gender_pie = nlsy %>%
+  ggplot(aes(x = "", y = Gender, fill = Gender)) + 
+  geom_bar(stat ="identity", width = 1) + 
+  coord_polar("y", start=0) + 
+  theme_void()
+
+gender_pie
+```
+
+
+```{r education histogram}
+edu_hist = nlsy %>%
+  ggplot() + 
+  geom_histogram(aes(x = Education05), bins = 15, color ="white", fill = "orange") + 
+  labs(title = "Historgram of Years of Education completed by 2005", subtitle = "Mean Education Level shown by red line", x = "Years of Education", y = "frequency") +
+  geom_vline(aes(xintercept=mean(Education05)),
+             color = "red", linetype = "dashed", size = 1)
+
+edu_hist
+```
+
+
+
+```{r barplot of 2005 jobs}
+job_bar = nlsy %>%
+  # filter(!Job05=="") %>%
+  ggplot(aes(x = Job05, fill = Job05)) + 
+  geom_bar() + 
+  theme(legend.position = "none",
+        # adjust for margins around the plot; t: top; r: right; b: bottom; l: left, 
+        axis.text.x = element_text(angle = -90, vjust = 0, hjust = 0))
+
+job_bar
+```
+
+
+paired visualization of income in 87 and income in 05 
+```{r}
+
+nlsy %>%
+  filter(!Income87 == "" & !Income05 == "" & !Job05 =="") %>%
+  ggpaired(cond1 = "Income87", cond2 = "Income05", color = "condition",line.color = "gray", line.size = 0.1, palette = "npg") + 
+  labs(title = "Income in 1987 and 2005 for paired subjects with a job in 2005")
+
+```
+
+Family income to 87 and 2005 income + gender + weight
+
+```{r}
+nlsy %>%
+  ggplot(aes(x=Income05, y = FamilyIncome78, col = Gender, size = Weight05, shape = , alpha = 0.3)) + 
+  geom_point()
+
+```
+
+
+  
+```{r}
+nlsy %>%
+  ggplot(aes(x=MotherEd, y = FatherEd, col = Gender, size = Income05 , alpha = 0.3)) + 
+  geom_point()
+
+```
+  
+```{r}
+nlsy %>%
+  ggplot(aes(x=Income05, y = FamilyIncome78, col = Gender, size = Weight05, shape = as.factor(Ilibrary) , alpha = 0.3)) + 
+  geom_point()
+
+```
+
+
+_How many people believe they are a person of worth in 87, and how is this affected by gender and income in 05?_
+
+```{r}
+nlsy %>%
+  ggplot(aes(x = Esteem87_1, fill = Gender)) +
+  geom_bar(position = "dodge") +
+  # facet_grid(as.factor(Inewspaper)~., scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+  ggtitle("")
+```
+
+
+_by parents reading the newspaper_
+```{r}
+
+nlsy %>%
+  ggplot(aes(x = Esteem87_1, fill = Gender)) +
+  geom_bar(position = "dodge") +
+  facet_grid(as.factor(Inewspaper)~., scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+  ggtitle("")
+```
+
+_feeling useless: 1: strongly agree, 2: agree, 3: disagree, 4: strongly disagree_
+```{r}
+nlsy %>%
+  ggplot(aes(x = Esteem87_9, fill = Gender)) +
+  geom_bar(position = "dodge") +
+  facet_grid(as.factor(Inewspaper)~., scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+  ggtitle("")
+```
+
+```{r}
+nlsy %>%
+  ggplot(aes(x = Esteem87_9, fill = Gender)) +
+  geom_bar(position = "dodge") +
+  # facet_grid(as.factor(Inewspaper)~., scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+  ggtitle("")
+```
+
+
+_Of those who agreed with feeling useless in 87, what was their income in 87 and weight_
+```{r}
+nlsy %>%
+  filter(Esteem87_9 <=2) %>%
+  ggplot(aes(x=Income87, y = Weight05, col = Gender, size = FamilyIncome78, alpha = 0.3)) + 
+  geom_point() + 
+  labs(title = "Income in 87 wrt Family Income, Gender, and Weight")
+
+```
+
+
+### Missing values 
+```{r}
+missing.nlsy = nlsy %>%
+  summarise(nas = sum(is.na(nlsy)),
+            blanks = sum(nlsy == ""))
+missing.nlsy
+```
+
+_From looking at the jobs barplots, it's posisble those with missing values could come from missing job types. These people may be unemployed, which is different than having a job that was "uncodeable". Therefore, I'm deciding not to remove thise entries as it could still be informative given there are several individuals who report income as 0_
+
 
 
 ## Self esteem evaluation
 
 Let concentrate on Esteem scores evaluated in 87. 
 
+The following 10 questions are answered as 1: strongly agree, 2: agree, 3: disagree, 4: strongly disagree
+
+* Esteem 1: “I am a person of worth”
+* Esteem 2: “I have a number of good qualities”
+* Esteem 3: “I am inclined to feel like a failure”
+* Esteem 4: “I do things as well as others”
+* Esteem 5: “I do not have much to be proud of”
+* Esteem 6: “I take a positive attitude towards myself and others”
+* Esteem 7: “I am satisfied with myself”
+* Esteem 8: “I wish I could have more respect for myself”
+* Esteem 9: “I feel useless at times”
+* Esteem 10: “I think I am no good at all”
+_
+```{r}
+labels = c("person of worth","good qualities", "feel like a failure", "do things as well as others", "not proud of much", "positive toward self & others", "satisfied w/self", "wish more self-respect", "feel useless", "I'm no good")
+```
+
+
 0. First do a quick summary over all the `Esteem` variables. Pay attention to missing values, any peculiar numbers etc. How do you fix problems discovered if there is any? Briefly describe what you have done for the data preparation. 
+
+```{r}
+nlsy %>%
+  select(contains("Esteem87"), ) %>%
+  summarise(nas = sum(is.na(.)),
+            blanks = sum(. == ""))
+
+data.esteem = nlsy %>%
+  select(contains("Esteem87"))
+```
+_There appear to be no blanks or NAs_
+
 
 1. Reverse Esteem 1, 2, 4, 6, and 7 so that a higher score corresponds to higher self-esteem. (Hint: if we store the esteem data in `data.esteem`, then `data.esteem[,  c(1, 2, 4, 6, 7)]  <- 5 - data.esteem[,  c(1, 2, 4, 6, 7)]` to reverse the score.)
 
+```{r}
+data.esteem[,  c(1, 2, 4, 6, 7)]  = 5 - data.esteem[,  c(1, 2, 4, 6, 7)]
+
+```
+
+
 2. Write a brief summary with necessary plots about the 10 esteem measurements.
 
-3. Do esteem scores all positively correlated? Report the pairwise correlation table and write a brief summary.
+```{r}
+# data.esteem
+```
+
+```{r}
+
+```
+```{r}
+# data.esteem%>%
+#   ggplot(aes(x = Esteem87_1, fill = Gender)) +
+#   geom_bar(position = "dodge") +
+#   facet_grid(as.factor(Inewspaper)~., scales = "free_y") +
+#   theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+#   ggtitle("")
+```
+
+
+3. Are esteem scores all positively correlated? Report the pairwise correlation table and write a brief summary.
+
+```{r}
+plot(data.esteem)
+```
+
+
+```{r}
+# corrplot::corrplot(data.esteem, is.corr = F)
+```
+
 
 4. PCA on 10 esteem measurements. (centered but no scaling)
 
     a) Report the PC1 and PC2 loadings. Are they unit vectors? Are they orthogonal? 
+    
+```{r centering}
+data.esteem.centered = scale(data.esteem, center = T, scale = F)
+data.esteem.centered <- as.data.frame(data.esteem.centered)
+
+```
+    
+    
+```{r plotting old and new means and SDs}
+round(sapply(data.esteem.centered,mean), 3) # col mean with 3 decimals
+sapply(data.esteem, mean) # col mean
+sapply(data.esteem.centered, sd) #col sd
+sapply(data.esteem, sd) # col sd
+```
+    
+  _Here we see the new mean centered at 0 but the standard deviation is the same as the uncentered data_
+    
+```{r}
+pc.data.esteem.centered = data.esteem.centered %>%
+  prcomp(scale.= F)
+
+pc.data.esteem.centered
+```
+```{r}
+summary(pc.data.esteem.centered)
+```
+```{r}
+loadings.esteem = data.frame(pc1 = abs(pc.data.esteem.centered$rotation[,1]),
+                      pc2 = abs(pc.data.esteem.centered$rotation[,2]))
+
+# knitr::kable(loadings.esteem)
+loadings.esteem = pc.data.esteem.centered$rotation
+loadings.esteem
+```
+
+
+```{r}
+pc.data.esteem.centered$rotation
+```
+    
+```{r}
+round(t(loadings.esteem) %*% loadings.esteem) 
+```
+ 
+```{r}
+colSums((loadings.esteem)^2)
+```
+ 
+  _All loadings are perpendicular and with unit 1_
+
+  
   
     b) Are there good interpretations for PC1 and PC2? (If loadings are all negative, take the positive loadings for the ease of interpretation)
+    
+    
+  Loadings determine the contribution of each variable to the PCs.    
+  PC1 loadings are all positively correlated with the esteem features, given their positive loadings.
+  PC2 had loadings which are mostly negatively correlated with the esteem features, besides the final three.
+  
+  These loadings could indicate that the 6 loadings in PC1 with values over 0.300 contribute more to PC1. Also Esteem87_9's loading in PC2 is one of three positively correlated with PC2 and also has the strongest contribution to the PC. 
+    
   
     c) How is the PC1 score obtained for each subject? Write down the formula.
     
+  PC1 = 0.235 x Esteem87_1 + 0.244 x Esteem87_2 + 0.279 x Esteem87_3 + 0.261 x Esteem87_4 + 0.312 x Esteem87_5 + 0.313 x Esteem87_6 + 0.299 x Esteem87_7 + 0.393 x Esteem87_8 + 0.398 x Esteem87_9 + 0.376 x Esteem87_10
+    
     d) Are PC1 scores and PC2 scores in the data uncorrelated? 
+  
+```{r}
+round(cov(pc.data.esteem.centered$x), 4) 
+```
+  
+```{r}
+pairs(pc.data.esteem.centered$x, xlim=c(-4, 4), ylim=c(-4, 4), col=rainbow(6), pch=16)
+```
+  
+  _There appears to be no correlation between the PCs_
+    
     
     e) Plot PVE (Proportion of Variance Explained) and summarize the plot. 
+    
+```{r}
+round((pc.data.esteem.centered$sdev)^2, 2)
+```
+```{r}
+summary(pc.data.esteem.centered)$importance
+```
+```{r}
+plot(pc.data.esteem.centered)
+```
+    
+    
+  _PC1 captures a large percetnage of the variance and each subsequent princial component explaines lessa variance than the preceeding one._
+  
+```{r}
+plot(summary(pc.data.esteem.centered)$importance[2, ],  # PVE
+     ylab="PVE",
+     xlab="Number of PCs",
+     pch = 16, 
+     main="Scree Plot of PVE for AFQT")
+```
+  
+  _PC1 captures about 40% of the variance and PC2 about 10%_
+  
   
     f) Also plot CPVE (Cumulative Proportion of Variance Explained). What proportion of the variance in the data is explained by the first two principal components?
+    
+```{r}
+plot(summary(pc.data.esteem.centered)$importance[3, ], pch=16,
+     ylab="Cumulative PVE",
+     xlab="Number of PCs",
+     main="Scree Plot of Cumulative PVE for AFQT")
+```
+    
+  _Cumulatively, about 60% of the variance in this data is explained by the first 2 PCs_
   
     g) PC’s provide us with a low dimensional view of the self-esteem scores. Use a biplot with the first two PC's to display the data.  Give an interpretation of PC1 and PC2 from the plot. (try `ggbiplot` if you could, much prettier!)
+    
+```{r}
+library("devtools")
+install_github("kassambara/factoextra")
+devtools::install_github("sinhrks/ggfortify")
+library(ggfortify)
+```
+    
+    
+```{r}
+# fviz_pca_biplot(pc.data.esteem.centered)
+```
+    
+```{r}
+autoplot(pc.data.esteem.centered, label = TRUE, loadings.label = TRUE)
+```
+    
+  _This biplot shows that the PC1 loadings are similarin magnitudes and signs. It also shows that PC2 shoudl capture the differences in responses to questions 8, 9 and 10 from the other questions. This also means questions 8, 9, and 10 are more correlated than the other questions (features)  ._
 
 5. Apply k-means to cluster subjects on the original esteem scores
 
-    a) Find a reasonable number of clusters using within sum of squared with elbow rules.
+    a) Find a reasonable number of clusters using within sum of squares with elbow rules.
+    
+```{r}
+wss =  function(data.esteem, k) {
+kmeans(data.esteem, k, nstart = 10)$tot.withinss
+}
+
+k.values = 2:15
+
+wss_values = sapply(k.values,
+                    function(k) kmeans(data.esteem[,-1], centers = k)$tot.withinss)
+
+plot(k.values, wss_values,
+     type="b", pch = 19, frame = FALSE,
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+```{r}
+library(factoextra)
+fviz_nbclust(data.esteem[,-1], kmeans, method = "wss")
+```
     
     b) Can you summarize common features within each cluster?
+```{r}
+# system.time({esteem.kmeans = kmeans(x = data.esteem, 2)})
+esteem.kmeans = kmeans(x = data.esteem, 2)
+# names(esteem.kmeans)
+# summary(esteem.kmeans)
+print(esteem.kmeans)
+
+```
+```{r}
+head(esteem.kmeans$cluster, 4)
+```
+  
+```{r}
+esteem.kmeans$size
+```
+  
+```{r}
+fviz_cluster(esteem.kmeans, data = data.esteem)
+```
+  
     
-    c) Can you visualize the clusters with somewhat clear boundaries? You may try different pairs of variables and different PC pairs of the esteem scores.
+```{r}
+data.esteem %>%
+  as_tibble() %>%
+  mutate(cluster = esteem.kmeans$cluster,
+         question = row.names(data.esteem)) %>%
+  ggplot(aes(Esteem87_1, Esteem87_10, color = factor(cluster), label = question)) +
+  geom_text()
+```
+    _this shows that those with the highest self esteem are mostly in cluster 1 while others are in cluster 2. These are people who agree with a positive statement and disagree with a negative stateent._
+    
+    c) Can you visualize the clusters with somewhat clear boundaries? You may try different pairs of variables and different PC pairs of the esteem scores. 
+    
+```{r}
+as.data.frame(pc.data.esteem.centered$x) %>% 
+  mutate(cluster = esteem.kmeans$cluster,
+         question = row.names(data.esteem)) %>%
+  ggplot(aes(x=PC1, y=PC2)) +    # Try other PCs vs. PC1, any patterns?
+  geom_point(aes(color= as.factor(cluster)))+
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  ggtitle("PC2 vs. PC1 for Self Esteem ") +
+  theme_bw()
+```
+    
+    
+```{r}
+as.data.frame(pc.data.esteem.centered$x) %>% 
+  mutate(cluster = esteem.kmeans$cluster,
+         question = row.names(data.esteem)) %>%
+  ggplot(aes(x=PC1, y=PC3)) +    # Try other PCs vs. PC1, any patterns?
+  geom_point(aes(color= as.factor(cluster)))+
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  ggtitle("PC3 vs. PC1 for Self Esteem ") +
+  theme_bw()
+```
+    
+```{r}
+as.data.frame(pc.data.esteem.centered$x) %>% 
+  mutate(cluster = esteem.kmeans$cluster,
+         question = row.names(data.esteem)) %>%
+  ggplot(aes(x=PC1, y=PC4)) +    # Try other PCs vs. PC1, any patterns?
+  geom_point(aes(color= as.factor(cluster)))+
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  ggtitle("PC4 vs. PC1 for Self Esteem ") +
+  theme_bw()
+```
+    
+```{r}
+as.data.frame(pc.data.esteem.centered$x) %>% 
+  mutate(cluster = esteem.kmeans$cluster,
+         question = row.names(data.esteem)) %>%
+  ggplot(aes(x=PC1, y=PC5)) +    # Try other PCs vs. PC1, any patterns?
+  geom_point(aes(color= as.factor(cluster)))+
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  ggtitle("PC5 vs. PC1 for Self Esteem ") +
+  theme_bw()
+```
+    
+```{r}
+data.esteem %>%
+  as_tibble() %>%
+  mutate(cluster = esteem.kmeans$cluster,
+         question = row.names(data.esteem)) %>%
+  ggplot(aes(Esteem87_8, Esteem87_9, color = factor(cluster), label = question)) +
+  geom_text()
+```
+    
+```{r}
+data.esteem %>%
+  as_tibble() %>%
+  mutate(cluster = esteem.kmeans$cluster,
+         question = row.names(data.esteem)) %>%
+  ggplot(aes(Esteem87_3, Esteem87_9, color = factor(cluster), label = question)) +
+  geom_text()
+```
+    
 
 
 6. We now try to find out what factors are related to self-esteem? PC1 of all the Esteem scores is a good variable to summarize one's esteem scores. We take PC1 as our response variable. 
+
+```{r}
+nlsy = nlsy %>%
+  mutate(PC1.esteem = pc.data.esteem.centered$x[,1])
+```
+
 
     a) Prepare possible factors/variables:
     
       - EDA the data set first. 
 
       - Personal information: gender, education (05), log(income) in 87, job type in 87. Weight05 (lb) and HeightFeet05 together with Heightinch05. One way to summarize one's weight and height is via Body Mass Index which is defined as the body mass divided by the square of the body height, and is universally expressed in units of kg/m². Note, you need to create BMI first. Then may include it as one possible predictor. 
+      
+
+```{r}
+nlsy = nlsy %>%
+  mutate(ft2m = HeightFeet05 / 3.281,
+         in2m = HeightFeet05 / 39.37,
+         totalheight = ft2m + in2m,
+         kg = Weight05 / 2.205,
+         bmi = kg / (totalheight^2))
+
+head(nlsy)
+```
+      
           
       - Household environment: Imagazine, Inewspaper, Ilibrary, MotherEd, FatherEd, FamilyIncome78. Do set indicators `Imagazine`, `Inewspaper` and `Ilibrary` as factors. 
+```{r}
+nlsy$Imagazine = as.factor(nlsy$Imagazine)
+nlsy$Inewspaper = as.factor(nlsy$Inewspaper)
+nlsy$Ilibrary = as.factor(nlsy$Ilibrary)
+
+head(nlsy)
+```
+      
     
       - You may use PC1 of ASVAB as level of intelligence
-        
-    b)   Run a few regression models between PC1 of all the esteem scores and suitable variables listed in a). Find a final best model with your own criterion. 
+      **Variables Related to ASVAB test Scores in 1981**
 
-      - How did you land this model? Run a model diagnosis to see if the linear model assumptions are reasonably met. 
+Test | Description
+--------- | ------------------------------------------------------
+AFQT | percentile score on the AFQT intelligence test in 1981 
+Coding | score on the Coding Speed test in 1981
+Auto | score on the Automotive and Shop test in 1981
+Mechanic | score on the Mechanic test in 1981
+Elec | score on the Electronics Information test in 1981
+Science | score on the General Science test in 1981
+Math | score on the Math test in 1981
+Arith | score on the Arithmetic Reasoning test in 1981
+Word | score on the Word Knowledge Test in 1981
+Parag | score on the Paragraph Comprehension test in 1981
+Numer | score on the Numerical Operations test in 1981
+
+```{r}
+asvab = nlsy %>%
+  select(AFQT, Coding, Auto, Mechanic, Elec, Science, Number)
+
+# asvab%>%
+#   mutate(word_centered = `Word` - mean(Word),
+#          parag_centered = `Parag` - mean(Parag))
+# # Making word and parag by centering each score.
+# 
+# # or use scale() to center the data
+# parag.word.centered <- scale(AFQT.sub[, c("Parag", "Word")], 
+#                                            center = T, scale = F)
+# parag.word.centered <- as.data.frame(parag.word.centered)
+
+asvab = as.data.frame(scale(asvab, center = T, scale = T))
+```
+      
+```{r}
+pc.asvab = prcomp(asvab, scale = T)
+
+names(pc.asvab)
+
+pc.asvab.loading = pc.asvab$rotation
+pc.asvab.loading
+```
+
+```{r}
+head(pc.asvab$x)
+```
+```{r}
+
+```
+
+```{r}
+plot(summary(pc.asvab)$importance[2, ],  # PVE
+     ylab="PVE",
+     xlab="Number of PCs",
+     pch = 16, 
+     main="Scree Plot of PVE for ASVAB")
+```
+
+```{r}
+autoplot(pc.asvab, label = TRUE, loadings.label = TRUE)
+```
+
+```{r}
+as.data.frame(pc.asvab$x) %>% 
+  ggplot(aes(x=PC1, y=PC2)) +
+  geom_point()+
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  ggtitle("PC2 vs. PC1 for ASVAB") +
+  theme_bw()
+```
+
+      
+```{r}
+asvab.nlsy.PC.Scores = cbind(scale(asvab, scale = TRUE), pc.asvab$x)
+arrange(as.data.frame(asvab.nlsy.PC.Scores), desc(PC1)) %>%
+     head()
+```
+```{r}
+nlsy = nlsy %>%
+  mutate(intelligence = pc.asvab$x[,1])
+
+head(nlsy)
+```
+      
+      
+### regression models
+  
+    b)   Run a few regression models between PC1 of all the esteem scores and suitable variables listed in a). Find a final best model with your own criterion. 
+    
+```{r}
+nlsy$Gender = as.factor(nlsy$Gender)
+```
+    
+_bmi_
+```{r}
+fit1 = lm(data = nlsy, formula = PC1.esteem ~ bmi)
+summary(fit1)
+```
+_intelligence_
+```{r}
+fit2 = nlsy %>%
+  lm(formula = PC1.esteem ~ intelligence)
+summary(fit2)
+```
+    
+  _Gender_
+```{r}
+fit3 = nlsy %>%
+  lm(formula = PC1.esteem ~ Gender)
+summary(fit3)
+```
+ _Since we saw slight diffferences in esteem scores across gender and newspaper indicators, we can run a model against these features _
+```{r}
+fit4a = nlsy %>%
+  lm(formula = PC1.esteem ~ Inewspaper)
+summary(fit4a)
+
+```
+  
+```{r}
+fit4b = nlsy %>%
+  lm(formula = PC1.esteem ~ Inewspaper + Gender)
+summary(fit4b)
+```
+  _These results may warrant further investigation into a potential linear relationship between Males, newspaper usage at home, and esteem scores._
+  
+
+Personal information: gender, education (05), log(income) in 87, job type in 87.
+
+
+
+_combing Personal info_
+
+```{r}
+fit5 = nlsy %>%
+  lm(formula = PC1.esteem ~ Gender + Education05)
+summary(fit5)
+```
+
+```{r}
+fit6 = nlsy %>%
+  drop_na() %>%
+  filter(Income87 >0) %>%
+  mutate(logincome = log(Income87)) %>%
+  lm(formula = PC1.esteem ~ Gender + Education05 + logincome)
+summary(fit6)
+```
+_Here we see the effect of Male gender become insignificant when we control for log(income) in 87._
+
+```{r}
+fit7 = nlsy %>%
+  drop_na() %>%
+  lm(formula = PC1.esteem ~ Gender + Education05 + Job05)
+summary(fit7)
+```
+
+_These models are only explaining less than 1% of the variation in the esteem data, however. Let's look at household environment features_
+
+    - Household environment: Imagazine, Inewspaper, Ilibrary, MotherEd, FatherEd, FamilyIncome78. Do set indicators `Imagazine`, `Inewspaper` and `Ilibrary` as factors. 
+
+```{r}
+fit8 = nlsy %>%
+  drop_na() %>%
+  lm(formula = PC1.esteem ~ Imagazine + Inewspaper + Ilibrary + MotherEd + FatherEd + FamilyIncome78)
+summary(fit8)
+
+```
+
+```{r}
+fit9 = nlsy %>%
+  drop_na() %>%
+  lm(formula = PC1.esteem ~ Inewspaper + MotherEd + Ilibrary + FamilyIncome78)
+summary(fit9)
+```
+
+
+_Combining more personal info with home environment_ 
+
+```{r}
+fit10 = nlsy %>%
+  drop_na() %>%
+  filter(Income87 >0) %>%
+  mutate(logincome = log(Income87)) %>%
+  lm(formula = PC1.esteem ~ Gender + Education05 + logincome + Inewspaper + MotherEd + FatherEd + Ilibrary + FamilyIncome78)
+summary(fit10)
+
+```
+
+
+```{r}
+fit11 = nlsy %>%
+  drop_na() %>%
+  filter(Income87 >0) %>%
+  mutate(logincome = log(Income87)) %>%
+  lm(formula = PC1.esteem ~ Gender + logincome  + FatherEd + MotherEd + Imagazine + bmi)
+summary(fit11)
+```
+```{r}
+fit12 = nlsy %>%
+  drop_na() %>%
+  filter(Income87 >0) %>%
+  mutate(logincome = log(Income87)) %>%
+  lm(formula = PC1.esteem ~ Gender + logincome + MotherEd + Job05 + bmi + intelligence + FamilyIncome78)
+summary(fit12)
+```
+
+```{r}
+fit13 = nlsy %>%
+  drop_na() %>%
+  filter(Income87 >0) %>%
+  mutate(logincome = log(Income87)) %>%
+  lm(formula = PC1.esteem ~ Gender + logincome + MotherEd + Inewspaper + Imagazine + Ilibrary + Job05 + bmi + intelligence + FamilyIncome78)
+summary(fit13)
+```
+
+```{r}
+fit14 = nlsy %>%
+  drop_na() %>%
+  filter(Income87 >0) %>%
+  mutate(logincome = log(Income87)) %>%
+  lm(formula = PC1.esteem ~ Gender + logincome + MotherEd + Education05 + Inewspaper + Imagazine + Ilibrary + Job05 + bmi + intelligence + FamilyIncome78)
+summary(fit14)
+```
+
+```{r}
+fit15 = nlsy %>%
+  drop_na() %>%
+  filter(Income87 >0) %>%
+  mutate(logincome = log(Income87)) %>%
+  lm(formula = PC1.esteem ~ Gender + logincome + MotherEd + Education05 + Inewspaper  + Job05 + bmi + intelligence + FamilyIncome78)
+summary(fit15)
+```
+
+_fit15 seems to be the best model so far_
+     
+  
+     
+      - How did you land on this model? Run a model diagnosis to see if the linear model assumptions are reasonably met. 
+      
+  _We are choosing ``fit15`` as our best model given the relatively higher R^2 value and features spanning home envrionment and personal demographics which have a significant linear relationship with PC1._
+  
+Residual Plot 
+```{r}
+plot(fit15$fitted, fit15$residuals, 
+     pch  = 16,
+     main = "residual plot")
+abline(h=0, lwd=4, col="red")
+```
+
+_There appear to be heteroscedasticity within the model as the variance is not equally distributed across all values of x. In other words, the variance does not appear to be constant, which does not support a linear model assumption._
+
+Check for Normality
+  
+```{r}
+qqnorm(fit15$residuals)
+  qqline(fit15$residuals, lwd=4, col="blue")
+```
+  
+_The points in the qqplot deviate significantly from the reference line, indicating the data may not be entirely normally distributed._
+
+_Taken together, we do not believe there is enough evidence that the assumptios of the linear model are met._
         
+### Summary
+
       - Write a summary of your findings. In particular, explain what and how the variables in the model affect one's self-esteem. 
+      
+  _Given the opposing outcomes of the linear model diagnosis which indicate the linear model assumptions may not be completely met, interpretation of this analysis should proceed with caution, as a linear model may not be the best model for predicting PC1 scores of self esteem. With that in mind, featyures such as male gender, income, education, intelligence, family income, and certain leadership-related job positions seem to have a positive correlation with higher self esteem scores. Features such as BMI and some STEM-related fields appear to have a negative correlation with high self esteem scores. Most of the persional background features such as education, gender, and income appear to have the stronge linear realtionships with self esteem scores. Together, the p-values and $\beta$ coefficients give a complementary picture of the magnitude and directions of linear relationships between these features and show that personal perceptions may be more shaped by personal demographics than family environment._
         
+
 
 
 # Case study 2: Breast cancer sub-type
@@ -243,7 +992,7 @@ brca <- brca[,-1]
 
 a) How many patients are there in each sub-type? 
     
-```{rmessage=FALSE, warning=FALSE, results='asis'}
+```{rmessage=FALSE, warning=FALSE, results='asis', echo=FALSE}
 kable(data.frame(t(summary((brca_subtype)))),
      caption = "Patients in each sub-type")
 ```
@@ -251,7 +1000,7 @@ kable(data.frame(t(summary((brca_subtype)))),
 
 b) Randomly pick 5 genes and plot the histogram by each sub-type.
     
-```{r, warning=FALSE, fig.height=10, fig.width=12}
+```{r, warning=FALSE, fig.height=10, fig.width=12, echo=FALSE}
 num_gene <- ncol(brca)
 
 # randomly select 10 gene
@@ -273,7 +1022,7 @@ brca %>%
 c) Remove gene with zero count and no variability. Then apply logarithmic transform.
     
 278 genes were removed
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 # remove genes with 0 counts
 subset_bool <-colSums(abs(brca)) != 0 & apply(brca,2,var) !=0
 sel_cols <- which(subset_bool)
@@ -289,7 +1038,7 @@ dim(brca_sub)
 
 2. Apply kmeans on the transformed dataset with 4 centers and output the discrepancy table between the real sub-type `brca_subtype` and the cluster labels.
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, results='asis', echo=FALSE}
 # system.time() get how long it runs
 # it can take several minutes.
 system.time({brca_sub_kmeans <- kmeans(x = brca_sub, 4)})
@@ -307,7 +1056,7 @@ kable(table(brca_subtype, brca_sub_kmeans$cluster))
 a) Apply PCA on the centered and scaled dataset. How many PCs should we use and why? You are encouraged to use `irlba::irlba()`.
     
 Will use 2 PCs for the centered and scaled and 4 for the centered but not scaled
-```{r centered and scaled, message=FALSE, warning=FALSE}
+```{r centered and scaled, message=FALSE, warning=FALSE, echo=FALSE}
 # center and scale the data
 brca_sub_scaled_centered <- scale(as.matrix(brca_sub), center = T, scale = T)
 brca_sub_unscaled_centered <- scale(as.matrix(brca_sub), center = T, scale = F)
@@ -330,19 +1079,19 @@ qplot(c(1:10), pve_apx) +
   geom_line()+
   xlab("Principal Component") +
   ylab("Percentage Variance Explained") +
-  ggtitle("Scree Plot")
+  ggtitle("Scree Plot Centered and Scaled")
 
 qplot(c(1:10), pve_apx_us) +
   geom_line()+
   xlab("Principal Component") +
   ylab("Percentage Variance Explained") +
-  ggtitle("Scree Plot")
+  ggtitle("Scree Plot Centered and Unscaled")
 ```
     
     
 b) Plot PC1 vs PC2 of the centered and scaled data and PC1 vs PC2 of the centered but unscaled data side by side. Should we scale or not scale for clustering process? Why? (Hint: to put plots side by side, use `gridExtra::grid.arrange()` or `ggpubr::ggrrange()` or `egg::ggrrange()` for ggplots; use `fig.show="hold"` as chunk option for base plots)
     
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
 # pc scores
 pc_score <- (svd_ret$u[, 1:10])*(svd_ret$d[1:10])
 pc_score_us <- (svd_ret_us$u[, 1:10])*(svd_ret_us$d[1:10])
@@ -377,9 +1126,9 @@ grid.arrange(scaled_centered, unscaled_centered, ncol = 2)
 
 a) Use the first 4 PCs of the centered and unscaled data and apply kmeans. Find a reasonable number of clusters using within sum of squared with the elbow rule.
     
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 # elbow methodfor optimal number of clusters
-fviz_nbclust(pc_score_us[, 1:4], kmeans, method = "wss")
+pca_elbow <- fviz_nbclust(pc_score_us[, 1:4], kmeans, method = "wss")
 
 # 4 clusters
 kmean_unscaled <- kmeans(x = pc_score_us[, 1:4], 3)
@@ -388,13 +1137,13 @@ kmean_unscaled <- kmeans(x = pc_score_us[, 1:4], 3)
     
 b) Choose an optimal cluster number and apply kmeans. Compare the real sub-type and the clustering label as follows: Plot scatter plot of PC1 vs PC2. Use point color to indicate the true cancer type and point shape to indicate the clustering label. Plot the kmeans centroids with black dots. Summarize how good is clustering results compared to the real sub-type.
     
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
 centroids <- data.frame(x = kmean_unscaled$centers[,1],
                         y = kmean_unscaled$centers[,2],
                         col =levels(brca_subtype)[3],
                         cl = factor(1:3))
 
-data.table(x = pc_score_us[,1],
+kmeans_pca_plot <- data.table(x = pc_score_us[,1],
                 y = pc_score_us[,2],
                 col = as.factor(brca_subtype),
                 cl = as.factor(kmean_unscaled$cluster)) %>%
@@ -407,18 +1156,21 @@ data.table(x = pc_score_us[,1],
   ylab("PC2") +
   ggtitle("Unscaled and Centered")
 
+kmeans_pca_plot
+
 
 ```
     
 c) Compare the clustering result from applying kmeans to the original data and the clustering result from applying kmeans to 4 PCs. Does PCA help in kmeans clustering? What might be the reasons if PCA helps?
     
-```{r,include=FALSE}
-# # elbow methodfor optimal number of clusters
-# fviz_nbclust(brca_sub, kmeans, method = "wss")
-# 
+```{r, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
+# elbow methodfor optimal number of clusters
+orig_elbow <- fviz_nbclust(brca_sub, kmeans, method = "wss")
+
+grid.arrange(orig_elbow, pca_elbow, ncol = 2)
 
 ```
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, fig.height=10, fig.width=12, results='asis', echo=FALSE}
 kmean_brca <- kmeans(x = brca_sub, 4)
 
 centroids_brca <- data.frame(x = kmean_brca$centers[,1],
@@ -428,7 +1180,7 @@ centroids_brca <- data.frame(x = kmean_brca$centers[,1],
 
 # run kmeans on data but what x and y should you use??
 
-data.table(x = pc_score_us[,1],
+kmeans_orig_plot<- data.table(x = pc_score_us[,1],
                 y = pc_score_us[,2],
                 col = as.factor(brca_subtype),
                 cl = as.factor(kmean_brca$cluster)) %>%
@@ -439,12 +1191,14 @@ data.table(x = pc_score_us[,1],
   labs(color = "Cancer Subtype", shape = "Cluster") +
   xlab("PC1") +
   ylab("PC2") +
-  ggtitle("Unscaled and Centered")
+  ggtitle("Unscaled and Centered, kmeans Original")
+
+grid.arrange(kmeans_orig_plot, kmeans_pca_plot, ncol = 2)
 ```
     
 d) Now we have an x patient with breast cancer but with unknown sub-type. We have this patient's mRNA sequencing data. Project this x patient to the space of PC1 and PC2. (Hint: remember we remove some gene with no counts or no variablity, take log and centered) Plot this patient in the plot in iv) with a black dot. Calculate the Euclidean distance between this patient and each of centroid of the cluster. Can you tell which sub-type this patient might have? 
     
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.height=10, fig.width=12, results='asis'}
 x_patient <- read.csv("data/brca_x_patient.csv.gz", header = T) %>%
   select(which(subset_bool))
 x_patient <- log2(x_patient+1e-10)
@@ -480,7 +1234,7 @@ Original data source is here: https://archive.ics.uci.edu/ml/datasets/auto+mpg
 
 Get familiar with this dataset first. Tip: you can use the command `?ISLR::Auto` to view a description of the dataset. 
 
-```{r}
+```{r echo=FALSE}
 ?ISLR::Auto
 ```
 
@@ -490,7 +1244,7 @@ Explore the data, with particular focus on pairwise plots and summary statistics
 
 
 + mpg summary
-```{r auto mpg}
+```{r auto mpg,  echo=FALSE}
 summary(Auto$mpg)
 
 mpg_box <- ggplot(Auto, aes(y=mpg)) +
@@ -498,7 +1252,7 @@ mpg_box <- ggplot(Auto, aes(y=mpg)) +
 ```
 
 + cylinders summary
-```{r auto cylinders}
+```{r auto cylinders,  echo=FALSE}
 summary(Auto$cylinders)
 
 cyl_box <- ggplot(Auto, aes(y=cylinders)) +
@@ -506,7 +1260,7 @@ cyl_box <- ggplot(Auto, aes(y=cylinders)) +
 ```
 
 + displacement summary
-```{r auto displacement}
+```{r auto displacement,  echo=FALSE}
 summary(Auto$displacement)
 
 disp_box <- ggplot(Auto, aes(y=displacement)) +
@@ -514,7 +1268,7 @@ disp_box <- ggplot(Auto, aes(y=displacement)) +
 ```
 
 + horsepower summary
-```{r auto horsepower}
+```{r auto horsepower,  echo=FALSE}
 summary(Auto$horsepower)
 
 horse_box <- ggplot(Auto, aes(y=horsepower)) +
@@ -522,7 +1276,7 @@ horse_box <- ggplot(Auto, aes(y=horsepower)) +
 ```
 
 + weight summary
-```{r auto weight}
+```{r auto weight,  echo=FALSE}
 summary(Auto$weight)
 
 weight_box <- ggplot(Auto, aes(y=weight)) +
@@ -530,7 +1284,7 @@ weight_box <- ggplot(Auto, aes(y=weight)) +
 ```
 
 + acceleration summary
-```{r auto acceleration}
+```{r auto acceleration,  echo=FALSE}
 summary(Auto$acceleration)
 
 acc_box <- ggplot(Auto, aes(y=acceleration)) +
@@ -542,7 +1296,7 @@ acc_box <- ggplot(Auto, aes(y=acceleration)) +
     total 13 years
     from 1970-1982
 
-```{r auto origin}
+```{r auto origin,  echo=FALSE}
 length(unique(Auto$origin))
 summary(as.factor(Auto$origin))
 ```
@@ -552,7 +1306,7 @@ American: 245
 European: 68
 Japanese: 79
 
-```{r auto name, echo =FALSE}
+```{r auto name, echo =FALSE,  echo=FALSE}
 length(unique(Auto$name))
 #unique(Auto$name) %>% .[order(.)]
 ```
@@ -562,7 +1316,7 @@ length(unique(Auto$name))
     unique auto names: 301
 
 
-```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis',  echo=FALSE}
 # omit top panels to display correlation
 panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
     usr <- par("usr"); on.exit(par(usr))
@@ -578,7 +1332,7 @@ select(Auto, colnames(Auto)[!(colnames(Auto) %in% c("name"))]) %>%
       upper.panel = panel.cor, main="Scatterplot Matrix")
 ```
 
-```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis'}
+```{r echo = FALSE, warning=F,message=FALSE,fig.height=10, fig.width=12, results='asis',  echo=FALSE}
 grid.arrange(mpg_box, cyl_box, disp_box,
              horse_box, weight_box, acc_box,
              ncol = 3)
@@ -592,7 +1346,7 @@ a) Start with a simple regression of `mpg` vs. `year` and report R's `summary` o
 
 
 
-```{r message=FALSE, warning=FALSE,results='asis'}
+```{r message=FALSE, warning=FALSE,results='asis',  echo=FALSE}
 fit1 <- lm(mpg ~ year, data = Auto) 
 stargazer(fit1, align=TRUE, ci = TRUE, type = "latex") 
 
@@ -607,7 +1361,7 @@ _Year is significant at the 0.01 level. Our model is saying that for every year 
 
 
 
-```{r message=FALSE, warning=FALSE, results='asis'}
+```{r message=FALSE, warning=FALSE, results='asis',  echo=FALSE}
 fit2 <- lm(mpg ~ year + horsepower, data = Auto) 
 stargazer(fit2, align=TRUE, ci = TRUE, type = "latex") 
 ```
@@ -624,9 +1378,9 @@ d) Create a model with interaction by fitting `lm(mpg ~ year * horsepower)`. Is 
 
  
 
-```{r message=FALSE, warning=FALSE, results='asis'}
+```{r message=FALSE, warning=FALSE, results='asis',  echo=FALSE}
 fit2 <- lm(mpg ~ year * horsepower, data = Auto) 
-stargazer(fit2, align=TRUE, ci = TRUE, type = "latex") 
+stargazer(fit2, align=TRUE, ci = TRUE, type = type = output_format) 
 ```
 
 
@@ -639,7 +1393,7 @@ Remember that the same variable can play different roles! Take a quick look at t
 
 a) Fit a model that treats `cylinders` as a continuous/numeric variable. Is `cylinders` significant at the 0.01 level? What effect does `cylinders` play in this model?
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE,  echo=FALSE}
 fit3 <- lm(mpg ~ cylinders, data = Auto) 
 stargazer(fit3, align=TRUE, ci = TRUE, type = output_format) 
 ```
@@ -647,7 +1401,7 @@ _Cylinders is significant at the 0.01 level. Our model is saying that for every 
 
 b) Fit a model that treats `cylinders` as a categorical/factor. Is `cylinders` significant at the .01 level? What is the effect of `cylinders` in this model? Describe the `cylinders` effect over `mpg`. 
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE,  echo=FALSE}
 fit4 <- lm(mpg ~ factor(cylinders), data = Auto) 
 stargazer(fit4, align=TRUE, ci = TRUE, type = output_format) 
 ```
@@ -661,7 +1415,7 @@ d) Can you test the null hypothesis: fit0: `mpg` is linear in `cylinders` vs. fi
 
 _Yes you can using anova(H_0, H_1). There is strong evidence of rejecting the null hypothesis that fit0: `mpg` is linear in `cylinders` vs. fit1: `mpg` relates to `cylinders` as a categorical variable_
 
-```{r message=FALSE, warning=FALSE, results='hold'}
+```{r message=FALSE, warning=FALSE, results='hold',  echo=FALSE}
 test_anova <- anova(fit3, fit4)
 test_anova
 ```
@@ -679,7 +1433,7 @@ b) Summarize the effects found.
 c) Predict the `mpg` of the following car: A red car built in the US in 1983 that is 180 inches long, has eight cylinders, displaces 350 cu. inches, weighs 4000 pounds, and has a horsepower of 260. Also give a 95% CI for your prediction.
 
 
-# Simple Regression through simulations
+# [Case Study 4] Simple Regression through simulations
     
 ## Linear model through simulations
 
@@ -689,9 +1443,10 @@ Presume that $\mathbf{x}$ and $\mathbf{y}$ are linearly related with a normal er
 
 We can create a sample input vector ($n = 40$) for $\mathbf{x}$ with the following code:
 
-```{r, eval = F, echo = TRUE}
+```{r, eval = T, echo = TRUE}
 # Generates a vector of size 40 with equally spaced values between 0 and 1, inclusive
-x <- seq(0, 1, length = 40)
+x = seq(0, 1, length = 40)
+x
 ```
 
 
@@ -699,22 +1454,90 @@ x <- seq(0, 1, length = 40)
 
 Create a corresponding output vector for $\mathbf{y}$ according to the equation given above. Use `set.seed(1)`. Then, create a scatterplot with $(x_i, y_i)$ pairs. Base R plotting is acceptable, but if you can, please attempt to use `ggplot2` to create the plot. Make sure to have clear labels and sensible titles on your plots.
 
+```{r}
+set.seed(1)
+y = 1 + 1.2*x + rnorm(40, 0, 2)
+y
+```
+
+```{r}
+sim.data = data.frame(x, y)
+sim.data
+```
+
+
+```{r}
+sim.data.plot = ggplot(sim.data) + 
+  geom_point(aes(x, y)) + 
+  labs(title = "Simulated Data", x = "x", y = "y")
+
+sim.data.plot
+
+```
+
+
 
 ### Understand the model
 i. Find the LS estimates of $\boldsymbol{\beta}_0$ and $\boldsymbol{\beta}_1$, using the `lm()` function. What are the true values of $\boldsymbol{\beta}_0$ and $\boldsymbol{\beta}_1$? Do the estimates look to be good? 
 
+```{r}
+fit0 = sim.data %>%
+  lm(formula = y ~ x)
+summary(fit0)
+```
+
+
+_LS estimate of $\boldsymbol{\beta}_0$ is 1.3 and $\boldsymbol{\beta}_1$ is 0.906._
+
+  _The true value of $\boldsymbol{\beta}_0$ is 1_  
+
+  _The true value of $\boldsymbol{\beta}_1$ is 1.2_
+
+_The estimates appears to be slightly off from the true values, but they are relatively close._
+
 ii. What is your RSE for this linear model fit? Is it close to $\sigma = 2$? 
+
+_The RSE for this model is 1.79 which is pretty close to 2, slightly smaller._
 
 ii. What is the 95% confidence interval for $\boldsymbol{\beta}_1$? Does this confidence interval capture the true $\boldsymbol{\beta}_1$?
 
+_The 95% confidence interval for $\boldsymbol{\beta}_1$ is 0.906 +/- 0.959 = [-0.053, 1.865]. This confidence interval does capture the true $\boldsymbol{\beta}_1$ of 1.2. If we had more samples (higher N), this confidence interval would become narrower and more precise around the true value._
+
 iii. Overlay the LS estimates and the true lines of the mean function onto a copy of the scatterplot you made above.
+```{r}
+sim.data.plot2 = ggplot(sim.data, aes(x, y)) + 
+  geom_point() + 
+  labs(title = "Simulated Data", x = "x", y = "y") + 
+  geom_abline(slope = 1.2, intercept = 1, color = "blue", show.legend = T) + 
+  geom_smooth(method = "lm", se = T, color = "red", show.legend = T) + 
+  annotate("text", x=0, y =.7, color = "blue", label = "True model") +
+  annotate("text", x=0.12, y =1.7, color = "red", label = "Predicted model")
+
+sim.data.plot2
+```
 
 
 ### diagnoses
 
 i. Provide residual plot where fitted $\mathbf{y}$-values are on the x-axis and residuals are on the y-axis. 
 
+```{r}
+plot(fit0$fitted, fit0$residuals, 
+     pch  = 16,
+     main = "residual plot")
+abline(h=0, lwd=4, col="red")
+```
+
+
 ii. Provide a normal QQ plot of the residuals.
+
+```{r}
+plot(fit0$fitted, fit0$residuals, 
+     pch  = 16,
+     main = "residual plot")
+abline(h=0, lwd=4, col="red")
+```
+
 
 iii. Comment on how well the model assumptions are met for the sample you used. 
 
