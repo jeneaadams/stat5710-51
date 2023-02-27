@@ -5,18 +5,19 @@ author:
 - Annan Timon
 date: 'Due: 11:59Pm,  2/26, 2023'
 output:
-  pdf_document:
-    number_sections: yes
-    toc: yes
-    toc_depth: '4'
   html_document:
-    code_folding: hide
+    code_folding: show
     highlight: haddock
     number_sections: yes
     theme: lumen
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    extra_dependencies: ["dcolumn"]
+    number_sections: yes
+    toc: yes
+    toc_depth: '4'
   word_document:
     toc: yes
     toc_depth: '4'
@@ -153,7 +154,7 @@ acc_box <- ggplot(Auto, aes(y=acceleration)) +
     
     from 1970-1982
 
-```{r auto origin,  echo=FALSE, eval=T}
+```{r auto origin,  echo=FALSE, eval=T, include=FALSE}
 length(unique(Auto$origin))
 summary(as.factor(Auto$origin))
 
@@ -174,7 +175,7 @@ levels(Auto$origin) <- c('1' = 'American',
     
     Japanese: 79
 
-```{r auto name, echo =FALSE,  echo=FALSE, eval=T}
+```{r auto name, echo =FALSE,  echo=FALSE, eval=T, include=FALSE}
 length(unique(Auto$name))
 #unique(Auto$name) %>% .[order(.)]
 ```
@@ -279,15 +280,143 @@ a) You may explore the possibility of variable transformations. We normally do n
 
 In addition, can you provide some background knowledge to support the notion: it makes more sense to model `GPM`?  
 
+_GPM is the number of gallons needed to move a vehicle 100 miles. The gpm helps determine the vehicle's fuel economy when taking other considerations into account. Both MPG and GPM have a useful role at different points in owning a car. MPG is useful when you're driving a car. GPM is useful when you're purchasing a car -- it better captures the fuel consumption, and fuel savings, when comparing a current car to a new car, or when comparing two new cars to each other [ref](www.mpgillusion.com/p/what-is-mpg-illusion.html)._ 
+
+```{r models, message=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+fit_mpg <- lm(mpg ~ factor(cylinders) + year*horsepower + weight + acceleration + factor(origin) + displacement, data = Auto)
+fit_gpm <- lm(1/mpg ~ factor(cylinders) + year*horsepower + weight + acceleration + factor(origin) + displacement, data = Auto)
+```
+
+
 b) You may also explore by adding interactions and higher order terms. The model(s) should be as *parsimonious* (simple) as possible, unless the gain in accuracy is significant from your point of view. 
 
+_Exploring the interaction between hosrsepower and year_
+```{r, message=FALSE, warning=FALSE, echo=F, results='asis', fig.height=8, fig.width=12}
+ggplot(Auto, aes(x = horsepower, y = mpg, color=year)) +
+  geom_point() +
+  geom_smooth(method = "lm" , se =F) +
+  facet_wrap(~ year) + labs(title="mpg and horsepower by year")
+```
+
+
+```{r, message=FALSE, warning=FALSE, echo=F, results='asis', fig.height=8, fig.width=12}
+ggplot(Auto, aes(x = origin, y = mpg, col=origin)) +
+  geom_boxplot() +
+  geom_smooth(method = "lm" , se =F) +
+  labs(title="mpg and origin")
+```
+
+
+_From the boxplot, we can see that Asian cars often have significantly higher mpg than American/European cars_
+
 c) Use Mallow's $C_p$ or BIC to select the model.
+
+```{r, message=FALSE, warning=FALSE, echo=F, results='asis', fig.height=8, fig.width=12}
+fit.final.mpg <- regsubsets(mpg ~ factor(cylinders) + year*horsepower + weight + acceleration + factor(origin) + displacement, nvmax = 45,
+                            method="backward",
+                            Auto)
+fit.final.gpm <- regsubsets(1/mpg ~ factor(cylinders) + year*horsepower + weight + acceleration + factor(origin) + displacement, nvmax = 45,
+                            method="backward",
+                            Auto)
+
+outer = FALSE
+
+line = -2
+cex = 2
+adj  = 0.025
+
+par(mfrow=c(1,2))
+plot(summary(fit.final.mpg)$cp)  
+title(outer=outer,adj=adj,main="MPG",cex.main=cex,col="black",font=2,line=line)
+plot(summary(fit.final.gpm)$cp) 
+title(outer=outer,adj=adj,main="GPM",cex.main=cex,col="black",font=2,line=line)
+```
+```{r mpg dimension reduction, message=FALSE, warning=FALSE, echo=F, results='asis', fig.height=8, fig.width=12}
+fit.final.mpg.s <- summary(fit.final.mpg)
+opt.size <- 2
+final.var.mpg <- fit.final.mpg.s$which
+final.var.mpg <- colnames(final.var.mpg)[final.var.mpg[opt.size, ]][-1] #take the intercept out
+
+final_data_mpg <- Auto %>%
+  select(c("mpg", final.var.mpg))
+final.fit.mpg <- lm(mpg~., final_data_mpg)
+stargazer(final.fit.mpg, align=TRUE, ci = TRUE, type = output_format) 
+```
+```{r gpm dimension reduction, message=FALSE, warning=FALSE, echo=F, results='asis', fig.height=8, fig.width=12}
+fit.final.gpm.s <- summary(fit.final.gpm)
+opt.size <- 3
+final.var.gpm <- fit.final.gpm.s$which
+final.var.gpm <- colnames(final.var.gpm)[final.var.gpm[opt.size, ]][-1] #take the intercept out
+
+final_data_gpm <- Auto %>%
+  select(c("mpg", final.var.gpm))
+final.fit.gpm <- lm(1/mpg~., final_data_gpm)
+stargazer(final.fit.gpm, align=TRUE, ci = TRUE, type = output_format) 
+```
+
+```{r gpm vs mpg models, message=FALSE, warning=FALSE, echo=F, results='asis', fig.height=8, fig.width=12}
+outer = FALSE
+
+line = -2
+cex = 2
+adj  = 0.025
+
+par(mfrow=c(2,2))
+plot(final.fit.mpg, 1)
+title(outer=outer,adj=adj,main="MPG",cex.main=cex,col="black",font=2,line=line)
+plot(final.fit.mpg, 2)
+title(outer=outer,adj=adj,main="MPG",cex.main=cex,col="black",font=2,line=line)
+plot(final.fit.gpm, 1)
+title(outer=outer,adj=adj,main="GPM",cex.main=cex,col="black",font=2,line=line)
+plot(final.fit.gpm, 2)
+title(outer=outer,adj=adj,main="GPM",cex.main=cex,col="black",font=2,line=line)
+```
+
+
+_The plots for MPG aren’t as evenly distributed vertically, has outliers, and has more of a shape than when compared to GPM. In the mpg residual plot, one may worry the violation of linearity, as well as presence of heteroscedasticity. There is more room for improvement in the mpg model_
 
 2) Describe the final model and its accuracy. Include diagnostic plots with particular focus on the model residuals.
 
   * Summarize the effects found.
+  _The mpg increases with changes in the following features:_
+  + year increases       
+  + weight decreases
+  
+  _The gpm increases with changes in the following features:_
+  + year decreases       
+  + weight increases
+  + horsepower increases
+  
+  
   * Predict the `mpg` of a car that is: built in 1983, in the US, red, 180 inches long, 8 cylinders, 350 displacement, 260 as horsepower, and weighs 4,000 pounds. Give a 95% CI.
+  
+```{r, echo = F, include=FALSE}
+newcar <- Auto[1, ] 
+newcar$mpg <- "NA"
+newcar$name <- "NA"
+newcar$acceleration <- "NA"
+newcar$year <- 83
+newcar$origin <- 'American'
+newcar$ycylinders <- 8
+newcar$displacement <- 350
+newcar$weight <- 4000
+newcar$horsepower <- 260
+
+predict(final.fit.mpg, newcar, interval = "predict", se.fit = TRUE)
+predict(final.fit.gpm, newcar, interval = "predict", se.fit = TRUE)
+1/0.0641
+1/0.052
+1/0.0763
+```
+
+_From these specifications we predict that the mpg will be 22 with a CI of [15.2, 28.8] using the mpg model_
+
+_However since the GPM model was better, From these specifications we predict that the mpg will be 15.6 with a CI of [13.1, 19.2] using the GPM model_
+
+
   * Any suggestions as to how to improve the quality of the study?
+
+_If we could clean the data to take into account manufacturer that would improve the study_
 
 
 # Case study 2: COVID19
@@ -359,7 +488,7 @@ The detailed description of variables is in `Appendix 1: Data description`. Plea
 
 Race Distribution across US counties
 
-```{r race, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+```{r race, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE}
 
 race_cols <- c("WhiteNonHispanicPct2010",
                "BlackNonHispanicPct2010",
@@ -394,7 +523,7 @@ ggarrange(plotlist = plots_race, ncol = 2, nrow = 3)
 
 Age Distribution across US counties
 
-```{r Age demographics, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+```{r Age demographics, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE}
 # income, age, race, education, jobs, population density
 age_cols <- c("Age65AndOlderPct2010", "Under18Pct2010")
 
@@ -424,7 +553,7 @@ ggarrange(plotlist = plots_age, ncol = 2, nrow = 1)
 
 Education Distribution across US counties
 
-```{r education, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+```{r education, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE}
 
 edu_cols <- c("Ed1LessThanHSPct", "Ed2HSDiplomaOnlyPct",
               "Ed3SomeCollegePct", "Ed4AssocDegreePct",
@@ -456,7 +585,7 @@ ggarrange(plotlist = plots_edu, ncol = 2, nrow = 3)
 
 Employment Distribution across US counties
 
-```{r eployment, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+```{r eployment, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE}
 
 jobs_cols <- c("PctEmpAgriculture", "PctEmpMining", "PctEmpConstruction",
                "PctEmpManufacturing", "PctEmpTrade", "PctEmpTrans", 
@@ -490,7 +619,7 @@ ggarrange(plotlist = plots_jobs, ncol = 2, nrow = 3)
 
 Income Distribution across US counties
 
-```{r demographics, eval=TRUE, echo=FALSE}
+```{r demographics, eval=TRUE, echo=FALSE, warning=FALSE}
 # income, age, race, education, jobs, population density
 income_cols <- c("FIPS", "MedHHInc")
 
@@ -512,7 +641,7 @@ county_data[-1,] %>%
 
 Unemployment Distribution across US counties
 
-```{r unemployment demographics, eval=TRUE, echo=FALSE}
+```{r unemployment demographics, eval=TRUE, echo=FALSE, warning=FALSE}
 # income, age, race, education, jobs, population density
 empl_cols <- c("FIPS", "UnempRate2019")
 
@@ -532,7 +661,7 @@ county_data[-1,] %>%
 
 COVID-19 Total Cases and Deaths by state and county
 
-```{r covid cases and deaths, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+```{r covid cases and deaths, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE}
 state_cases <- covid_rate %>%
   group_by(State) %>%
   filter(date == "2021-02-20") %>%
@@ -589,7 +718,7 @@ It is crucial to decide the right granularity for visualization and analysis. We
 
 i) Plot **new** COVID cases in NY, WA and FL by state and by day. Any irregular pattern? What is the biggest problem of using single day data? 
 
-```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE}
 covid_rate %>%
   filter(State %in% c("New York", "Florida", "Washington")) %>%
   select(State, date, cum_cases) %>%
@@ -604,7 +733,7 @@ covid_rate %>%
 
 ii) Create **weekly new** cases per 100k `weekly_case_per100k`. Plot the spaghetti plots of `weekly_case_per100k` by state. Use `TotalPopEst2019` as population.
 
-```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE}
 covid_rate %>%
   filter(State %in% c("New York", "Florida", "Washington")) %>%
   select(State, week, cum_cases, TotalPopEst2019) %>%
@@ -629,7 +758,7 @@ iv) (Optional) Use `covid_intervention` to see whether the effectiveness of lock
 
 i) For each month in 2020, plot the monthly deaths per 100k heatmap by state on US map. Use the same color range across months. (Hints: Set `limits` argument in `scale_fill_gradient()` or use `facet_wrap()`; use `lubridate::month()` and `lubridate::year()` to extract month and year from date; use `tidyr::complete(state, month, fill = list(new_case_per100k = NA))` to complete the missing months with no cases.)
 
-```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12, warning=FALSE}
 deaths_plot <- covid_rate %>% 
   mutate(month = lubridate::month(date),
          year = lubridate::year(date)) %>%
