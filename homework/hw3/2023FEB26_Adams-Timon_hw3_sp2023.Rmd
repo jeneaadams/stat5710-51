@@ -24,12 +24,17 @@ urlcolor: blue
 ---
 
 
-```{r setup, include=FALSE}
+```{r Setup, include=FALSE, results='hide', warning=FALSE}
 knitr::opts_chunk$set(echo = T, fig.width=8, fig.height=4)
 options(scipen = 0, digits = 3)  # controls base R output
-# check if you have ISLR package, if not, install it
-if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, readxl, magrittr, dplyr, ggplot2) # add the packages needed
+
+# Package setup
+if(!require("pacman")) install.packages("pacman")
+
+pacman::p_load(tidyverse, dplyr, ggplot2, ggthemes, data.table, lubridate,
+               GGally, RColorBrewer, ggsci, plotROC, usmap,stargazer,
+               plotly, ggpubr, vistime, ggarrange, skimr, knitr, glmnet,
+               leaps)
 ```
 
 
@@ -166,21 +171,304 @@ covid_rate <- fread("data/covid_rates.csv")
 
 The detailed description of variables is in `Appendix 1: Data description`. Please get familiar with the variables. Summarize the two data briefly.
 
+
+
+Race Distribution across US counties
+
+```{r race, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+
+race_cols <- c("WhiteNonHispanicPct2010",
+               "BlackNonHispanicPct2010",
+               "AsianNonHispanicPct2010",
+               "NativeAmericanNonHispanicPct2010",
+               "HispanicPct2010","MultipleRacePct2010")
+race_labs <- c("White Non-Hispanic %,2010",
+               "Black Non-Hispanic %, 2010",
+               "Asian Non-Hispanic %, 2010",
+               "Native American Non-Hispanic %, 2010",
+               "Hispanic %, 2010","Multiple Race %, 2010")
+plots_race <- list()
+
+for (i in 1:length(race_cols)) {
+  cols_selected <- c("FIPS", race_cols[i])
+  
+  plots_race[[race_cols[i]]] <- county_data[-1,] %>%
+  select(cols_selected) %>%
+  rename(fips = "FIPS",
+         values = race_cols[i]) %>%
+  na.omit() %>%
+  plot_usmap(data=.,regions = "counties", color = "grey") + 
+  scale_fill_gradient(low = "white", high = "Purple", 
+                      name = race_labs[i], 
+                      label = scales::comma) + 
+  theme(legend.position = "right")
+}
+
+
+ggarrange(plotlist = plots_race, ncol = 2, nrow = 3)
+```
+
+Age Distribution across US counties
+
+```{r Age demographics, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+# income, age, race, education, jobs, population density
+age_cols <- c("Age65AndOlderPct2010", "Under18Pct2010")
+
+age_labs <- c("% Age 65 And Older, 2010", "% Under 18, 2010")
+plots_age <- list()
+
+for (i in 1:length(age_cols)) {
+  cols_selected <- c("FIPS", age_cols[i])
+  
+  plots_age[[age_cols[i]]] <- county_data[-1,] %>%
+  select(cols_selected) %>%
+  rename(fips = "FIPS",
+         values = age_cols[i]) %>%
+  na.omit() %>%
+  plot_usmap(data=.,regions = "counties", color = "grey") + 
+  scale_fill_gradient(low = "white", high = "red", 
+                      name = age_labs[i], 
+                      label = scales::comma) + 
+  theme(legend.position = "right")
+}
+
+
+ggarrange(plotlist = plots_age, ncol = 2, nrow = 1)
+
+
+```
+
+Education Distribution across US counties
+
+```{r education, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+
+edu_cols <- c("Ed1LessThanHSPct", "Ed2HSDiplomaOnlyPct",
+              "Ed3SomeCollegePct", "Ed4AssocDegreePct",
+              "Ed5CollegePlusPct")
+edu_labs <- c("Less Than High School %", "High School Diploma Only %",
+              "Some College %", "Associates Degree %",
+              "College Degree and Greater %")
+plots_edu <- list()
+
+for (i in 1:length(edu_cols)) {
+  cols_selected <- c("FIPS", edu_cols[i])
+  
+  plots_edu[[edu_cols[i]]] <- county_data[-1,] %>%
+  select(cols_selected) %>%
+  rename(fips = "FIPS",
+         values = edu_cols[i]) %>%
+  na.omit() %>%
+  plot_usmap(data=.,regions = "counties", color = "grey") + 
+  scale_fill_gradient(low = "white", high = "darkgreen", 
+                      name = edu_labs[i], 
+                      label = scales::comma) + 
+  theme(legend.position = "right")
+}
+
+
+ggarrange(plotlist = plots_edu, ncol = 2, nrow = 3)
+```
+
+
+Employment Distribution across US counties
+
+```{r eployment, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+
+jobs_cols <- c("PctEmpAgriculture", "PctEmpMining", "PctEmpConstruction",
+               "PctEmpManufacturing", "PctEmpTrade", "PctEmpTrans", 
+               "PctEmpInformation", "PctEmpFIRE", "PctEmpServices",
+               "PctEmpGovt") 
+jobs_labs <- c("Agriculture, Forestry, Fishing, and Hunting", "Mining, Quarrying, Oil and Gas extraction", "Construction",
+               "Manufacturing", "% Employed in Wholesale and Retail trade", "Transportation, Warehousing, and Utilities", 
+               "Information Services", "Finance, Insurance and Real estate", "Services",
+               "Public Administration") 
+plots_jobs <- list()
+
+for (i in 1:length(jobs_cols)) {
+  cols_selected <- c("FIPS", jobs_cols[i])
+  
+  plots_jobs[[jobs_cols[i]]] <- county_data[-1,] %>%
+  select(cols_selected) %>%
+  rename(fips = "FIPS",
+         values = jobs_cols[i]) %>%
+  na.omit() %>%
+  plot_usmap(data=.,regions = "counties", color = "grey") + 
+  scale_fill_gradient(low = "white", high = "blue", 
+                      name = jobs_labs[i], 
+                      label = scales::comma) + 
+  theme(legend.position = "right")
+}
+
+
+ggarrange(plotlist = plots_jobs, ncol = 2, nrow = 3)
+```
+
+
+Income Distribution across US counties
+
+```{r demographics, eval=TRUE, echo=FALSE}
+# income, age, race, education, jobs, population density
+income_cols <- c("FIPS", "MedHHInc")
+
+county_data[-1,] %>%
+  select(income_cols) %>%
+  rename(fips = "FIPS",
+         values = "MedHHInc") %>%
+  na.omit() %>%
+  plot_usmap(data=.,regions = "counties", color = "grey") + 
+  scale_fill_gradient(low = "yellow", high = "darkgreen", 
+                      name = "Median Household Income, 2018", 
+                      label = scales::comma) + 
+  labs(title = "Income") +
+  theme(legend.position = "right")
+
+
+```
+
+
+Unemployment Distribution across US counties
+
+```{r unemployment demographics, eval=TRUE, echo=FALSE}
+# income, age, race, education, jobs, population density
+empl_cols <- c("FIPS", "UnempRate2019")
+
+county_data[-1,] %>%
+  select(empl_cols) %>%
+  rename(fips = "FIPS",
+         values = "UnempRate2019") %>%
+  na.omit() %>%
+  plot_usmap(data=.,regions = "counties", color = "grey") + 
+  scale_fill_gradient(low = "yellow", high = "darkgreen", 
+                      name = "Unemployment Rate, 2019", 
+                      label = scales::comma) + 
+  labs(title = "Employment") +
+  theme(legend.position = "right")
+
+```
+
+COVID-19 Total Cases and Deaths by state and county
+
+```{r covid cases and deaths, eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+state_cases <- covid_rate %>%
+  group_by(State) %>%
+  filter(date == "2021-02-20") %>%
+  summarise(total.cases=sum(cum_cases)) %>%
+  rename(state="State",
+         values="total.cases") %>%
+  plot_usmap(data=., exclude = c("Hawaii", "Alaska"), color = "grey") + 
+  scale_fill_gradient(low = "white", high = "red", 
+                      name = "State level Cumulative COVID-19 Cases", 
+                      label = scales::comma) + 
+  theme(legend.position = "right")
+
+state_deaths <- covid_rate %>%
+  group_by(State) %>%
+  filter(date == "2021-02-20") %>%
+  summarise(total.deaths=sum(cum_deaths)) %>%
+  rename(state="State",
+         values="total.deaths") %>%
+  plot_usmap(data=., exclude = c("Hawaii", "Alaska"), color = "grey") + 
+  scale_fill_gradient(low = "white", high = "red", 
+                      name = "State level Cumulative COVID-19 Deaths", 
+                      label = scales::comma) + 
+  theme(legend.position = "right")
+
+county_cases <- covid_rate %>%
+  group_by(FIPS) %>%
+  filter(date == "2021-02-20") %>%
+  rename(fips="FIPS",
+         values="cum_cases") %>%
+  plot_usmap(data=., exclude = c("Hawaii", "Alaska"), color = "grey") + 
+  scale_fill_gradient(low = "white", high = "red", 
+                      name = "County level Cumulative COVID-19 Cases", 
+                      label = scales::comma) + 
+  theme(legend.position = "right")
+
+county_deaths <- covid_rate %>%
+  group_by(FIPS) %>%
+  filter(date == "2021-02-20") %>%
+  rename(fips="FIPS",
+         values="cum_deaths") %>%
+  plot_usmap(data=., exclude = c("Hawaii", "Alaska"), color = "grey") + 
+  scale_fill_gradient(low = "white", high = "red", 
+                      name = "County level Cumulative COVID-19 Deaths", 
+                      label = scales::comma) + 
+  theme(legend.position = "right")
+
+ggarrange(state_cases, state_deaths, county_cases, county_deaths, ncol = 2, nrow = 2)
+
+```
+
 ## COVID case trend
 
 It is crucial to decide the right granularity for visualization and analysis. We will compare daily vs weekly total new cases by state and we will see it is hard to interpret daily report.
 
 i) Plot **new** COVID cases in NY, WA and FL by state and by day. Any irregular pattern? What is the biggest problem of using single day data? 
 
+```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+covid_rate %>%
+  filter(State %in% c("New York", "Florida", "Washington")) %>%
+  select(State, date, cum_cases) %>%
+  group_by(date, State) %>%
+  summarise(cum_cases_state = sum(cum_cases), .groups = 'drop') %>%
+  group_by(State, add=FALSE) %>%
+  mutate(new_cases = cum_cases_state - lag(cum_cases_state, default = cum_cases_state[1], order_by = State)) %>%
+  ggplot(aes(x = date, y = new_cases, col = State)) +
+  geom_line() + 
+  labs(title = "New COVID cases in NY, WA and FL by day", x = "Date", y = "New Covid Cases")
+```
+
 ii) Create **weekly new** cases per 100k `weekly_case_per100k`. Plot the spaghetti plots of `weekly_case_per100k` by state. Use `TotalPopEst2019` as population.
 
+```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+covid_rate %>%
+  filter(State %in% c("New York", "Florida", "Washington")) %>%
+  select(State, week, cum_cases, TotalPopEst2019) %>%
+  group_by(State, week) %>%
+  summarise(weekly_case = sum(cum_cases),
+            per100k = sum(TotalPopEst2019)/100000) %>%
+  group_by(State, add=FALSE) %>%
+  mutate(weekly_case_per100k = (weekly_case - lag(weekly_case, default = weekly_case[1], order_by = State))/per100k) %>%
+  ggplot(aes(x = week, y = weekly_case_per100k, col = State)) +
+  geom_line() + 
+  labs(title = "Weekly New COVID cases in NY, WA and FL", x = "Week", y = "New Covid Cases per 100k")
+  
+```
+
 iii) Summarize the COVID case trend among states based on the plot in ii). What could be the possible reasons to explain the variabilities? 
+
+_lockdown/when the first cases were reported, vaccine access, and governmental attitudes towards COVID protocol_
 
 iv) (Optional) Use `covid_intervention` to see whether the effectiveness of lockdown in flattening the curve.
 
 ## COVID death trend
 
 i) For each month in 2020, plot the monthly deaths per 100k heatmap by state on US map. Use the same color range across months. (Hints: Set `limits` argument in `scale_fill_gradient()` or use `facet_wrap()`; use `lubridate::month()` and `lubridate::year()` to extract month and year from date; use `tidyr::complete(state, month, fill = list(new_case_per100k = NA))` to complete the missing months with no cases.)
+
+```{r , eval=TRUE, echo=FALSE, fig.height=8, fig.width=12}
+deaths_plot <- covid_rate %>% 
+  mutate(month = lubridate::month(date),
+         year = lubridate::year(date)) %>%
+  filter(year == 2020) %>%
+  select(State, month, cum_deaths, TotalPopEst2019) %>%
+  group_by(State, month) %>%
+  summarise(monthly_deaths = sum(cum_deaths),
+            per100k = sum(TotalPopEst2019)/100000) %>%
+  group_by(State, add=FALSE) %>%
+  mutate(monthly_deaths_per100k = (monthly_deaths - lag(monthly_deaths, default = monthly_deaths[1], order_by = State))/per100k) %>%
+  rename(state="State") %>% 
+  ungroup() %>%
+  tidyr::complete(state, month, fill = list(monthly_deaths_per100k = NA)) %>%
+  plot_usmap(data=.,regions="state", values="monthly_deaths_per100k", exclude =c("Hawaii","Alaska"), color="black") + 
+  scale_fill_gradient(low = "white", high = "red", name = "New COVID-19 Monthly Deaths Per 100k in 2020", label = scales::comma) + 
+  labs(title="State Deaths",subtitle="Continental US States") +
+  facet_wrap(~month) + 
+  theme(legend.position = "bottom")
+
+deaths_plot
+
+
+```
 
 ii) (Optional) Use `plotly` to animate the monthly maps in i). Does it reveal any systematic way to capture the dynamic changes among states? (Hints: Follow *Appendix 3: Plotly heatmap::* in Module 6 regularization lecture to plot the heatmap using `plotly`. Use `frame` argument in `add_trace()` for animation. `plotly` only recognizes abbreviation of state names. Use `unique(us_map(regions = "states") %>% select(abbr, full))` to get the abbreviation and merge with the data to get state abbreviation.)
 
