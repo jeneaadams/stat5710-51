@@ -34,7 +34,7 @@ if(!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, dplyr, ggplot2, ggthemes, data.table, lubridate,
                GGally, RColorBrewer, ggsci, plotROC, usmap,stargazer,
                plotly, ggpubr, vistime, ggarrange, skimr, knitr, glmnet,
-               leaps)
+               leaps, ISLR)
 ```
 
 
@@ -84,12 +84,193 @@ Review the code and concepts covered during lectures: multiple regression, model
 If you haven't done this as part of the homework 2, please attach it here. 
 
 # Case study 1:  `ISLR::Auto` data
+```{r echo=FALSE}
+?ISLR::Auto
+```
 
 This will be the last part of the Auto data from ISLR. The original data contains 408 observations about cars. It has some similarity as the Cars data that we use in our lectures. To get the data, first install the package `ISLR`. The data set `Auto` should be loaded automatically. We use this case to go through methods learned so far. 
 
 Final modelling question: We want to explore the effects of each feature as best as possible. 
 
 1) Preparing variables: 
+
+
++ mpg summary
+```{r auto mpg,  echo=FALSE, eval=T, results='asis'}
+kable(as.array(summary(Auto$mpg)))
+
+
+mpg_box <- ggplot(Auto, aes(y=mpg)) +
+  geom_boxplot()
+```
+
++ cylinders summary
+```{r auto cylinders,  echo=FALSE, eval=T, results='asis'}
+kable(as.array(summary(Auto$cylinders)))
+
+cyl_box <- ggplot(Auto, aes(y=cylinders)) +
+  geom_boxplot()
+```
+
++ displacement summary
+```{r auto displacement,  echo=FALSE, eval=T, results='asis'}
+kable(as.array(summary(Auto$displacement)))
+
+disp_box <- ggplot(Auto, aes(y=displacement)) +
+  geom_boxplot()
+```
+
++ horsepower summary
+```{r auto horsepower,  echo=FALSE, eval=T, results='asis'}
+kable(as.array(summary(Auto$horsepower)))
+
+horse_box <- ggplot(Auto, aes(y=horsepower)) +
+  geom_boxplot()
+```
+
++ weight summary
+```{r auto weight,  echo=FALSE, eval=T, results='asis'}
+kable(as.array(summary(Auto$weight)))
+
+weight_box <- ggplot(Auto, aes(y=weight)) +
+  geom_boxplot()
+```
+
++ acceleration summary
+```{r auto acceleration,  echo=FALSE, eval=T, results='asis'}
+kable(as.array(summary(Auto$acceleration)))
+
+acc_box <- ggplot(Auto, aes(y=acceleration)) +
+  geom_boxplot()
+```
+
++ year summary
+
+    total 13 years
+    
+    from 1970-1982
+
+```{r auto origin,  echo=FALSE, eval=T}
+length(unique(Auto$origin))
+summary(as.factor(Auto$origin))
+
+length(unique(Auto$origin))
+summary(as.factor(Auto$origin))
+
+Auto$origin <- factor(Auto$origin)
+levels(Auto$origin) <- c('1' = 'American',
+                         '2' =  'European',
+                         '3' = 'Japanese')
+```
+
++ Origin of car 
+
+    American: 245
+    
+    European: 68
+    
+    Japanese: 79
+
+```{r auto name, echo =FALSE,  echo=FALSE, eval=T}
+length(unique(Auto$name))
+#unique(Auto$name) %>% .[order(.)]
+```
+
++ Auto names
+    
+    unique auto names: 301
+
+
+```{r echo = FALSE, warning=F,message=FALSE,fig.height=8, fig.width=12, results='asis'}
+Auto %>%
+  select(is.numeric) %>%
+  ggpairs()
+```
+
+## What effect does `time` have on `MPG`?
+
+a) Start with a simple regression of `mpg` vs. `year` and report R's `summary` output. Is `year` a significant variable at the .05 level? State what effect `year` has on `mpg`, if any, according to this model.
+    
+
+
+
+```{r message=FALSE, warning=FALSE,results='asis', echo = F}
+fit1 <- lm(mpg ~ year, data = Auto) 
+stargazer(fit1, align=TRUE, ci = TRUE, type = output_format) 
+
+```
+
+
+      
+_Year is significant at the 0.01 level. Our model is saying that for every year that goes by, there is about a 1.230 increase in the mpg of a car._
+
+ b) Add `horsepower` on top of the variable `year` to your linear model. Is `year` still a significant variable at the .05 level? Give a precise interpretation of the `year`'s effect found here. (Table 4)_
+
+
+
+
+```{r message=FALSE, warning=FALSE, results='asis', echo = F}
+fit2 <- lm(mpg ~ year + horsepower, data = Auto) 
+stargazer(fit2, align=TRUE, ci = TRUE, type = output_format) 
+```
+
+
+_Year is significant at the 0.01 level. Our model is saying that for every year that passes by, there is about a .657 increase in the mpg of a car. This effect size decreases from the previous one since we added horsepower to the dataset. (Table 5)_
+
+c) The two 95% CI's for the coefficient of year differ among (i) and (ii). How would you explain the difference to a non-statistician?
+    
+_The confidence intervals got a lot smaller going from (i) to (ii). Since we added more information to the model (`horspower`) this reduces some of the variability that we see when we examine year alone. This reduction in conifidence interval means that we are likely getting more precise._
+
+d) Create a model with interaction by fitting `lm(mpg ~ year * horsepower)`. Is the interaction effect significant at .05 level? Explain the year effect (if any). 
+
+
+ 
+
+```{r message=FALSE, warning=FALSE, results='asis', echo = F}
+fit2 <- lm(mpg ~ year * horsepower, data = Auto) 
+stargazer(fit2, align=TRUE, ci = TRUE, type = output_format) 
+```
+
+
+
+_All of the variables are significant at the 0.01 level. Year is an extremely significant variable. Our model is saying that for every year that passes by, there is about a 2.190 increase in the mpg of a car. This effect size increases dramatically from the previous models. (Table 6)_
+
+## Categorical predictors
+
+Remember that the same variable can play different roles! Take a quick look at the variable `cylinders`, and try to use this variable in the following analyses wisely. We all agree that a larger number of cylinders will lower mpg. However, we can interpret `cylinders` as either a continuous (numeric) variable or a categorical variable.
+
+a) Fit a model that treats `cylinders` as a continuous/numeric variable. Is `cylinders` significant at the 0.01 level? What effect does `cylinders` play in this model?
+
+```{r  message=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+fit3 <- lm(mpg ~ cylinders, data = Auto) 
+stargazer(fit3, align=TRUE, ci = TRUE, type = output_format) 
+```
+_Cylinders is significant at the 0.01 level. Our model is saying that for every 1 cylinder added, there is about a 3.560 increase in the mpg of a car. (Table 7)_
+
+b) Fit a model that treats `cylinders` as a categorical/factor. Is `cylinders` significant at the .01 level? What is the effect of `cylinders` in this model? Describe the `cylinders` effect over `mpg`. 
+
+```{r  message=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+fit4 <- lm(mpg ~ factor(cylinders), data = Auto) 
+stargazer(fit4, align=TRUE, ci = TRUE, type = output_format) 
+```
+
+_Only 4 Cylinders is significant at the 0.01 level. Our model is saying that for every 1 cylinder added, there is about a 3.560 increase in the mpg of a car. (Table 7)_
+
+
+c) What are the fundamental differences between treating `cylinders` as a continuous and categorical variable in your models? 
+
+_From a practical sense it's not feasible to consider cylinders as a continuous variable because it'll out put results that don't make sense. It will assume that the more cylinders you have, the lower your mpg will be. However, considering cylinders as a categorical variable allows you to see that having different numbers of cylinders is not a linear relationship._
+
+d) Can you test the null hypothesis: fit0: `mpg` is linear in `cylinders` vs. fit1: `mpg` relates to `cylinders` as a categorical variable at .01 level?  
+
+_Yes you can using anova(H_0, H_1). There is strong evidence of rejecting the null hypothesis that fit0: `mpg` is linear in `cylinders` vs. fit1: `mpg` relates to `cylinders` as a categorical variable_
+
+```{r message=FALSE, warning=FALSE, results='hold', echo = F}
+test_anova <- anova(fit3, fit4)
+test_anova
+```
+
+
 
 a) You may explore the possibility of variable transformations. We normally do not suggest to transform $x$ for the purpose of interpretation. You may consider to transform $y$ to either correct the violation of the linear model assumptions or if you feel a transformation of $y$ makes more sense from some theory. In this case we suggest you to look into `GPM=1/MPG`. Compare residual plots of MPG or GPM as responses and see which one might yield a more satisfactory patterns. 
 
