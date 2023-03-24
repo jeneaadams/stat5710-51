@@ -24,7 +24,7 @@ output:
 urlcolor: blue
 ---
 
-
+# Packages 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, results = "hide", fig.width=8, fig.height=4)
 options(scipen = 0, digits = 3)  # controls base R output
@@ -198,6 +198,7 @@ We focus on understanding the elements of basic inference method in this part. L
 ```{r, results='hide'}
 fit1 <- glm(HD~SBP, hd_data.f, family=binomial)
 summary(fit1)
+
 fit1.1 <- glm(HD~SBP + AGE, hd_data.f, family=binomial)
 summary(fit1.1)
 # you will need to finish by adding each other variable 
@@ -205,19 +206,31 @@ summary(fit1.1)
 ```
 
 ```{r}
-fit1.2 <- glm(HD~SBP + AGE + SEX, hd_data.f, family=binomial)
+fit1.2 <- glm(HD~SBP + SEX, hd_data.f, family=binomial)
 summary(fit1.2)
+```
 
-fit1.3 <- glm(HD~SBP + AGE + SEX + DBP, hd_data.f, family=binomial)
+
+```{r}
+fit1.3 <- glm(HD~SBP + DBP, hd_data.f, family=binomial)
 summary(fit1.3)
+```
 
-fit1.4 <- glm(HD~SBP + AGE + SEX + DBP + CHOL, hd_data.f, family=binomial)
+
+```{r}
+fit1.4 <- glm(HD~SBP  + CHOL, hd_data.f, family=binomial)
 summary(fit1.4)
+```
 
-fit1.5 <- glm(HD~SBP + AGE + SEX + DBP + CHOL + FRW, hd_data.f, family=binomial)
+
+```{r}
+fit1.5 <- glm(HD~SBP + FRW, hd_data.f, family=binomial)
 summary(fit1.5)
+```
 
-fit1.6 <- glm(HD~SBP + AGE + SEX + DBP + CHOL + FRW + CIG, hd_data.f, family=binomial)
+
+```{r}
+fit1.6 <- glm(HD~SBP + CIG, hd_data.f, family=binomial)
 summary(fit1.6)
 
 ```
@@ -250,29 +263,201 @@ _The residual deviance of fit2, which is the smaller model, may not be consisten
   
 iii. Perform both the Wald test and the Likelihood ratio tests (Chi-Squared) to see if the added variable is significant at the .01 level.  What are the p-values from each test? Are they the same? 
 
+Wald test
+
+```{r}
+fit2 = fit1.2
+```
+
+
+```{r}
+summary(fit2)
+```
+
+```{r}
+Anova(fit2)
+```
+
+
+```{r}
+confint.default(fit2)
+```
+
+Likelihood ratio test 
+```{r}
+anova(fit2, test = "Chisq")  
+```
+
+
+
 ###  Model building
 
 Start with all variables. Our goal is to fit a well-fitting model, that is still small and easy to interpret (parsimonious).
 
 i. Use backward selection method. Only keep variables whose coefficients are significantly different from 0 at .05 level. Kick out the variable with the largest p-value first, and then re-fit the model to see if there are other variables you want to kick out.
+```{r}
+fit3 = glm(HD~., hd_data.f, family=binomial)
+summary(fit3)
+Anova(fit3)
+```
+
+```{r}
+fit3.1 = update(fit3, .~. - DBP)
+summary(fit3.1)
+```
+
+```{r}
+fit3.2 = update(fit3.1, .~. -FRW)
+summary(fit3.2)
+```
+
+```{r}
+fit3.3 = update(fit3.2, .~. -CIG)
+summary(fit3.3)
+```
+
 
 ii. Use AIC as the criterion for model selection. Find a model with small AIC through exhaustive search. Does exhaustive search  guarantee that the p-values for all the remaining variables are less than .05? Is our final model here the same as the model from backwards elimination? 
+```{r}
+
+Xy_design = model.matrix(HD ~. +0, hd_data.f)
+
+Xy = data.frame(Xy_design, hd_data.f$HD)
+
+fit.all = bestglm(Xy, family = binomial, method = "exhaustive", IC = "AIC", nvmax =  10)
+
+names(fit.all)
+
+fit.all$BestModels
+```
+
+```{r}
+fit.all$BestModel
+```
+
+```{r}
+summary(glm(HD~AGE+SEX+SBP+CHOL+FRW+CIG, family=binomial, data=hd_data.f))
+```
+Does exhaustive search  guarantee that the p-values for all the remaining variables are less than .05? Is our final model here the same as the model from backwards elimination? 
+_Exhaustive search dos not guarantee that the p-values for all the remaining variable are less than 0.05. The final model here is not the same as the model from backward selection_
 
 iii. Use the model chosen from part ii. as the final model. Write a brief summary to describe important factors relating to Heart Diseases (i.e. the relationships between those variables in the model and heart disease). Give a definition of “important factors”. 
+```{r}
+final.model = glm(HD~AGE+SEX+SBP+CHOL+CIG, family=binomial, data=hd_data.f)
+summary(final.model)
+```
+
+```{r}
+Anova(glm(HD~AGE+SEX+SBP+CHOL+CIG, family=binomial, data=hd_data.f))
+```
+_AGE, SBP, CHOL, CIG are all positively related to the chance of a HD because of their positive Beta coefficients. This means that as these features increase, the chance of HD increases as well. Males have an increased risk of HD compared to females._
+
 
 iv. What is the probability that Liz will have heart disease, according to our final model?
+
+```{r}
+# Liz = 
+# final.model.Liz = predict(final.model, hd_data.f, type)
+```
+
+
+```{r}
+beta0 = coef(final.model)[1]
+beta1 = coef(final.model)[2]
+# beta2 = coef(final.model)[3]
+beta3 = coef(final.model)[4]
+beta4 = coef(final.model)[5]
+beta5 = coef(final.model)[6]
+
+# x3;  beta3 * x3+
+logit_func2 = function(x1, x3, x4, x5) beta0 + beta1 * x1 + beta3 * x3 + beta4 * x4 + beta5 * x5
+```
+
+
+```{r}
+liz_hd_p2 = plogis(logit_func2(50, 110, 180, 0 ))
+liz_hd_p2
+
+```
+
+_The final model predicts that the probability that Liz has heart disease is 4.9%_
 
 ##  Classification analysis
 
 ### ROC/FDR
 
 i. Display the ROC curve using `fit1`. Explain what ROC reports and how to use the graph. Specify the classifier such that the False Positive rate is less than .1 and the True Positive rate is as high as possible.
+```{r}
+fit1.roc = roc(hd_data.f$HD, fit1$fitted, plot=T, col="blue")
+
+plot(1-fit1.roc$specificities, fit1.roc$sensitivities, col="red", pch=16,
+xlab="False Positive",
+ylab="Sensitivity")
+```
+
 
 ii. Overlay two ROC curves: one from `fit1`, the other from `fit2`. Does one curve always contain the other curve? Is the AUC of one curve always larger than the AUC of the other one? Why or why not?
+```{r}
+fit2.roc = roc(hd_data.f$HD, fit2$fitted, plot=T, col="blue")
+```
+
+
+```{r}
+plot(1-fit1.roc$specificities,
+     fit1.roc$sensitivities, col="red", lwd=3, type="l",
+     xlab="False Positive",
+     ylab="Sensitivity")
+
+lines(1-fit2.roc$specificities, fit2.roc$sensitivities, col="blue", lwd=3)
+
+legend("bottomright",
+       c(paste0("fit1 AUC=", round(fit1.roc$auc,2)),
+         paste0("fit2 AUC=", round(fit2.roc$auc, 2)),
+       col=c("red", "blue"), lty=1))
+```
+
 
 iii.  Estimate the Positive Prediction Values and Negative Prediction Values for `fit1` and `fit2` using .5 as a threshold. Which model is more desirable if we prioritize the Positive Prediction values?
+```{r}
+fit1.5 = ifelse(fit1$fitted>0.5, "1", "0") 
+cmfit1.5 = table(fit1.5, hd_data.f$HD)
+TP1 = (cmfit1.5[2,2])/(cmfit1.5[2,1] + cmfit1.5[2,2])
+
+TN1 = (cmfit1.5[1,1])/(cmfit1.5[1,2] + cmfit1.5[1,1])
+
+TP1
+
+TN1
+```
+
+```{r}
+fit2.5 = ifelse(fit2$fitted>0.5, "1", "0") 
+cmfit2.5 = table(fit2.5, hd_data.f$HD)
+TP2 = (cmfit2.5[2,2])/(cmfit2.5[2,1] + cmfit2.5[2,2])
+
+TN2 = (cmfit2.5[1,1])/(cmfit2.5[1,2] + cmfit2.5[1,1])
+
+TP2
+
+TN2
+```
+
+
+_Fit2 is more desireable if we prioritze positive prediction because this is 0.472 compared to fit1's 0.45 _
 
 iv.  For `fit1`: overlay two curves,  but put the threshold over the probability function as the x-axis and positive prediction values and the negative prediction values as the y-axis.  Overlay the same plot for `fit2`. Which model would you choose if the set of positive and negative prediction values are the concerns? If you can find an R package to do so, you may use it directly.
+```{r}
+plot(fit1.roc$thresholds, 1-fit1.roc$specificities, col="orange", pch = 16, lwd=3,
+     xlab="Threshold on prob",
+     ylab="False Positive",
+     main = "Thresholds vs. False Postive")
+
+lines(fit2.roc$thresholds, 1-fit2.roc$specificities, col="blue", pch = 16, lwd=3)
+
+```
+
+_I would chose fit2 because it has a lower false positive rate than fit1._
+
   
 ### Cost function/ Bayes Rule
 
@@ -281,15 +466,49 @@ Bayes rules with risk ratio $\frac{a_{10}}{a_{01}}=10$ or $\frac{a_{10}}{a_{01}}
 
 i.  Write down the linear boundary for the Bayes classifier if the risk ratio of $a_{10}/a_{01}=10$.
 
+$$
+0.019\times SBP + 0.903 \times SEX > log(10) + 4.57
+$$
+
+
 ii. What is your estimated weighted misclassification error for this given risk ratio?
+$$
+WMCE = 10 \times \Sigma (\hat{Y} = 0 | Y =1) + 1\times \Sigma(\hat{Y}=1|Y=0)
+$$
 
 iii.  How would you classify Liz under this classifier?
+$$
+0.019\times (110) + 0.903 \times (FEMALE) > log(10) + 4.57
+
+$$
+_2.09 is not greater than 5.57, so she is assigned a 0 meaning no heart disease._
 
 iv. Bayes rule gives us the best rule if we can estimate the probability of `HD-1` accurately. In practice we use logistic regression as our working model. How well does the Bayes rule work in practice? We hope to show in this example it works pretty well.
 
 Now, draw two estimated curves where x = threshold, and y = misclassification errors, corresponding to the thresholding rule given in x-axis.
+```{r}
+fit2.pred.bayes = as.factor(ifelse(fit2$fitted>log(10)+4.57, "1", "0"))
+# fit2.pred.bayes.roc = roc(hd_data.f$HD, fit2$fitted, plot=T, col="blue")
+
+fit2.pred.bayes.roc = roc(hd_data.f$HD, as.numeric(fit2.pred.bayes), plot=T, col="blue")
+
+MCE.bayes = (10*sum(fit2.pred.bayes[hd_data.f$HD == "1"] != "1") + 1*sum(fit2.pred.bayes[hd_data.f$HD == "0"] != "0"))/length(hd_data.f$HD)
+```
+
+
+```{r}
+plot(fit2.pred.bayes.roc$thresholds, 1-fit2.pred.bayes.roc$specificities, col="orange", pch = 16, lwd=3,
+     xlab="Threshold on prob",
+     ylab="False Positive",
+     main = "Thresholds vs. False Postive")
+
+# lines(fit2.roc$thresholds, 1-fit2.roc$specificities, col="blue", pch = 16, lwd=3)
+```
 
 v. Use weighted misclassification error, and set $a_{10}/a_{01}=10$. How well does the Bayes rule classifier perform? 
+
+
+
 
 vi. Use weighted misclassification error, and set $a_{10}/a_{01}=1$. How well does the Bayes rule classifier perform? 
 
