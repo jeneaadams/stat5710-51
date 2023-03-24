@@ -22,7 +22,7 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, fig.width = 7, fig.height = 4)
 if(!require("pacman")) install.packages("pacman")
-pacman::p_load(dplyr, ggplot2, glmnet, car, data.table)   #add your packages here
+pacman::p_load(dplyr, ggplot2, glmnet, car, data.table, tidyverse, ggally)   #add your packages here
 ```
 
 
@@ -55,6 +55,7 @@ Data needed (see detailed information below):
 
 - **`diabetic.data.csv`**
 - **`readmission.csv`**
+
 
 ### Characteristics of the Data Set
 
@@ -123,6 +124,7 @@ To save your time we are going to use some data sets cleaned by the group. Thus,
 
 **`readmission.csv`** is a cleaned version and they are modified in the following ways:
 
+
 1) `Payer code`, `weight` and `Medical Specialty` are not included since they have a large number of missing values. 
 
 2) Variables such as `acetohexamide`, `glimepiride.pioglitazone`, `metformin.rosiglitazone`, `metformin.pioglitazone` have little variability, and are as such excluded. This also includes the following variables: `chlorpropamide`, `acetohexamide`, `tolbutamide`, `acarbose`, `miglitor`, `troglitazone`, `tolazamide`, `examide`, `citoglipton`, `glyburide.metformin`, `glipizide.metformin`, and `glimepiride.pioglitazone`.
@@ -139,19 +141,445 @@ From the *Goals* section above, your study should respond to the following:
 
 1) Identify important factors that capture the chance of a readmission within 30 days. 
 
+```{r}
+readmission <- fread("readmission.csv") %>%
+  dplyr::select(-c(encounter_id, patient_nbr)) %>%
+  filter(race != "?") %>%
+  mutate_if(is.character, factor)
+levels(readmission$change) <- c("Yes", "No")
+levels(readmission$age_mod) <- c("0to19", "20to59", "60to79", "80+")
+summary(readmission)
+```
+
+```{r, warning=F}
+# race
+readmission %>%
+  group_by(readmitted, race) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = race)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# gender
+readmission %>%
+  group_by(readmitted, gender) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = gender)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# age
+readmission %>%
+  group_by(readmitted, age_mod) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = age_mod)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# diabetes medication
+readmission %>%
+  group_by(readmitted, diabetesMed) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = diabetesMed)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+
+# change in medication
+readmission %>%
+  group_by(readmitted, change ) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = change )) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# discharge
+readmission %>%
+  group_by(readmitted, disch_disp_modified) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = disch_disp_modified)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# admission source
+readmission %>%
+  group_by(readmitted, adm_src_mod) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = adm_src_mod)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# admission type
+readmission %>%
+  group_by(readmitted, adm_typ_mod) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = adm_typ_mod)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+```
+
+
+```{r}
+# max_glu_serum
+readmission %>%
+  group_by(readmitted, max_glu_serum) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = max_glu_serum)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# A1Cresult
+readmission %>%
+  group_by(readmitted, A1Cresult) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = A1Cresult)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# metformin
+readmission %>%
+  group_by(readmitted, metformin) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = metformin)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# glimepiride
+readmission %>%
+  group_by(readmitted, glimepiride) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = glimepiride)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# glipizide
+readmission %>%
+  group_by(readmitted, glipizide) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = glipizide)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# glyburide
+readmission %>%
+  group_by(readmitted, glyburide) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = glyburide)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# pioglitazone
+readmission %>%
+  group_by(readmitted, pioglitazone) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = pioglitazone)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# rosiglitazone
+readmission %>%
+  group_by(readmitted, rosiglitazone) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = rosiglitazone)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+
+# insulin
+readmission %>%
+  group_by(readmitted, insulin) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  group_by(readmitted) %>%
+  mutate(pct = n/sum(n)) %>%
+ggplot(aes(readmitted, pct, fill = insulin)) +
+  geom_bar(stat = "identity", position=position_dodge())  +
+  geom_text(aes(label = scales::percent(pct)), vjust = -.5, position=position_dodge(width = .9))
+```
+
+
+
+
+```{r}
+# looking at how readmission and time in hospital interact
+readmission %>%
+ggplot(aes(readmitted, time_in_hospital, fill = readmitted)) +
+  geom_boxplot()+ 
+stat_compare_means(comparisons = list(c("<30",">30"), c("<30","NO"), c(">30","NO")),
+                   method ="wilcox")
+
+# looking at how readmission and number of lab procedures interact
+readmission %>%
+ggplot(aes(readmitted, num_lab_procedures, fill = readmitted)) +
+  geom_boxplot()+ 
+stat_compare_means(comparisons = list(c("<30",">30"), c("<30","NO"), c(">30","NO")),
+                   method ="wilcox")
+
+# looking at how readmission and number of procedures interact
+readmission %>%
+ggplot(aes(readmitted, num_procedures, fill = readmitted)) +
+  geom_boxplot()+ 
+stat_compare_means(comparisons = list(c("<30",">30"), c("<30","NO"), c(">30","NO")),
+                   method ="wilcox")
+
+# looking at how readmission and number of medication interact
+readmission %>%
+ggplot(aes(readmitted, num_medications, fill = readmitted)) +
+  geom_boxplot()+ 
+stat_compare_means(comparisons = list(c("<30",">30"), c("<30","NO"), c(">30","NO")),
+                   method ="wilcox")
+
+# looking at how readmission and number of outpatient interact
+readmission %>%
+ggplot(aes(readmitted, number_outpatient, fill = readmitted)) +
+  geom_boxplot()+ 
+stat_compare_means(comparisons = list(c("<30",">30"), c("<30","NO"), c(">30","NO")),
+                   method ="wilcox")
+
+# looking at how readmission and number of emergency interact
+readmission %>%
+ggplot(aes(readmitted, number_emergency, fill = readmitted)) +
+  geom_boxplot()+ 
+stat_compare_means(comparisons = list(c("<30",">30"), c("<30","NO"), c(">30","NO")),
+                   method ="wilcox")
+
+# looking at how readmission and number of inpatient interact
+readmission %>%
+ggplot(aes(readmitted, number_inpatient, fill = readmitted)) +
+  geom_boxplot()+ 
+stat_compare_means(comparisons = list(c("<30",">30"), c("<30","NO"), c(">30","NO")),
+                   method ="wilcox")
+
+# looking at how readmission and number of diagnoses interact
+readmission %>%
+ggplot(aes(readmitted, number_diagnoses, fill = readmitted)) +
+  geom_boxplot()+ 
+stat_compare_means(comparisons = list(c("<30",">30"), c("<30","NO"), c(">30","NO")),
+                   method ="wilcox")
+```
+
+
+```{r}
+# Preparing the response variable and design matrix
+set.seed(15)
+fit.lm <- lm(readmitted ~ ., data=readmission)
+Y = readmission$readmitted
+
+X = model.matrix(readmitted ~ ., readmission)[,-1] #gets rid of intercept 
+
+# Finding MSE from LASSO with different lambda values
+cv.fit = cv.glmnet(X, as.numeric(levels(Y))[Y], alpha = 1, nfolds = 10)
+```
+```{r}
+plot(cv.fit)
+```
+
+
+```{r}
+print(paste0('lambda.1se: ', cv.fit$lambda.1se))
+print(paste0('# of nonzero coefficients: ', cv.fit$nzero[cv.fit$lambda==cv.fit$lambda.1se]))
+
+
+print(paste0('lambda.min: ', cv.fit$lambda.min))
+print(paste0('# of nonzero coefficients: ', cv.fit$nzero[cv.fit$lambda==cv.fit$lambda.min]))
+```
+
+```{r}
+# printing the coefficients
+print(coef(cv.fit,s='lambda.1se'))
+
+# printing the coefficients
+print(coef(cv.fit,s='lambda.min'))
+```
+
+
+```{r}
+# Selecting nonzero coefficients by name
+coef.min <- coef(cv.fit, s="lambda.min")
+var.min <- coef.min@Dimnames[[1]][coef.min@i + 1][-1] 
+
+# Subsetting the data to the LASSO-selected variables
+cp_data_diabetes <- data.frame(cbind(X[,var.min], "readmitted" = Y))
+
+fit.min.lm <- lm(readmitted ~., data=cp_data_diabetes) # debiased or relaxed LASSO
+summary(fit.min.lm)
+
+```
+
+```{r}
+# too many non significant
+fit.lasso.final = regsubsets(readmitted~., nvmax = 15,
+                              method="backward",
+                              cp_data_diabetes)
+
+plot(summary(fit.lasso.final)$cp) 
+```
+
+
+```{r}
+
+fit.lasso.final.s <- summary(fit.lasso.final)
+min.size <- which.min(fit.lasso.final.s$cp) # min cp
+print(paste0('min cp: ',min.size))
+
+opt.size <- which.min(fit.lasso.final.s$cp) # min cp
+final.var.1 <- fit.lasso.final.s$which
+final.var <- colnames(final.var.1)[final.var.1[opt.size, ]][-1]
+
+final_data_diabetes <- data.frame(cbind(X[,colnames(X) %in% final.var], "readmitted" = Y))
+final.fit.diabetes.lasso <- lm(readmitted~., final_data_diabetes)
+summary(final.fit.diabetes.lasso)
+```
+
+
+```{r}
+fit1.glm <- glm(readmitted~., readmission, family=binomial)
+summary(fit1.glm)
+```
+
+
+
+
 The set of available predictors is not limited to the raw variables in the data set. You may engineer any factors using the data, that you think will improve your model's quality.
 
 2) For the purpose of classification, propose a model that can be used to predict whether a patient will be a readmit within 30 days. Justify your choice. Hint: use a decision criterion, such as AUC, to choose among a few candidate models.
 
+```{r}
+fit1.glm.roc <- roc(readmission$readmitted, fit1.glm$fitted)
+final.fit.diabetes.lasso.roc <- roc(readmission$readmitted, final.fit.diabetes.lasso$fitted)
+
+
+plot(1-fit1.glm.roc$specificities,
+     fit1.glm.roc$sensitivities, col="red", lwd=3, type="l",
+     xlab="False Positive",
+     ylab="Sensitivity")
+lines(1-final.fit.diabetes.lasso.roc$specificities, final.fit.diabetes.lasso.roc$sensitivities, col="blue", lwd=3)
+legend("bottomright",
+       c(paste0("fitglm AUC=", round(fit1.glm.roc$auc,2)),
+         paste0("fitLasso AUC=", round(final.fit.diabetes.lasso.roc$auc, 2))),
+       col=c("red", "blue"),
+       lty=1)
+```
+
+
 3) Based on a quick and somewhat arbitrary guess, we estimate **it costs twice as much** to mislabel a readmission than it does to mislabel a non-readmission. Based on this risk ratio, propose a specific classification rule to minimize the cost. If you find any information that could provide a better cost estimate, please justify it in your write-up and use the better estimate in your answer.
 
 Suggestion: You may use any of the methods covered so far in parts 1) and 2), and they need not be the same. Also keep in mind that a training/testing data split may be necessary. 
+
+If the cost of misclassifying "1" to "0" is 2 times of that of misclassifying "0" to "1",
+then the Bayes rule is thresholding over the $$\hat P(Y=1 \vert x) > \frac{0.5}{(1+0.5)}=0.333$$
+or $$logit > \log(\frac{.333}{0.667})=-0.695$$ 
+
+```{r}
+final.fit.diabetes.pred.bayes <- as.factor(ifelse(final.fit.diabetes.lasso$fitted > .333, "1", "0"))
+MCE.bayes <- (2*sum(final.fit.diabetes[readmission$readmitted == "1"] != "1")
+              + sum(final.fit.diabetes[readmission$readmitted == "0"] != "0"))/length(readmission$readmitted)
+MCE.bayes
+
+```
+
 
 4) We suggest you to split the data first to Training/Testing/Validation data:
 
 - Use training/testing data to land a final model (If you only use LASSO to land a final model, we will not need testing data since all the decisions are made with cross-validations.)
 
 - Evaluate the final model with the validation data to give an honest assessment of your final model. 
+
+```{r}
+# Split the data:
+N <- length(readmission$readmitted )
+n1 <- floor(.6*N)
+n2 <- floor(.2*N)
+set.seed(10)
+# Split data to three portions of .6, .2 and .2 of data size N
+idx_train <- sample(N, n1)
+idx_no_train <- (which(! seq(1:N) %in% idx_train))
+idx_test <- sample( idx_no_train, n2)
+idx_val <- which(! idx_no_train %in% idx_test)
+data.train <- readmission[idx_train,]
+data.test <- readmission[idx_test,]
+data.val <- readmission[idx_val,]
+```
+
+Fit two models using `data.train`
+```{r}
+fit1.train <- glm(readmitted~., data=data.train, family=binomial)
+summary(fit1.train)
+
+```
+Get the fitted probabilities using the testing data
+```{r results=TRUE}
+fit1.fitted.test <- predict(fit1.train, data.test, type="response") # get the prob's
+
+data.frame(fit1.fitted.test)[1:10, ]
+```
+
+
+```{r}
+fit1.test.roc <- roc(data.test$readmitted, fit1.fitted.test)
+
+plot(1-fit1.test.roc$specificities, fit1.test.roc$sensitivities, 
+     col="red", type="l", lwd=3, 
+     xlab=paste("  AUC(fit1.test) =",
+                round(pROC::auc(fit1.test.roc),2)), 
+     ylab="Sensitivities")
+legend("bottomright", legend=c("fit1.test w one variable"),
+       lty=c(1,1), lwd=c(2,2), col=c("red", "blue"))
+```
+
+
+```{r, warning=FALSE}
+pROC::auc(data.test$readmitted, fit1.fitted.test)
+fit1.fitted.val <- predict(fit1.train, data.val, type="response")
+pROC::auc(data.val$readmitted, fit1.fitted.val)
+```
 
 # The write up
 
@@ -198,7 +626,3 @@ iii) Appendix
 	
 * Any thing necessary to keep but for which you don’t want them to be in the main report.
 
-
-<!-- # Collaboration -->
-
-<!-- This is an **individual** assignment. We will only allow private Piazza posts for questions. If there are questions that are generally useful, we will release that information. -->
