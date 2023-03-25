@@ -6,10 +6,6 @@ author:
 - Group Member 3
 date: '11:59 pm, 03/19, 2023'
 output:
-  pdf_document:
-    number_sections: yes
-    toc: yes
-    toc_depth: '4'
   html_document:
     code_folding: show
     highlight: haddock
@@ -18,6 +14,10 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: '4'
   word_document:
     toc: yes
     toc_depth: '4'
@@ -528,7 +528,6 @@ fit.final.pred.bayes <- as.factor(ifelse(final.model$fitted > .0909, "1", "0"))
 MCE.bayes <- (10*sum(fit.final.pred.bayes[hd_data.f$HD == "1"] != "1")
               + sum(fit.final.pred.bayes[hd_data.f$HD == "0"] != "0"))/length(hd_data.f$HD)
 MCE.bayes
-
 ```
 
 _The weighted misclassification error for this given risk ratio is 0.714_
@@ -546,28 +545,43 @@ _2.09 is not greater than 5.57, so she is assigned a 0 meaning no heart disease.
 iv. Bayes rule gives us the best rule if we can estimate the probability of `HD-1` accurately. In practice we use logistic regression as our working model. How well does the Bayes rule work in practice? We hope to show in this example it works pretty well.
 
 Now, draw two estimated curves where x = threshold, and y = misclassification errors, corresponding to the thresholding rule given in x-axis.
-```{r}
-fit2.pred.bayes = as.factor(ifelse(fit2$fitted>log(10)+4.57, "1", "0"))
-# fit2.pred.bayes.roc = roc(hd_data.f$HD, fit2$fitted, plot=T, col="blue")
-
-fit2.pred.bayes.roc = roc(hd_data.f$HD, as.numeric(fit2.pred.bayes), plot=T, col="blue")
-
-MCE.bayes = (10*sum(fit2.pred.bayes[hd_data.f$HD == "1"] != "1") + 1*sum(fit2.pred.bayes[hd_data.f$HD == "0"] != "0"))/length(hd_data.f$HD)
-```
-
 
 ```{r}
-plot(fit2.pred.bayes.roc$thresholds, 1-fit2.pred.bayes.roc$specificities, col="orange", pch = 16, lwd=3,
+
+pred1 <- prediction(fit1$fitted,hd_data.f$HD)
+perf1 <- performance(pred1,"ppv", "npv")
+plot(fit1.roc$thresholds,
+     perf1@y.values[[1]], col="red", lwd=3, type="l",
+     ylim=c(0,1),
      xlab="Threshold on prob",
-     ylab="False Positive",
-     main = "Thresholds vs. False Postive")
-
-# lines(fit2.roc$thresholds, 1-fit2.roc$specificities, col="blue", pch = 16, lwd=3)
+     ylab="prediction values")
+lines(fit1.roc$thresholds, perf1@x.values[[1]], col="blue", lwd=3)
+legend("bottomright",
+       c("Positive prediction values",
+         "Negative prediction values"),
+       col=c("red", "blue", "green"),
+       lty=1)
 ```
+
+
+```{r}
+pred2 <- prediction(fit2$fitted,hd_data.f$HD)
+perf2 <- performance(pred2,"ppv", "npv")
+plot(fit2.roc$thresholds,
+     perf2@y.values[[1]], col="red", lwd=3, type="l",
+     ylim=c(0,1),
+     xlab="Threshold on prob",
+     ylab="prediction values")
+lines(fit2.roc$thresholds, perf2@x.values[[1]], col="blue", lwd=3)
+legend("bottomright",
+       c("Positive prediction values",
+         "Negative prediction values"),
+       col=c("red", "blue", "green"),
+       lty=1)
+```
+
 
 v. Use weighted misclassification error, and set $a_{10}/a_{01}=10$. How well does the Bayes rule classifier perform? 
-
-
 
 
 vi. Use weighted misclassification error, and set $a_{10}/a_{01}=1$. How well does the Bayes rule classifier perform? 
