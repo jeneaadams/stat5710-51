@@ -6,6 +6,10 @@ author:
 - Group Member 3
 date: '11:59 pm, 03/19, 2023'
 output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: '4'
   html_document:
     code_folding: show
     highlight: haddock
@@ -14,10 +18,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  pdf_document:
-    number_sections: yes
-    toc: yes
-    toc_depth: '4'
   word_document:
     toc: yes
     toc_depth: '4'
@@ -534,10 +534,7 @@ _The weighted misclassification error for this given risk ratio is 0.714_
 
 
 iii.  How would you classify Liz under this classifier?
-$$
-0.019\times (110) + 0.903 \times (FEMALE) > log(10) + 4.57
-
-$$
+$$ 0.019\times (110) + 0.903 \times (FEMALE) > log(10) + 4.57 $$
 _2.09 is not greater than 5.57, so she is assigned a 0 meaning no heart disease._
 
 
