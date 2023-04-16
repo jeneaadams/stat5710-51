@@ -159,7 +159,7 @@ i. Take a random subsample of size 5 from `hd_data_f` which only includes `HD` a
 ```{r, include =T}
 
 row.names(hd_data.f) <- 1:1393
-# set.seed(28)
+set.seed(28)
 indx <- sample(1393, 5)
 fram_sub<- hd_data.f[indx, c("HD","SBP")] 
 
@@ -373,6 +373,10 @@ plot(1-fit1.roc$specificities,
      fit1.roc$sensitivities, col="red", lwd=3, type="l",
      xlab="False Positive",
      ylab="Sensitivity")
+legend("bottomright",
+       c(paste0("fitLasso AUC=", round(final.fit.lasso2.roc$auc, 2))),
+       col=c("red"),
+       lty=1)
 ```
 
 
