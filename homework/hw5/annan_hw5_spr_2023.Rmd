@@ -1,9 +1,8 @@
 ---
 title: "Modern Data Mining - HW 5"
 author:
-- Group Member 1
-- Group Member 2
-- Group Member 3
+- Jenea Adams
+- Annan Timon
 date: 'Due: 11:59Pm,  4/16, 2023'
 output:
   html_document:
@@ -184,7 +183,7 @@ The traditional JSON format is as follows.
 
 We use `stream_in()` in the `jsonlite` package to load the JSON data (of ndjson format) as `data.frame`. (For the traditional JSON file, use `fromJSON()` function.)
 
-```{r}
+```{r, echo=FALSE}
 pacman::p_load(jsonlite)
 yelp_data <- jsonlite::stream_in(file("data/yelp_review_20k.json"), verbose = F)
 str(yelp_data)  
@@ -199,7 +198,7 @@ str(yelp_data)
 yelp_data$rating <- c(0)
 yelp_data$rating[yelp_data$stars >= 4] <- 1
 yelp_data$rating <- as.factor(yelp_data$rating)
-summary(yelp_data) #str(data)
+summary(yelp_data)
 ```
 
 
@@ -231,30 +230,34 @@ prop.table(table(yelp_data$stars))
 
 **Write a brief summary about the data:**
 
+_The data is a small sample (n=19,999) of all the reviews for different restaurants. It contains a review, information about the user who wrote the review, which restaurant the review is about, a 5 star based rating system, and different scores describing how useful, funny, or cool the review was.See http://www.yelp.com/dataset_challenge for more information. _
+
 a) Which time period were the reviews collected in this data?
+
+_Reviews were collected from 10/19/2004 to 10/04/2018_
 
 ```{r}
 range(as.Date(yelp_data$date))
 ```
 
 
-
 b) Are ratings (with 5 levels) related to month of the year or days of the week? Only address this through EDA please. 
 
-Let us use functions in `tidyverse` to  format the dates and extract weekdays
+_Ratings do not appear to be related to the month of the year or days of the week. Reviews are not biased towards the weekend or weekday, from the plots and analysis below we see an even distribution of reviews across days and months._
+
 ```{r}
 weekdays <- weekdays(as.Date(yelp_data$date)) # get weekdays for each review  
 months <- months(as.Date(yelp_data$date))   # get months 
 ```
 
-Do people tend to leave a review over weekends? (months?)
-```{r results='hold'}
+
+```{r results='hold', fig.height=5, fig.width=10}
 par(mfrow=c(1,2))
 pie(table(weekdays), main="Prop of reviews") # Pretty much evenly distributed
 pie(table(months))  
 ```
 
-Proportion of Good reviews: Don't really see any pattern
+
 ```{r results='hold'}
 prop.table(table(yelp_data$stars, months), 2)  # prop of the columns
 prop.table(table(yelp_data$stars, months), 1)  # prop of the rows
@@ -273,7 +276,7 @@ ii. Document term matrix (dtm) (bag of words)
  
  Extract document term matrix for texts to keep words appearing at least .5% of the time among all 20000 documents. Go through the similar process of cleansing as we did in the lecture. 
  
-```{r results='hold'}
+```{r, results = FALSE}
 mycorpus1 <- VCorpus(VectorSource(yelp_data$text))
 mycorpus1
 typeof(mycorpus1)   ## It is a list
@@ -283,13 +286,11 @@ inspect(mycorpus1[[1]])
 as.character(mycorpus1[[1]])
 ```
 
-Inspect the corpus, say documents number 4 and 5.
-```{r}
+```{r, results = FALSE}
 ## inspect corpus 4,5
 lapply(mycorpus1[4:5], as.character)
 ```
 
-Before transforming the text into a word frequency matrix, we should transform the text into a more standard format and clean the text by removing punctuation, numbers and some common words that do not have predictive power (a.k.a. [stopwords](https://kavita-ganesan.com/what-are-stop-words/#:~:text=Stop%20words%20are%20a%20set,on%20the%20important%20words%20instead); e.g. pronouns, prepositions, conjunctions). This can be tedious but is necessary for quality analyses. We use the `tm_map()` function with different available transformations including `removeNumbers()`, `removePunctuation()`, `removeWords()`, `stemDocument()`, and `stripWhitespace()`. It works like the `apply()` class function to apply the function to corpus. Details of each step are in the appendix. These cleaning techniques are not one-size-fits-all, and the techniques appropriate for your data will vary based on context. 
 
 ```{r n-gram tokenizer}
 # The 'n' for n-grams
@@ -334,14 +335,13 @@ mycorpus_clean <- tm_map(mycorpus_clean, stemDocument, lazy = TRUE)
 
 
 Apply the bigram tokenizer to the first review, we see the library or word of bag is enlarged.
-```{r results='hold'}
+```{r, , results = FALSE}
 inspect(mycorpus_clean[[1]])  # see review 1 again
 ngram_tokenizer(mycorpus_clean[[1]], 2) # output bigram of review 1
 ```
 
-While we won't run any analyses with the n-grams, we encourage you to play around with some of the settings to see how the DTM changes, as well as how the analysis might be improved (or worsened) by including the higher order n-grams.
 
-```{r n-gram DTM, results=TRUE}
+```{r n-gram DTM, , results = FALSE}
 # use ngram_tokenizer()
 control_list_ngram <- list(tokenize = function(x) ngram_tokenizer(x, 2))
 
@@ -354,11 +354,12 @@ inspect(dtm_ngram)
 
 a) Briefly explain what does this matrix record? What is the cell number at row 100 and column 405? What does it represent?
 
-```{r}
+_For each review (represented by the rows of the matrix), this matrix records the frequency or count of each word (denoted by the columns)._
+
+```{r, results = FALSE}
 inspect(dtm_ngram[100,405])
 ```
 
-_For each review (represented by the rows of the matrix), this matrix records the frequency or count of each word (denoted by the columns)._
 
 b) What is the sparsity of the dtm obtained here? What does that mean?
 
@@ -366,7 +367,7 @@ _Sparsity refers to the values of the matrix that are 0. Most words will not app
 
 c) Set the stars as a two category response variable called rating to be “1” = 5,4 and “0”= 1,2,3. Combine the variable rating with the dtm as a data frame called data2. 
 
-```{r }
+```{r, results = FALSE}
 names(yelp_data)
 
 # Combine the original data with the text matrix
@@ -375,13 +376,13 @@ dim(data1.temp)
 head(data1.temp)
 ```
 
-```{r}
+```{r, results = FALSE}
 names(data1.temp)[1:30]
 str(data1.temp)
 # data2 consists of date, rating and all the top 1% words
 ```
 
-```{r}
+```{r, results = FALSE}
 data2 <- data1.temp[, c(10:ncol(data1.temp))]
 names(data2)[1:20]
 dim(data2)
@@ -398,14 +399,15 @@ if(!file.exists("data/YELP_tm_freq.csv")) {
 
 Get a training data with 13000 reviews and the 5000 reserved as the testing data. Keep the rest (2000) as our validation data set. 
 
-```{r}
-table(data2$rating)
-object.size(data2)
-```
 
 As one standard machine learning process, we first split data into two sets one training data and the other testing data. We use training data to build models, choose models etc and make final recommendations. We then report the performance using the testing data.
 
 Reserve 5000 randomly chosen rows as our test data (`data2.test`), 13000 as the training set, and the remaining 2000 as as our validation set (`data2.train`)
+
+```{r, results = FALSE, echo=FALSE}
+table(data2$rating)
+object.size(data2)
+```
 
 ```{r}
  # for the purpose of reproucibility
@@ -421,6 +423,10 @@ n2 <- nrow(data2.nottest)
 valid.index <- sample(n2, 2000)
 data2.valid <- data2.nottest[valid.index,]
 data2.train <- data2.nottest[-valid.index,]
+
+dim(data2.test)
+dim(data2.train)
+dim(data2.valid)
 
 ```
 
@@ -439,11 +445,14 @@ y <- data2.train$rating
 X1 <- sparse.model.matrix(rating~., data=data2.train)[, -1]
 
 set.seed(1)
+
+# not running this because it takes too much time in order to knit
 fit.lasso <- cv.glmnet(X1, y, alpha=.99, family="binomial")
 
 plot(fit.lasso)
+```
 
-# or our old way
+```{r}
 coef.1se <- coef(fit.lasso, s="lambda.1se")  
 coef.1se <- coef.1se[which(coef.1se !=0),] 
 lasso.words <- rownames(as.matrix(coef.1se))[-1]
@@ -510,11 +519,13 @@ saveRDS(fit.glm.small,
 	
 a) Pull out all the positive coefficients and the corresponding words. Rank the coefficients in a decreasing order. Report the leading 2 words and the coefficients. Describe briefly the interpretation for those two coefficients. 
 
+_The 2 leading words are thorough and worth_wait. The words here are all largely positive and speak to useful qualities of a restaurant that might lead to great reviews._
+
 ```{r, warning=FALSE}
 fit.glm.small <- readRDS("data/TextMiningHW_glm_small.RDS")
 fit.glm.small.coef <- coef(fit.glm.small)
 #fit.glm.small.coef[200:250]
-hist(fit.glm.small.coef)
+#hist(fit.glm.small.coef)
 
 # pick up the positive coef's which are positively related to the prob of being a good review
 good.glm <- fit.glm.small.coef[which(fit.glm.small.coef > 0)]
@@ -533,7 +544,9 @@ good.word <- names(good.fre)  # good words with a decreasing order in the coeff'
 
 b) Make a word cloud with the top 100 positive words according to their coefficients. Interpret the cloud briefly.
 
-```{r results=TRUE, warning=FALSE, message=FALSE}
+_To fit all the words we decided to do the log of all the weights. The chunk below shows in detail the weight for positive words. The words here are all largely positive and speak to useful qualities of a restaurant that might lead to great reviews._
+
+```{r results=TRUE, warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
 cor.special <- brewer.pal(8,"Dark2")
 wordcloud(good.word[1:100], good.fre[1:100],  # make a word cloud
           colors=cor.special, ordered.colors=F)
@@ -541,6 +554,8 @@ wordcloud(good.word[1:100], good.fre[1:100],  # make a word cloud
 
 
 c) Repeat a) and b) above for the bag of negative words.
+
+_The 2 leading words are disgust and unproffession. The words here are all largely negative and speak to qualities of a restaurant that might lead to bad reviews._
 
 ```{r, warning=FALSE}
 # pick up the positive coef's which are negatively related to the prob of being a good review
@@ -555,7 +570,9 @@ bad.word <- names(bad.fre)  # good words with a decreasing order in the coeff's
 length(bad.fre)
 ```
 
-```{r results=TRUE, warning=FALSE, message=FALSE}
+_To fit all the words we decided to do the log of all the weights. The chunk below shows in detail the weight for negative words. The words here are all largely negative and speak to qualities of a restaurant that might lead to bad reviews._
+
+```{r results=TRUE, warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
 cor.special <- brewer.pal(8,"Dark2")
 wordcloud(bad.word[1:100], bad.fre[1:100],  # make a word cloud
           colors=cor.special, ordered.colors=F)
@@ -563,12 +580,18 @@ wordcloud(bad.word[1:100], bad.fre[1:100],  # make a word cloud
 
 d) Summarize the findings. 
 
+_We apply LASSO to classify good/bad review based on the text. The core technique for text mining is a simple bag of words, i.e. a word frequency matrix. The problem becomes a high-dimensional problem. Using LASSO, we reduce dimension and train a model with high predictive power. Based on the model, we find out the positive/negative words and build a word cloud._
+
 iii. What are the major differences among the two methods used so far: Lasso and glm
+
+_Comparing the two models we do not see much of the difference. We could use either final models for the purpose of the prediction._
 
 iv.  Using majority votes find the testing errors
 	a) From `fit.lasso`
   b) From `fit.glm`
 	c) Which one is smaller?
+
+_Lasso test error is smaller_
 	
 ```{r results= 'hold'}
 predict.glm <- predict(fit.glm, data2.test, type = "response")
@@ -591,7 +614,7 @@ testerror.lasso
 
 ```
 
-```{r}
+```{r, message=FALSE}
 fit.lasso.roc <- roc(data2.test$rating, predict.lasso.p)
 fit.glm.roc <- roc(data2.test$rating, predict.glm)
 
@@ -610,9 +633,8 @@ legend("bottomright",
 
 ```
 
-Comparing the two predictions through testing errors/ROC we do not see much of the difference. We could use either final models for the purpose of the prediction. 
 
-Here, we apply LASSO to classify good/bad review based on the text. The core technique for text mining is a simple bag of words, i.e. a word frequency matrix. The problem becomes a high-dimensional problem. Using LASSO, we reduce dimension and train a model with high predictive power. Based on the model, we find out the positive/negative words and build a word cloud. One natural question to ask about bag of words is to take certain weight for each word or a document length. There are some attempts to make adjustment.
+
 
 ### Neural network
 
