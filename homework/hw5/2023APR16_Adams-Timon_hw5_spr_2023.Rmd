@@ -1116,7 +1116,52 @@ Variable Related to Life Success in 2006
   - testing data: find the best tuning parameters/best models
   - validation data: only used in your final model to report the accuracy. 
 
+```{r}
+iq <- fread("data/IQ.Full.csv")
 
+# check to see if there are any missing values or wrong entries
+#str(iq)
+#summary(iq)
+
+# remove subject, make categorical variables into factors, change income to log
+iq %<>%
+  mutate(across(c(Imagazine, Inewspaper, Ilibrary, Gender, Race,
+                  Esteem1, Esteem2, Esteem3, Esteem4, Esteem5,
+                  Esteem6, Esteem7, Esteem8, Esteem9, Esteem10),
+                factor)) %>%
+  mutate(Income = log(Income2005)) %>%
+  dplyr::select(-Subject, -Income2005)
+
+# extract Michelle
+Michelle <- iq[nrow(iq),]
+
+# check size of df before and after removing
+#dim(iq)
+iq %<>% 
+  filter(!row_number() %in% nrow(iq))
+#dim(iq)
+summary(iq)
+```
+
+```{r}
+ # for the purpose of reproucibility
+set.seed(1) 
+n <- nrow(iq)
+test.index.iq <- sample(n, n*.2)
+
+# only keep rating and the texts
+iq.test <- iq[test.index.iq, ]
+iq.nottest <- iq[-test.index,]
+
+n2 <- nrow(iq.nottest)
+valid.index.iq <- sample(n2, n*.1)
+iq.valid <- iq.nottest[valid.index.iq,]
+iq.train <- iq.nottest[-valid.index.iq,]
+
+dim(iq.test)
+dim(iq.train)
+dim(iq.valid)
+```
 ## 2. Factors affect Income
 
 We only use linear models to answer the questions below.
@@ -1124,10 +1169,77 @@ We only use linear models to answer the questions below.
 i. To summarize ASVAB test scores, create PC1 and PC2 of 10 scores of ASVAB tests and label them as
 ASVAB_PC1 and ASVAB_PC2. Give a quick interpretation of each ASVAB_PC1 and ASVAB_PC2 in terms of the original 10 tests. 
 
+_Together pcs 1 and 2 capture about 70% of the variance observed_
+
+```{r  message=F, echo =F}
+asvab <- iq %>%
+  dplyr::select(AFQT, Coding, Auto, Mechanic, Elec, Science, Math, Arith, Word, Parag, Numer)
+
+asvab <- as.data.frame(scale(asvab, center = T, scale = T))
+pc.asvab <- prcomp(asvab, scale = T)
+
+
+pc.asvab.loading <- pc.asvab$rotation
+pc.asvab.loading
+
+iq %<>%
+  mutate(ASVAB_PC1 = pc.asvab$x[,1],
+         ASVAB_PC2 = pc.asvab$x[,2],)
+```
+
+```{r}
+plot(summary(pc.asvab)$importance[2, ],
+     ylab="PVE",
+     xlab="Number of PCs",
+     pch = 16, 
+     main="Scree Plot of PVE for ASVAB")
+```
+     
+
 ii. Is there any evidence showing ASVAB test scores in terms of ASVAB_PC1 and ASVAB_PC2, might affect the Income?  Show your work here. You may control a few other variables, including gender. 
+
+_Yes, below we see extremely significant evidence that ASVAB_PC1 and ASVAB_PC2 affect the Income  and interact with other variables_
+
+```{r}
+fit1 <- lm(Income ~ ASVAB_PC1 + ASVAB_PC2, iq)
+summary(fit1)
+```
+
+```{r}
+fit.gender <- lm(Income ~ ASVAB_PC1 + ASVAB_PC2 + Gender, iq)
+summary(fit1)
+Anova(fit.gender)
+```
+
+```{r}
+fit.edu <- lm(Income ~ ASVAB_PC1 + ASVAB_PC2 + Gender + Educ, iq)
+summary(fit1)
+
+Anova(fit.edu)
+```
+
+```{r}
+fit.race <- lm(Income ~ ASVAB_PC1 + ASVAB_PC2 + Race, iq)
+summary(fit.race)
+Anova(fit.race)
+
+```
+```{r}
+fit.fam.inc <- lm(Income ~ ASVAB_PC1 + ASVAB_PC2 + FamilyIncome78, iq)
+summary(fit.fam.inc)
+Anova(fit.fam.inc)
+
+```
+
+```{r}
+fit.all <- lm(Income ~ . - Science - Arith - Word - Parag - Numer - Coding - Auto - Math - Mechanic - Elec - AFQT , iq)
+summary(fit.all)
+Anova(fit.all)
+```
 
 iii. Is there any evidence to show that there is gender bias against either male or female in terms of income in the above model? 
 
+_Yes_
 
 We next build a few models for the purpose of prediction using all the information available. From now on you may use the three data sets setting (training/testing/validation) when it is appropriate. 
 
@@ -1139,6 +1251,23 @@ i. fit1: tree(Income ~ Educ + Gender, data.train) with default set up
     b) How many end nodes? Briefly explain how the estimation is obtained in each end nodes and deescribe the prediction equation
     c) Does it show interaction effect of Gender and Educ over Income?
     d) Predict Michelle's income
+    
+_4 Nodes_
+_Yes, below we see extremely significant evidence of interaction effect of Gender and Educ over Income_
+_We predict Michelle will make 21029.71_
+    
+```{r}
+fit.tree <- tree(Income ~ Educ + Gender, iq.train)
+plot(fit.tree)
+text(fit.tree, pretty=0)
+```
+```{r}
+summary(fit.tree)
+```
+```{r}
+exp(predict(fit.tree, Michelle))
+```
+
 
 ii. fit2: fit2 <- rpart(Income2005 ~., data.train, minsplit=20, cp=.009)
 
@@ -1147,6 +1276,27 @@ ii. fit2: fit2 <- rpart(Income2005 ~., data.train, minsplit=20, cp=.009)
     c) Compare testing errors between fit1 and fit2. Is the training error from fit2 always less than that from fit1? Is the testing error from fit2 always smaller than that from fit1? 
     d) You may prune the fit2 to get a tree with small testing error. 
     
+
+_The testing error from fit2 always smaller than that from fit1_
+    
+```{r}
+fit.tree2 <- rpart(Income ~., iq.train, minsplit=20, cp=.009)
+plot(as.party(fit.tree2), main="Final Tree with Rpart")
+```
+
+```{r}
+summary(fit.tree2)
+```
+
+
+```{r}
+test.error.tree <- sum((predict(fit.tree, iq.test) - iq.test$Income)^2)
+test.error.tree
+test.error.tree2 <- sum((predict(fit.tree2, iq.test)-iq.test$Income)^2)
+test.error.tree2
+```
+
+    
 iii. fit3: bag two trees
 
     a) Take 2 bootstrap training samples and build two trees using the 
@@ -1154,7 +1304,30 @@ iii. fit3: bag two trees
     b) Explain how to get fitted values for Michelle by bagging the two trees obtained above. Do not use the predict(). 
     c) What is the testing error for the bagged tree. Is it guaranteed that the testing error by bagging the two tree always smaller that either single tree? 
     
-iv. fit4: Build a best possible RandomForest
+```{r results = 'hold'}
+# bootstrap tree 1 
+par(mfrow=c(1, 2))
+n=1000
+set.seed(1)  
+index1 <- sample(n, n, replace = TRUE)
+iq.train.a <- iq.train[index1, ]
+
+fit.tree.3a <- rpart(Income ~., iq.train.a, minsplit=20, cp=.009)
+plot(fit.tree.3a, main = "Trees by rpart")
+text(fit.tree.3a, pretty = TRUE) 
+
+# bootstrap tree 2 
+set.seed(2)  
+index2 <- sample(n, n, replace = TRUE)
+iq.train.b <- iq.train[index2, ]
+
+fit.tree.3b <- rpart(Income ~., iq.train.b, minsplit=20, cp=.009)
+plot(fit.tree.3b, main = "Trees by rpart")
+text(fit.tree.3b, pretty = TRUE) 
+```
+
+    
+iv. fit4: Build a best possible RandomForest 
 
     a) Show the process how you tune mtry and number of trees. Give a very high level explanation how fit4 is built.
     b) Compare the oob errors form fit4 to the testing errors using your testing data. Are you convinced that oob errors estimate testing error reasonably well.
@@ -1169,8 +1342,5 @@ vii. Use your final model to predict Michelle's income.
 
 
     
-
-
-
 
 
