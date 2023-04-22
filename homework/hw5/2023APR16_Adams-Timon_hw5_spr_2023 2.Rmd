@@ -1151,7 +1151,7 @@ test.index.iq <- sample(n, n*.2)
 
 # only keep rating and the texts
 iq.test <- iq[test.index.iq, ]
-iq.nottest <- iq[-test.index.iq,]
+iq.nottest <- iq[-test.index,]
 
 n2 <- nrow(iq.nottest)
 valid.index.iq <- sample(n2, n*.1)
@@ -1332,34 +1332,45 @@ iv. fit4: Build a best possible RandomForest
     a) Show the process how you tune mtry and number of trees. Give a very high level explanation how fit4 is built.
     
 ```{r}
-rf.error.p <- 1:19  # set up a vector of length 19
-for (p in 1:19)  # repeat the following code inside { } 19 times
+rf.error.p <- 1:50  # set up a vector of length 50
+for (p in 1:50) 
 {
-  fit.rf <- randomForest(rating~., data2.train, mtry=p, ntree=250)
-  #plot(fit.rf, col= p, lwd = 3)
-  rf.error.p[p] <- fit.rf$mse[250]  # collecting oob mse based on 250 trees
+  rf <- ranger::ranger(rating~., iq.train.a, mtry = p, num.trees = 200, importance="impurity")
+  
+  rf.error.p[p] <-  rf$prediction.error  # collecting oob mse based on 250 trees
 }
-rf.error.p   # oob mse returned: should be a vector of 19
 
-plot(1:19, rf.error.p, pch=16,
+rf.error.p   
+
+plot(1:50, rf.error.p, pch=16,
+     main = "Testing errors of mtry with 250 trees",
      xlab="mtry",
-     ylab="OOB mse of mtry",
-     main = "Testing errors as func of mtry with Salaries as response")
-lines(1:19, rf.error.p)
+     ylab="OOB mse of mtry")
+lines(1:50, rf.error.p)
 ```
-    
+  
     b) Compare the oob errors form fit4 to the testing errors using your testing data. Are you convinced that oob errors estimate testing error reasonably well.
     
     c) What is the predicted value for Michelle?
 
     
 v. Now you have built so many predicted models (fit1 through fit4 in this section). What about build a fit5 which bags fit1 through fit4. Does fit5 have the smallest testing error?
+```{r}
+
+```
 
 
 vi.  Summarize the results and nail down one best possible final model you will recommend to predict income. Explain briefly why this is the best choice. Finally for the first time evaluate the prediction error using the validating data set. 
+```{r}
+
+```
 
 
 vii. Use your final model to predict Michelle's income. 
+```{r}
+
+```
+
 
 
     

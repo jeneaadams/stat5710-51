@@ -1,0 +1,70 @@
+---
+title: "JA data cleaning"
+author:
+- Jenea Adams
+- Annan Timon
+date: 'april 22'
+output:
+  html_document:
+    code_folding: show
+    highlight: haddock
+    theme: lumen
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+  word_document:
+    toc: yes
+    toc_depth: '4'
+urlcolor: blue  
+---
+
+# Packages 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(censusxy, sf) 
+```
+
+
+# Data 
+
+```{r}
+affordable_housing = read.csv("data/Affordable_Housing.csv", header = T)
+heat_vuln = read.csv("data/HEAT_EXPOSURE_CENSUS_TRACT.csv", header = T)
+food_access = read.csv("data/NeighborhoodFoodRetail.csv", header = T)
+hospitals = read.csv("data/Hospitals.csv", header = T)
+population_philly = read.csv("data/Vital_Population_CT.csv", header = T)
+
+```
+
+
+
+```{r}
+head(population_philly)
+```
+
+
+```{r}
+head(food_access)
+```
+
+
+
+```{r}
+head(heat_vuln)
+```
+
+```{r}
+head(affordable_housing)
+```
+
+```{r}
+head(hospitals)
+```
+
+
