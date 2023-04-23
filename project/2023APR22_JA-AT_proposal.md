@@ -8,7 +8,7 @@
 Gentrification and Health Disparities: An Integrated Analysis of Inequality in Philadelphia
 
 ## Abstract
-Gentrification is process of affluent residents and businesses displacing existing low-income residents and businesses. Beyond prospects for so-called "urban renewal", gentrification has real, tangible effects of on the landscape and trajectories of existing communities who often don't benefit from the changes of a neighborhood and are disenfranchised from participating in the growth of their area. Gentrification also has document health effects on communities, such as shortened life expectancy, higher cancer rates, higher infant mortality, and cardiovascular diseases. Income inequality can be quantified by a [Gini index](https://www.census.gov/topics/income-poverty/income-inequality/about/metrics/gini-index.html) which is a value from 0 to 1 indicating inequality in the dispersion of income in a given unit. This study begins to to unpack a statistical framework for capturing the relationship between income inequality and health effects in Philadelphia. 
+Gentrification is a process of affluent residents and businesses displacing existing low-income residents and businesses. Beyond prospects for so-called "urban renewal", gentrification has real, tangible effects on the landscape and trajectories of existing communities who often don't benefit from the changes of a neighborhood and are disenfranchised from participating in the growth of their area. Gentrification also has documented health effects on communities, such as shortened life expectancy, higher cancer rates, higher infant mortality, and cardiovascular diseases. Income inequality can be used to estimate gentrification rates. It can be quantified by a [Gini index](https://www.census.gov/topics/income-poverty/income-inequality/about/metrics/gini-index.html) which is a value from 0 to 1 indicating inequality in the dispersion of income in a given unit. This study begins to to investigate a statistical framework for capturing the relationship between income inequality and health effects in Philadelphia from integrated datasets. 
 
 ## Goal of the study
 The goal of the study is to quantify gentrification in Philly's neighborhoods and understand it's perceived effect on public health correlates. We will do this through modeling the relationship of Philadelphia health data and dynamic neighborhood demographics with census tract-level Gini index. 
@@ -19,7 +19,7 @@ We are aggregating several datasets for this analysis:
 
 - **Food access**: The Neighborhood Food Retail dataset includes GEOID level assessments of food access relevant to distance and types of high produce grocery stores, as well as if that area is a high poverty area. We chose this to understand the livability of certain areas with respect to their access to fresh food options, which have positive impacts on health. 
 
-- **Hospital locations**: locations of hospitals by type of care provided. We chose this to understand the distribution and acess to healthcare in each census block. 
+- **Hospital locations**: locations of hospitals by type of care provided. We chose this to understand the distribution and access to healthcare in each census block. 
 
 - **Heat Vulnerability**: scores and indicators for heat vulnerability by census block and prevalence of heat-related illnesses. This may or may not be related to access to green space and tree canopy. This data gives us an idea of environmental variables which contribute to health outcomes and quality of life for Philadelphia residents. 
 
@@ -27,7 +27,7 @@ We are aggregating several datasets for this analysis:
 
 - **Philadelphia population metrics**: Demographic information of Philadelphia census blocks by race and ethnicity
 
-- **Socieconomic data** - income inequality calculated as a census tract-level Gini index. 
+- **Socioeconomic data** - income inequality calculated as a census tract-level Gini index. 
 
 - **Health data**: measures of prevalence of health measures such as cancer prevalence, access to health insurance, blood pressure, heart disease, and more by census tract. 
 
