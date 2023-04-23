@@ -1,11 +1,16 @@
-# Group 51 Project Proposal 
+---
+output:
+  
+  html_document: default
+  pdf_document: default
+---
+# STAT 5710 - Group 51 Project Proposal 
 
 - Jenea Adams 
 - Annan Timon
 
 
-## Title of the project
-Gentrification and Health Disparities: An Integrated Analysis of Inequality in Philadelphia
+## Gentrification and Health Disparities: An Integrated Analysis of Inequality in Philadelphia
 
 ## Abstract
 Gentrification is a process of affluent residents and businesses displacing existing low-income residents and businesses. Beyond prospects for so-called "urban renewal", gentrification has real, tangible effects on the landscape and trajectories of existing communities who often don't benefit from the changes of a neighborhood and are disenfranchised from participating in the growth of their area. Gentrification also has documented health effects on communities, such as shortened life expectancy, higher cancer rates, higher infant mortality, and cardiovascular diseases. Income inequality can be used to estimate gentrification rates. It can be quantified by a [Gini index](https://www.census.gov/topics/income-poverty/income-inequality/about/metrics/gini-index.html) which is a value from 0 to 1 indicating inequality in the dispersion of income in a given unit. This study begins to to investigate a statistical framework for capturing the relationship between income inequality and health effects in Philadelphia from integrated datasets. 
