@@ -27,7 +27,7 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(censusxy, sf) 
+pacman::p_load(censusxy, sf, readxl, tidyverse, ggplot2) 
 ```
 
 
@@ -39,30 +39,71 @@ heat_vuln = read.csv("data/HEAT_EXPOSURE_CENSUS_TRACT.csv", header = T)
 food_access = read.csv("data/NeighborhoodFoodRetail.csv", header = T)
 hospitals = read.csv("data/Hospitals.csv", header = T)
 population_philly = read.csv("data/Vital_Population_CT.csv", header = T)
-
+cities_census_health_full = read.csv("data/500_Cities__Census_Tract-level_Data__GIS_Friendly_Format___2019_release.csv",header = T)
+census_block_groups10 = read.csv("data/Census_Block_Groups_2010.csv")
+census_blocks10 = read.csv("data/Census_Blocks_2010.csv")
 ```
+
 
 
 
 ```{r}
-head(population_philly)
+test = read.csv("data/Walkable_Access_Healthy_Food.csv")
+
+
+```
+
+```{r}
+census_blocks10$GEOID10 = as.factor(census_blocks10$GEOID10)
+
+census_blocks10
 ```
 
 
+
+376 tracts here
+```{r}
+head(cities_census_health_full)
+
+philly_census_health = cities_census_health_full %>%
+  filter(PlaceName == "Philadelphia")
+
+write.csv(philly_census_health, "data/philly_census_health_tracts.csv") #376 tracts
+```
+
+
+```{r}
+# philly_census_health %>%
+#   ggplot(aes(x = Population2010, y = HIGHCHOL_CrudePrev)) + 
+#   geom_point() + 
+#   geom_smooth(method = "lm")
+#   theme_bw()
+```
+
+384 census tracts here (2010 data)
+```{r}
+head(population_philly)
+```
+
+Food access data by census block group (level in between a block and a tract)
 ```{r}
 head(food_access)
 ```
 
 
-
+384 census tracts here (2010 data)
 ```{r}
 head(heat_vuln)
 ```
 
+
+Only 400 projects described in this dataset
 ```{r}
 head(affordable_housing)
 ```
 
+
+36 hospitals 
 ```{r}
 head(hospitals)
 ```
