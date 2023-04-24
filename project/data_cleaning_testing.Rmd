@@ -1,0 +1,98 @@
+---
+title: "geoJSON_test"
+output: html_document
+date: "2023-04-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(ggplot2, dplyr, data.table, censusxy,rvest) 
+```
+
+# read in census tract information
+
+```{r}
+census_health <- fread(".//data/500_Cities__Census_Tract-level_Data__GIS_Friendly_Format___2019_release.csv")
+```
+
+```{r}
+summary(census_health)
+
+
+tract_locations <- census_health %>%
+  filter(PlaceName == "Philadelphia") %>%
+  select(TractFIPS, Geolocation)
+
+write.table(tract_locations, "./data/Census_Tract_groups_2010.txt",
+            quote = F, row.names = F, col.names = T, sep = "\t")
+```
+
+
+```{r}
+philly_info <- census_health %>%
+  filter(PlaceName == "Philadelphia")
+
+length(unique(philly_info$Place_TractID))
+
+length(unique(philly_info$TractFIPS))
+
+dim(philly_info)
+
+head(philly_info)
+
+
+```
+
+
+
+## read in affordable housing
+
+```{r}
+affordable <- fread("./data/Affordable_Housing.csv") %>% data.frame()
+
+affordable$CITY <-rep("Philadelphia", nrow(affordable))
+affordable$STATE <-rep("PA", nrow(affordable))
+
+affordable_sf <- cxy_geocode(affordable,
+                            street = "ADDRESS", 
+                            city = "CITY",
+                            state = "STATE",  
+                            class = "dataframe")
+
+affordable_cleaned <- affordable_sf[!is.na(affordable_sf$cxy_lon),]
+
+dim(affordable_cleaned)
+
+saveRDS(affordable_cleaned, "./data/Affordable_Housing_cleaned.RDS")
+
+```
+
+# read in hospital data
+
+```{r}
+# need to fix address 8
+hospitals <- fread("./data/hospitals.csv") %>% data.frame()
+
+# address is wrong, using and or & signs
+hospitals$STREET_ADDRESS[8] <- "801 W Girard Avenue" 
+hospitals$STREET_ADDRESS[5] <- "3401 Civic Center Blvd"
+
+# address is wrong, using outpatient address instead
+hospitals$STREET_ADDRESS[2] <- "3998 Red Lion Rd"
+hospitals$STREET_ADDRESS[6] <- "1200 West Tabor Road"
+hospitals$STREET_ADDRESS[19] <- "5735 Ridge Avenue"
+
+hospitals_sf <- cxy_geocode(hospitals,
+                            street = "STREET_ADDRESS", 
+                            city = "CITY",
+                            state = "STATE",  
+                            class = "dataframe")
+
+hospitals_cleaned <- hospitals_sf[!is.na(hospitals_sf$cxy_lon),]
+
+saveRDS(hospitals_cleaned, "./data/hospitals_cleaned.RDS")
+
+```
+
+
