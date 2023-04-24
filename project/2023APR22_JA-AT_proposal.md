@@ -34,7 +34,7 @@ We are aggregating several datasets for this analysis:
 
 - **Socioeconomic data** - income inequality calculated as a census tract-level Gini index. 
 
-- **Health data**: measures of prevalence of health measures such as cancer prevalence, access to health insurance, blood pressure, heart disease, and more by census tract. 
+- **[Health data](https://chronicdata.cdc.gov/500-Cities-Places/500-Cities-Census-Tract-level-Data-GIS-Friendly-Fo/k86t-wghb)**: measures of prevalence of health measures such as cancer prevalence, access to health insurance, blood pressure, heart disease, and more by census tract. 
 
 
 

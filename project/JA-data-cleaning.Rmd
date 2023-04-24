@@ -27,7 +27,7 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(censusxy, sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris) 
+pacman::p_load(censusxy, sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi) 
 ```
 
 
@@ -306,15 +306,15 @@ affordable_housing2_geoid = affordable_housing2_geoid %>%
 
 ```
 
-merge3.5
+merge3.1 = affordable_housing_geoid, food_access_agg, philly census health, population by race, heat vulnerability
 ```{r}
-merge3.5 = left_join(merge3, affordable_housing2_geoid, by = "TractFIPS")
+merge3.1 = left_join(merge3, affordable_housing2_geoid, by = "TractFIPS")
 
 ```
 
 affordable housing and health
 ```{r}
-merge3.5 %>%
+merge3.1 %>%
   ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
   geom_point(alpha = 0.5) +
   # geom_smooth(method = "lm", se = F) + 
@@ -332,7 +332,7 @@ merge3.5 %>%
 
 
 ```{r}
-merge3.5 %>%
+merge3.1 %>%
   ggplot(aes(x = sumTOTAL_UNITS, y = CANCER_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
   geom_point(alpha = 0.4) +
   geom_smooth(method = "lm", se = F, show.legend = F) +
@@ -349,4 +349,108 @@ merge3.5 %>%
 
 
 Testing on looking at property tax delinquencies 
+
+
+## walkscores from Annan
+```{r}
+walk = read.csv("data/walkscores.csv")
+
+walk %>%
+  arrange(TractFIPS)
+
+walk$transit_score = as.numeric(walk$transit_score)
+walk$bike_score = as.numeric(walk$bike_score)
+walk$TractFIPS = as.character(walk$TractFIPS)
+
+str(walk)
+
+summary(walk)
+```
+
+
+merge3.2 = walk score, affordable_housing_geoid, food_access_agg, philly census health, population by race, heat vulnerability
+```{r}
+merge3.2 = merge(merge3.1, walk, by = "TractFIPS")
+```
+
+```{r}
+merge3.2 %>%
+  ggplot(aes(x = sumTOTAL_UNITS, 
+             y = transit_score, 
+             color = CANCER_CrudePrev, 
+             shape = N_VERYHIGH)) + 
+  geom_point(alpha = 0.6,
+             size = 3,
+             stroke = 1) +
+  # geom_smooth(method = "lm", se = F, show.legend = F) +
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  labs(x = "Total Affordable Housing Units", y = "Transit Score", title = "EDA" ) +
+  scale_shape_discrete(labels=c('No', 'Yes')) +
+  scale_color_gradient(low = "lightpink", high = "darkblue", na.value = NA) +
+  guides(color=guide_legend(title="Cancer Prevalence"), 
+         shape=guide_legend(title="High Heat-Related Illness")) +
+  theme_bw() + 
+  theme(legend.position = "right")
+```
+
+
+```{r}
+
+#trying to see if i can conditionally change the fill on the points
+merge3.2 %>%
+  ggplot(aes(x = sumTOTAL_UNITS, 
+             y = transit_score, 
+             color = CANCER_CrudePrev, 
+             # shape = N_VERYHIGH, 
+             fill = ifelse(N_VERYHIGH == 1, NA, N_VERYHIGH))) + 
+  geom_point(alpha = 0.7,
+             size = 3,
+             shape = 21,
+             stroke = 1) +
+  scale_fill_discrete(na.value = "transparent") +
+  # geom_smooth(method = "lm", se = F, show.legend = F) +
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  labs(x = "Total Affordable Housing Units", y = "Transit Score", title = "EDA" ) +
+  # scale_shape_discrete(labels=c('No', 'Yes')) +
+  scale_color_gradient(low = "lightpink", high = "darkblue") +
+  guides(color=guide_legend(title="Cancer Prevalence"), 
+         shape=guide_legend(title="High Heat-Related Illness"), 
+         fill = F) +
+  theme_bw() + 
+  theme(legend.position = "right")
+```
+
+
+```{r}
+str(merge3.2)
+```
+
+# Final column cleaning 
+
+```{r}
+colnames(merge3.2)
+```
+
+
+Getting rid of columns we won't use 
+```{r}
+merge3.2 %>%
+  
+  
+```
+
+
+# tract-level gini index
+```{r}
+philly_tract_gini = gini(geo = "tract", year = 2010, quiet = F, state = "PA", county = "Philadelphia")
+
+saveRDS(philly_tract_gini, "data/philly_census_tract_gini.rds")
+
+
+philly_tract_gini
+```
 
