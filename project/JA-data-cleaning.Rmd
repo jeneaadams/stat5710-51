@@ -27,7 +27,7 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(censusxy, sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr) 
+pacman::p_load(censusxy, sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris) 
 ```
 
 
@@ -228,6 +228,13 @@ str(merge3)
 ```
 
 
+## tidying up 
+```{r}
+merge3$TractFIPS = as.character(merge3$TractFIPS)
+```
+
+
+
 ## test visualizations 
 ```{r}
 merge3 %>%
@@ -247,5 +254,82 @@ merge3 %>%
   stat_regline_equation(label.y = 60, aes(label = ..eq.label..)) +
   stat_regline_equation(label.y = 55, aes(label = ..rr.label..)) +
   theme_bw()
+```
+
+
+```{r}
+
+merge3$N_VERYHIGH = as.character(merge3$N_VERYHIGH)
+
+merge3 %>%
+  ggplot(aes(x = avgPCT_HPSS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = F) + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  labs(x = "Average % High Produce Supply Stores", y = "Prevalenace of High Blood Pressure", title = "Integrated view of health disparities, poverty, and environmental factors" ) +
+  guides(size=guide_legend(title="Average % Poverty"), 
+         color=guide_legend(title="High Heat-Related Illness")) +
+  theme_bw() + 
+  theme(legend.position = "bottom")
+```
+
+# geolocating 
+Geolocating addresses to census tracts?
+```{r}
+affordable_housing2 = affordable_housing %>%
+  rename(street = ADDRESS) %>%
+  mutate(city = "Philadelphia", 
+         state = "PA")
+
+# Generate geoids for the address list
+# affordable_housing2_geoid = append_geoid(affordable_housing2, 'tract')
+
+#since this takes a minute, I'll save it as an RDS file 
+saveRDS(affordable_housing2_geoid, file = "data/affordable_housing_geoid.rds")
+
+
+affordable_housing2_geoid = affordable_housing2_geoid %>%
+  rename(TractFIPS = geoid )
+```
+
+
+Get the total number of affordable housing units by census tract
+```{r}
+affordable_housing2_geoid = affordable_housing2_geoid %>%
+  group_by(TractFIPS) %>%
+  summarise(sumTOTAL_UNITS = sum(TOTAL_UNITS)) %>%
+  drop_na() #leaves 144 census tracts with known addresses and affordable housing units
+
+```
+
+merge3.5
+```{r}
+merge3.5 = left_join(merge3, affordable_housing2_geoid, by = "TractFIPS")
+
+```
+
+affordable housing and health
+```{r}
+merge3.5 %>%
+  ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
+  geom_point(alpha = 0.5) +
+  # geom_smooth(method = "lm", se = F) + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  labs(x = "Total Affordable Housing Units", y = "Prevalenace of High Blood Pressure", title = "Integrated view of health disparities, poverty, and environmental factors" ) +
+  guides(size=guide_legend(title="Average % Poverty"), 
+         color=guide_legend(title="High Heat-Related Illness")) +
+  theme_bw() + 
+  theme(legend.position = "bottom")
+```
+
+
+
+Do the same for hospitals
+```{r}
+head(hospitals)
 ```
 
