@@ -287,11 +287,13 @@ affordable_housing2 = affordable_housing %>%
 # affordable_housing2_geoid = append_geoid(affordable_housing2, 'tract')
 
 #since this takes a minute, I'll save it as an RDS file 
-saveRDS(affordable_housing2_geoid, file = "data/affordable_housing_geoid.rds")
+# saveRDS(affordable_housing2_geoid, file = "data/affordable_housing_geoid.rds")
+
+affordable_housing2_geoid = readRDS("data/affordable_housing_geoid.rds")
 
 
-affordable_housing2_geoid = affordable_housing2_geoid %>%
-  rename(TractFIPS = geoid )
+# affordable_housing2_geoid = affordable_housing2_geoid %>%
+#   rename(TractFIPS = geoid )
 ```
 
 
@@ -317,19 +319,34 @@ merge3.5 %>%
   geom_point(alpha = 0.5) +
   # geom_smooth(method = "lm", se = F) + 
   # stat_poly_eq(use_label(c("eq", "R2"))) + 
-  stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
-  stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  scale_color_discrete(labels=c('No', 'Yes')) +
   labs(x = "Total Affordable Housing Units", y = "Prevalenace of High Blood Pressure", title = "Integrated view of health disparities, poverty, and environmental factors" ) +
   guides(size=guide_legend(title="Average % Poverty"), 
          color=guide_legend(title="High Heat-Related Illness")) +
   theme_bw() + 
-  theme(legend.position = "bottom")
+  theme(legend.position = "left")
 ```
 
 
 
-Do the same for hospitals
 ```{r}
-head(hospitals)
+merge3.5 %>%
+  ggplot(aes(x = sumTOTAL_UNITS, y = CANCER_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = F, show.legend = F) +
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  labs(x = "Total Affordable Housing Units", y = "Prevalenace of Cancer", title = "Integrated view of health disparities, poverty, and environmental factors" ) +
+  scale_color_discrete(labels=c('No', 'Yes')) +
+  guides(size=guide_legend(title="Average % Poverty"), 
+         color=guide_legend(title="High Heat-Related Illness")) +
+  theme_bw() + 
+  theme(legend.position = "right")
 ```
+
+
+Testing on looking at property tax delinquencies 
 
