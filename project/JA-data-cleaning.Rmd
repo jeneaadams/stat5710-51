@@ -27,7 +27,7 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(censusxy, sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi) 
+pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr) 
 ```
 
 
@@ -450,7 +450,84 @@ philly_tract_gini = gini(geo = "tract", year = 2010, quiet = F, state = "PA", co
 
 saveRDS(philly_tract_gini, "data/philly_census_tract_gini.rds")
 
+colnames(philly_tract_gini[[1]])
 
-philly_tract_gini
+philly_tract_gini_df = philly_tract_gini[[1]] %>%
+  rename(TractFIPS = GEOID)
 ```
 
+```{r}
+philly_tract_gini_df$gini %>%
+  summary()
+
+```
+
+
+merge4 = gini, walk score, affordable_housing_geoid, food_access_agg, philly census health, population by race, heat vulnerability
+```{r}
+merge4 = merge(merge3.2, philly_tract_gini_df, by = "TractFIPS")
+```
+ 
+```{r}
+str(merge4)
+```
+ 
+## hospitals new 
+ 
+```{r}
+new_hosp = readRDS("data/hospitals_cleaned.RDS")
+head(new_hosp)
+
+new_hosp = new_hosp %>%
+  rename(street = STREET_ADDRESS, 
+         city = CITY, 
+         state = STATE)
+```
+ 
+```{r}
+new_hosp_geoid = append_geoid(new_hosp, 'tract')
+
+```
+ 
+```{r}
+new_hosp_geoid = new_hosp_geoid %>%
+  rename(TractFIPS = geoid)
+
+new_hosp_geoid_pct = new_hosp_geoid %>%
+  group_by(TractFIPS) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  mutate(pct_hosp = n/sum(n))
+
+```
+ 
+ 
+
+ merge 5 = merge4 + hospitals 
+```{r}
+merge5 = left_join(merge4, new_hosp_geoid_pct, by = "TractFIPS")
+```
+ 
+ 
+ 
+ 
+```{r}
+str(merge5)
+colnames(merge5)
+```
+
+```{r}
+
+#take out shapes and add them as a variable 
+
+merge5_new = merge5 %>%
+  select(-PlaceName, -PlaceFIPS, -Place_TractID, -StateAbbr, -Geolocation.x, -Geolocation.y, -OBJECTID.x, -OBJECTID.y, -GEOGRAPHY, -colnames(merge5)[grep(".*_Crude95CI", colnames(merge5))], -OBJECTID_1, -Shape__Area.x, -Shape__Length.x, -Shape__Area.y, -Shape__Length.y, -tract, -county, -state, -NAME10) %>%
+  rename(n_hospitals = n)
+
+dim(merge5_new)
+
+write.csv(merge5_new, "data/census_healthdisp_cleaned.csv")
+  
+```
+
+ 
