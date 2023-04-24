@@ -27,11 +27,11 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(censusxy, sf, readxl, tidyverse, ggplot2) 
+pacman::p_load(censusxy, sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr) 
 ```
 
 
-# Data 
+# Data loading & inspection
 
 ```{r}
 affordable_housing = read.csv("data/Affordable_Housing.csv", header = T)
@@ -50,8 +50,18 @@ census_blocks10 = read.csv("data/Census_Blocks_2010.csv")
 ```{r}
 test = read.csv("data/Walkable_Access_Healthy_Food.csv")
 
+test$GEOID = as.factor(test$GEOID)
 
+length(unique(test$GEOID))
 ```
+
+
+```{r}
+census_block_groups10 %>%
+  group_by(GEOID10)
+```
+
+
 
 ```{r}
 census_blocks10$GEOID10 = as.factor(census_blocks10$GEOID10)
@@ -68,7 +78,8 @@ head(cities_census_health_full)
 philly_census_health = cities_census_health_full %>%
   filter(PlaceName == "Philadelphia")
 
-write.csv(philly_census_health, "data/philly_census_health_tracts.csv") #376 tracts
+# write.csv(philly_census_health, "data/philly_census_health_tracts.csv") #376 tracts
+
 ```
 
 
@@ -83,18 +94,45 @@ write.csv(philly_census_health, "data/philly_census_health_tracts.csv") #376 tra
 384 census tracts here (2010 data)
 ```{r}
 head(population_philly)
+
+population_philly = population_philly %>%
+  rename(TractFIPS = GEOGRAPHY_NAME) 
+
+population_philly %>%
+  filter(TractFIPS == 42101000100)
 ```
+
 
 Food access data by census block group (level in between a block and a tract)
 ```{r}
 head(food_access)
+
+food_access %>%
+  filter(GEOID10 == 42101019800)
+```
+
+```{r}
+
+
+head(food_access$GEOID10)
+
+print("\n\n")
+
+head(heat_vuln$TractFIPS)
 ```
 
 
 384 census tracts here (2010 data)
 ```{r}
 head(heat_vuln)
+
+heat_vuln = heat_vuln %>%
+  rename(TractFIPS = GEOID10)
+
+heat_vuln %>%
+  filter(TractFIPS ==42101000100)
 ```
+
 
 
 Only 400 projects described in this dataset
@@ -108,4 +146,106 @@ head(affordable_housing)
 head(hospitals)
 ```
 
+
+
+# Merging 
+
+philly_census_health x population_philly (by race) 
+```{r}
+merge1 = merge(philly_census_health, population_philly, by = "TractFIPS")
+head(merge1)
+dim(merge1) #376 tracts and 77 columns, some which may not be used 
+
+```
+
+merge1 + heat vulnerability = philly census health, population by race, and heat vulnerability
+```{r}
+merge2 = merge(merge1, heat_vuln, by = "TractFIPS" )
+head(merge2)
+dim(merge2) #376 census tracts and 88 variables 
+
+```
+
+
+Next we just need to separate out the last digit in the food_access GEOID10 to transform the census block group number into a census tract number (https://www.census.gov/programs-surveys/geography/guidance/geo-identifiers.html#:~:text=Census%20Tract,482012231001)
+
+```{r}
+food_access = food_access %>%
+  mutate(new_tracts = substr(GEOID10,1,nchar(GEOID10)-1)) %>%
+  rename(TractFIPS = new_tracts)
+```
+
+The new census tract column is now ``TractFIPS`` like the other datasets
+
+
+Then we can maybe average the estimates for each census tract to get one row of data for each census tract 
+```{r}
+# food_access %>%
+#   arrange(TractFIPS) %>%
+#   group_by(TractFIPS) %>%
+#   summarise(sumTOTAL_LPSS = sum(TOTAL_LPSS),
+#             avgLPSS_PER1000 = mean(LPSS_PER1000), 
+#             sumTOTAL_HPSS = sum(TOTAL_HPSS),
+#             avgHPSS_PER1000 = mean(HPSS_PER1000), 
+#             avgPCT_HPSS = mean(PCT_HPSS), 
+#             # aggHPSS_ACCESS = paste(HPSS_ACCESS), 
+#             # aggSUP_ACCESS = paste(SUPERMARKET_ACCESS), 
+#             avgPCT_VEHICLE_AVAIL = mean(PCT_VEHICLE_AVAILABILITY),
+#             sumTOTAL_RESTAURANTS = sum(TOTAL_RESTAURANTS), 
+#             avgPCT_POVERTY = mean(PCT_POVERTY)
+#             # agg_HIGH_POV = paste(HIGH_POVERTY))
+
+
+food_access_agg = food_access %>%
+  arrange(TractFIPS) %>%
+  group_by(TractFIPS) %>%
+  summarise(sumTOTAL_LPSS = sum(TOTAL_LPSS),
+            avgLPSS_PER1000 = mean(LPSS_PER1000),
+            sumTOTAL_HPSS = sum(TOTAL_HPSS),
+            avgHPSS_PER1000 = mean(HPSS_PER1000),
+            avgPCT_HPSS = mean(PCT_HPSS),
+            avgPCT_VEHICLE_AVAIL = mean(PCT_VEHICLE_AVAILABILITY),
+            sumTOTAL_RESTAURANTS = sum(TOTAL_RESTAURANTS),
+            avgPCT_POVERTY = mean(PCT_POVERTY))
+
+food_access_agg
+```
+
+So now that we are down to about 380 census tracts, we can merge with the other data for ``merege3`` 
+
+
+merge2 + food_access_ag = philly census health, population by race, heat vulnerability, and food access
+```{r}
+merge3 = merge(merge2, food_access_agg, by = "TractFIPS" )
+head(merge3)
+dim(merge3) #376 census tracts and 94 variables 
+
+```
+
+
+```{r}
+str(merge3)
+```
+
+
+## test visualizations 
+```{r}
+merge3 %>%
+  ggplot(aes(x = HVI_SCORE, y = COPD_CrudePrev)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  stat_poly_eq(use_label(c("eq", "R2"))) + 
+  theme_bw()
+```
+
+```{r}
+merge3 %>%
+  ggplot(aes(x = avgPCT_HPSS, y = BPHIGH_CrudePrev)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  stat_regline_equation(label.y = 60, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 55, aes(label = ..rr.label..)) +
+  theme_bw()
+```
 
