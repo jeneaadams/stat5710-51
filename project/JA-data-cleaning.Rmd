@@ -96,7 +96,7 @@ philly_census_health = cities_census_health_full %>%
 head(population_philly)
 
 population_philly = population_philly %>%
-  rename(TractFIPS = GEOGRAPHY_NAME) 
+  dplyr::rename(TractFIPS = GEOGRAPHY_NAME) 
 
 population_philly %>%
   filter(TractFIPS == 42101000100)
@@ -127,7 +127,7 @@ head(heat_vuln$TractFIPS)
 head(heat_vuln)
 
 heat_vuln = heat_vuln %>%
-  rename(TractFIPS = GEOID10)
+  dplyr::rename(TractFIPS = GEOID10)
 
 heat_vuln %>%
   filter(TractFIPS ==42101000100)
@@ -172,7 +172,7 @@ Next we just need to separate out the last digit in the food_access GEOID10 to t
 ```{r}
 food_access = food_access %>%
   mutate(new_tracts = substr(GEOID10,1,nchar(GEOID10)-1)) %>%
-  rename(TractFIPS = new_tracts)
+  dplyr::rename(TractFIPS = new_tracts)
 ```
 
 The new census tract column is now ``TractFIPS`` like the other datasets
@@ -279,7 +279,7 @@ merge3 %>%
 Geolocating addresses to census tracts?
 ```{r}
 affordable_housing2 = affordable_housing %>%
-  rename(street = ADDRESS) %>%
+  dplyr::rename(street = ADDRESS) %>%
   mutate(city = "Philadelphia", 
          state = "PA")
 
@@ -438,7 +438,7 @@ colnames(merge3.2)
 
 Getting rid of columns we won't use 
 ```{r}
-merge3.2 %>%
+#merge3.2 %>%
   
   
 ```
@@ -453,7 +453,7 @@ saveRDS(philly_tract_gini, "data/philly_census_tract_gini.rds")
 colnames(philly_tract_gini[[1]])
 
 philly_tract_gini_df = philly_tract_gini[[1]] %>%
-  rename(TractFIPS = GEOID)
+  dplyr::rename(TractFIPS = GEOID)
 ```
 
 ```{r}
@@ -479,7 +479,7 @@ new_hosp = readRDS("data/hospitals_cleaned.RDS")
 head(new_hosp)
 
 new_hosp = new_hosp %>%
-  rename(street = STREET_ADDRESS, 
+  dplyr::rename(street = STREET_ADDRESS, 
          city = CITY, 
          state = STATE)
 ```
@@ -491,7 +491,7 @@ new_hosp_geoid = append_geoid(new_hosp, 'tract')
  
 ```{r}
 new_hosp_geoid = new_hosp_geoid %>%
-  rename(TractFIPS = geoid)
+  dplyr::rename(TractFIPS = geoid)
 
 new_hosp_geoid_pct = new_hosp_geoid %>%
   group_by(TractFIPS) %>%
@@ -522,7 +522,7 @@ colnames(merge5)
 
 merge5_new = merge5 %>%
   select(-PlaceName, -PlaceFIPS, -Place_TractID, -StateAbbr, -Geolocation.x, -Geolocation.y, -OBJECTID.x, -OBJECTID.y, -GEOGRAPHY, -colnames(merge5)[grep(".*_Crude95CI", colnames(merge5))], -OBJECTID_1, -Shape__Area.x, -Shape__Length.x, -Shape__Area.y, -Shape__Length.y, -tract, -county, -state, -NAME10) %>%
-  rename(n_hospitals = n)
+  dplyr::rename(n_hospitals = n)
 
 dim(merge5_new)
 
