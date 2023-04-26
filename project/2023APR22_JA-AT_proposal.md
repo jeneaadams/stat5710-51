@@ -22,17 +22,17 @@ The goal of the study is to quantify gentrification in Philly's neighborhoods an
 
 We are aggregating several datasets for this analysis: 
 
-- **Food access**: The Neighborhood Food Retail dataset includes GEOID level assessments of food access relevant to distance and types of high produce grocery stores, as well as if that area is a high poverty area. We chose this to understand the livability of certain areas with respect to their access to fresh food options, which have positive impacts on health. 
+- **[Food access](https://metadata.phila.gov/#home/datasetdetails/568d4b3c13d1bebc0c2a2b0f/representationdetails/5d4c6e160f63a20011c21727/)**: The Neighborhood Food Retail dataset includes GEOID level assessments of food access relevant to distance and types of high produce grocery stores, as well as if that area is a high poverty area. We chose this to understand the livability of certain areas with respect to their access to fresh food options, which have positive impacts on health. 
 
-- **Hospital locations**: locations of hospitals by type of care provided. We chose this to understand the distribution and access to healthcare in each census block. 
+- **[Hospital locations](https://metadata.phila.gov/#home/datasetdetails/5543867420583086178c4f38/representationdetails/55438ac29b989a05172d0d6e/)**: locations of hospitals by type of care provided. We chose this to understand the distribution and access to healthcare in each census block. 
 
-- **Heat Vulnerability**: scores and indicators for heat vulnerability by census block and prevalence of heat-related illnesses. This may or may not be related to access to green space and tree canopy. This data gives us an idea of environmental variables which contribute to health outcomes and quality of life for Philadelphia residents. 
+- **[Heat Vulnerability](https://metadata.phila.gov/#home/datasetdetails/61c3840862f14b001e21e837/representationdetails/61c3840962f14b001e21e83b/)**: scores and indicators for heat vulnerability by census block and prevalence of heat-related illnesses. This may or may not be related to access to green space and tree canopy. This data gives us an idea of environmental variables which contribute to health outcomes and quality of life for Philadelphia residents. 
 
-- **Affordable Housing**: locations of affordable and accessible housing projects recorded by the city. This data will provide information on the distribution of affordable housing options mapped to census blocks. 
+- **[Affordable Housing](https://metadata.phila.gov/#home/datasetdetails/5d5448e32385b40011d09425/representationdetails/5d5448e42385b40011d09429/)**: locations of affordable and accessible housing projects recorded by the city. This data will provide information on the distribution of affordable housing options mapped to census blocks. 
 
-- **Philadelphia population metrics**: Demographic information of Philadelphia census blocks by race and ethnicity
+- **[Philadelphia population metrics](https://metadata.phila.gov/#home/datasetdetails/61c23fb963d616001ef54695/representationdetails/61eb230b3675cd001e28a23c/)**: Demographic information of Philadelphia census blocks by race and ethnicity
 
-- **Socioeconomic data** - income inequality calculated as a census tract-level Gini index. 
+- **[Socioeconomic data](https://rdrr.io/cran/ndi/man/gini.html)** - income inequality calculated as a census tract-level Gini index. 
 
 - **[Health data](https://chronicdata.cdc.gov/500-Cities-Places/500-Cities-Census-Tract-level-Data-GIS-Friendly-Fo/k86t-wghb)**: measures of prevalence of health measures such as cancer prevalence, access to health insurance, blood pressure, heart disease, and more by census tract. 
 
