@@ -1,0 +1,378 @@
+---
+title: "JA data cleaning"
+author:
+- Jenea Adams
+- Annan Timon
+date: 'april 22'
+output:
+  html_document:
+    code_folding: show
+    highlight: haddock
+    theme: lumen
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+  word_document:
+    toc: yes
+    toc_depth: '4'
+urlcolor: blue  
+---
+
+# Packages 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr,
+               rmapshaper,tmap, areal,leaflet, RColorBrewer,raster, rasterVis, tidycensus, censusapi,
+               reshape2, wesanderson, ggarrange, viridis, ggsci, mapview) 
+```
+
+In this case study, we use the following three nearly cleaned data:
+
+* **covid_county.csv**: County-level socialeconomic information that combines the above-mentioned 4 datasets: Income (Poverty level and household income), Jobs (Employment type, rate, and change), People (Population size, density, education level, race, age, household size, and migration rates), County Classifications
+* **covid_rates.csv**: Daily cumulative numbers on infection and fatality for each county
+* **covid_intervention.csv**: County-level lockdown intervention.
+
+Among all data, the unique identifier of county is `FIPS`.
+
+The cleaning procedure is attached in `Appendix 2: Data cleaning` You may go through it if you are interested or would like to make any changes. 
+
+**It may need more data wrangling.**
+
+First read in the data.
+
+```{r}
+census_disp <-fread("data/census_healthdisp_cleaned.csv")
+dim(census_disp)
+summary(census_disp)
+```
+
+
+
+## Gini Index analysis
+
+```{r, warning=FALSE}
+# extract gini coefficient for 2010 and generate a matrix
+gini_2010 <- gini(geo = "tract", year = 2010, quiet = F, state = "PA", county = "Philadelphia")
+philly_gini_all <- gini_2010$gini %>%
+  dplyr::select(GEOID, gini) %>%
+  dplyr::rename(!!as.character(2010) := gini)
+
+# extract philly gini data for years 2010-2019
+for (year in 2011:2019) {
+  curData <- gini(geo = "tract", year = year, quiet = F, state = "PA", county = "Philadelphia")
+  philly_gini_all <- curData$gini %>%
+    dplyr::rename(!!as.character(year) := gini) %>%
+    dplyr::select(GEOID, !!as.character(year)) %>%
+    left_join(philly_gini_all, ., by ="GEOID")
+}
+```
+
+In order to directly download data from the Census API, you need a [key](http://api.census.gov/data/key_signup.html). You can sign up for a free key here. Type your key in quotes using the census_api_key() command.
+
+```{r}
+# get accesss to the census api
+census_api_key("f4a30edf07058b5e59f5bbfe6c2cc2cc7bbb8029", install = TRUE)
+```
+
+
+
+```{r, warning=FALSE}
+# extract phila county geospatial data
+pa.tracts <- get_acs(geography = "tract", 
+              year = 2010,
+              variables = c(tpopr = "B03002_001"), 
+              state = "PA",
+              county = "Philadelphia",
+              output = "wide",
+              survey = "acs5",
+              geometry = TRUE,
+              cb = FALSE)
+```
+
+```{r, warning=FALSE, fig.width=10, fig.height=8}
+philly_gini_all$mean_gini <- rowMeans(philly_gini_all[,2:length(philly_gini_all)])
+
+# select top 5 and bottom 5 census tracts with the highest and lowest mean gini index, respectively
+selected_tracts_high <- philly_gini_all[order(philly_gini_all$mean_gini, decreasing=T), ]$GEOID[1:10]
+#print(selected_tracts_high)
+selected_tracts_low <- philly_gini_all[order(philly_gini_all$mean_gini, decreasing=F), ]$GEOID[1:10]
+#print(selected_tracts_low)
+
+# flatten out df
+philly_gini_melt <-philly_gini_all %>%
+  dplyr::select(-mean_gini) %>%
+  reshape2::melt()
+
+# show change in gini index over time, highlighting census tracts with high gini
+high_ineq_trend <- philly_gini_melt%>%
+  ggplot(aes(x=variable, y=value, group =GEOID)) +
+  geom_line(col = "grey", alpha = .5) + 
+  geom_point(col = "grey", alpha = .5) +
+  geom_line(data = subset(philly_gini_melt, GEOID %in% selected_tracts_high),
+            aes(col = GEOID)) +
+  geom_point(data = subset(philly_gini_melt, GEOID %in% selected_tracts_high),
+            aes(col = GEOID)) +  
+  scale_color_manual(values = viridis(10)) +
+  theme_bw() +
+  labs(y = "Gini Index", x = "Year") 
+
+
+# plotting, subset census tracts with high gini to show where they are geographically
+ineq_tracts <- pa.tracts %>%
+  left_join(subset(philly_gini_all, GEOID %in% selected_tracts_high)) %>%
+  mutate_if(is.numeric,coalesce,0)
+
+# remove tracts that are always na (park and river area) and non residential
+na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
+              "42101980900", "42101980700", "42101980600", "42101980800",
+              "42101980500", "42101980000", "42101980300")
+
+ineq_tracts[ineq_tracts$GEOID %in% na_tracts,3:length(ineq_tracts)] <- NA
+
+# plot showing areas in west, center city east, and north philly experience the highest income inequality
+high_ineq_geo <- ggplot(data = ineq_tracts, aes(fill = mean_gini)) + 
+  geom_sf() +
+  scale_fill_continuous(low="grey", high="mediumpurple", 
+                       guide="colorbar",na.value="white") + 
+  theme_void()
+
+plot1 <- ggarrange(high_ineq_trend, high_ineq_geo, ncol = 2, nrow = 1, common.legend = TRUE,legend="bottom")
+
+annotate_figure(plot1, top = text_grob("Census tracts with highest Income inequality", face = "bold", size = 14))
+
+# same analysis as above but with the lowest income inequality
+
+low_ineq_trend <- philly_gini_melt%>%
+  ggplot(aes(x=variable, y=value, group =GEOID)) +
+  geom_line(col = "grey", alpha = .5) + 
+  geom_point(col = "grey", alpha = .5) +
+  geom_line(data = subset(philly_gini_melt, GEOID %in% selected_tracts_low),
+            aes(col = GEOID)) +
+  geom_point(data = subset(philly_gini_melt, GEOID %in% selected_tracts_low),
+            aes(col = GEOID)) +  
+  scale_color_manual(values = viridis(10)) +
+  theme_bw() +
+  labs(y = "Gini Index", x = "Year") 
+
+ineq_tracts <- pa.tracts %>%
+  left_join(subset(philly_gini_all, GEOID %in% selected_tracts_low)) %>%
+  mutate_if(is.numeric,coalesce,0)
+
+na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
+              "42101980900", "42101980700", "42101980600", "42101980800",
+              "42101980500", "42101980000", "42101980300")
+
+ineq_tracts[ineq_tracts$GEOID %in% na_tracts,3:length(ineq_tracts)] <- NA
+
+
+low_ineq_geo <- ggplot(data = ineq_tracts, aes(fill = mean_gini)) + 
+  geom_sf() +
+  scale_fill_continuous(low="grey", high="mediumpurple", 
+                       guide="colorbar",na.value="white") + 
+  theme_void()
+
+
+
+plot2 <- ggarrange(low_ineq_trend, low_ineq_geo, ncol = 2, nrow = 1, common.legend = TRUE,legend="bottom")
+
+annotate_figure(plot2, top = text_grob("Census tracts with lowest Income inequality", face = "bold", size = 14))
+
+```
+
+## distribution of 
+
+```{r}
+hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
+  dplyr::rename(street = STREET_ADDRESS, 
+         city = CITY, 
+         state = STATE)
+  
+hospitals_sf <- cxy_geocode(hospitals,
+                            street = "street", 
+                            city = "city", 
+                            state = "state", 
+                            class = "sf")
+```
+
+```{r}
+mapview::mapview(hospitals_sf)
+```
+
+
+```{r}
+affordable_housing <- readRDS("data/affordable_housing_geoid.rds") 
+  
+affordable_housing_sf <- cxy_geocode(affordable_housing,
+                            street = "street", 
+                            city = "city", 
+                            state = "state", 
+                            class = "sf")
+```
+
+```{r}
+mapview::mapview(affordable_housing_sf)
+```
+
+### food access
+Across Philadelphia, low-produce supply stores vastly outnumber
+high-produce supply stores. This tips the balance towards foods high
+in calories, fat, sugar, or salt for everyone, regardless of income, race,
+or neighborhood.
+
+Lower income neighborhoods have disproportionately high numbers
+of low-produce supply stores.
+
+Proximity to supermarkets is only one part of improving diet quality.
+
+HIGH_POVERTY 	  	Binary indicator for high poverty. High poverty is defined as 20% or more of the block group being below the federal poverty level. 	Text
+HPSS_ACCESS 	  	Access to high-produce supply stores as either No Access, Low Access, or Moderate or High Access.
+
+No Access areas have 0 high-produce supply stores within walking distance. Low Access areas have either 1 big box store, 1 produce store, or up to 4 limited-access high-produce supply stores. Moderate or High Access and have either 1 or more supermarkets or several high-produce supply stores nearby. 	Text
+HPSS_PER1000 	  	Number of high-produce supply stores per 1,000 people 	Numeric
+LPSS_PER1000 	  	Number of low-produce supply stores per 1,000 people 	Numeric
+NON_RESIDENTIAL 	  	Non-residential indicator. Non-residential block groups are those with either a population of zero (based on the 2013-2017 American Community Survey of the U.S. Census) or an area of 2 square miles or more. The latter criteria allows for the exclusion of Fairmount Park, Wissahickon Valley Park, and Pennypack Park. 	Text
+PCT_HPSS 	  	Percentage of all stores within a half mile walking distance of the block group that are high-produce supply stores 	Numeric
+PCT_POVERTY 	  	Percentage of people living below the federal poverty level 	Numeric
+PCT_VEHICLE_AVAILABILITY 	  	Percentage of occupied housing units with at least 1 vehicle 	Numeric
+SUPERMARKET_ACCESS 	  	Binary indicator for whether or not the block group has a supermarket within a half mile walking distance. 	Text
+TOTAL_HPSS 	  	Total number of high-produce supply stores within a half mile walking distance of the block group. High-produce supply stores generally offer a larger amount of healthier foods, particularly fruits and vegetables. They included supermarkets, big box stores, and produce stores. Farmers markets, mobile produce, buying clubs, and CSAs were counted as 1/4 of a store due to their limited access. Supermarkets (8) and big box stores (3) within a half mile of Philadelphia were included to account for border-crossing. 	Numeric 
+
+
+```{r}
+food_access <- census_disp %>%
+  dplyr::select(TractFIPS, avgHPSS_PER1000, avgLPSS_PER1000) %>%
+  mutate(TractFIPS = as.character(TractFIPS)) %>%
+  dplyr::rename(GEOID = TractFIPS)
+
+# plotting, subset census tracts with high gini to show where they are geographically
+food_access_tracts <- pa.tracts %>%
+  left_join(food_access)
+
+
+# plot showing areas in west, center city east, and north philly experience the highest income inequality
+
+ggplot(data = food_access_tracts, aes(fill = avgHPSS_PER1000)) + 
+  geom_sf() +
+  scale_fill_distiller(palette = "RdPu", 
+                       direction = 1) + 
+  theme_void()
+
+
+ggplot(data = food_access_tracts, aes(fill = avgLPSS_PER1000)) + 
+  geom_sf() +
+  scale_fill_distiller(palette = "RdPu", 
+                       direction = 1) + 
+  theme_void()
+
+
+
+```
+
+
+## walking and transit
+
+```{r}
+# read in redfin scores 
+walkscores <- fread("data/walkscores.csv") %>%
+  dplyr::select(TractFIPS, walk_score, transit_score, bike_score) %>%
+  dplyr::rename(GEOID = TractFIPS) %>%
+  mutate(GEOID = as.character(GEOID)) %>%
+  mutate(transit_score = as.numeric(transit_score)) %>%
+  mutate(bike_score = as.numeric(bike_score))
+
+
+# fix transit score and bikescore 63, no transit score available and the bike scoer was messed up
+print(walkscores[63,])
+walkscores[63,]$transit_score <- 0
+walkscores[63,]$bike_score <- 60
+
+#merge with geospatial stuff
+
+# plotting, subset census tracts with high gini to show where they are geographically
+walkscores_tracts <- pa.tracts %>%
+  left_join(walkscores)
+
+
+walkscores_tracts[walkscores_tracts$GEOID %in% na_tracts,3:length(walkscores_tracts)] <- NA
+
+
+ggplot(data = walkscores_tracts, aes(fill = walk_score)) + 
+  geom_sf() +
+  scale_fill_distiller(palette = "BuPu", 
+                       direction = 1) + 
+  theme_void()
+
+
+ggplot(data = walkscores_tracts, aes(fill = transit_score)) + 
+  geom_sf() +
+  scale_fill_distiller(palette = "BuPu", 
+                       direction = 1) + 
+  theme_void()
+
+ggplot(data = walkscores_tracts, aes(fill = bike_score)) + 
+  geom_sf() +
+  scale_fill_distiller(palette = "BuPu", 
+                       direction = 1) + 
+  theme_void()
+
+
+```
+
+### relationship between variables
+
+EXTRA CODE TO GUIDE ANALYSIS
+
+## Understand the data
+
+The detailed description of variables is in `Appendix 1: Data description`. Please get familiar with the variables. Summarize the two data briefly.
+
+## COVID case trend
+
+It is crucial to decide the right granularity for visualization and analysis. We will compare daily vs weekly total new cases by state and we will see it is hard to interpret daily report.
+
+i) Plot **new** COVID cases in NY, WA and FL by state and by day. Any irregular pattern? What is the biggest problem of using single day data? 
+
+ii) Create **weekly new** cases per 100k `weekly_case_per100k`. Plot the spaghetti plots of `weekly_case_per100k` by state. Use `TotalPopEst2019` as population.
+
+iii) Summarize the COVID case trend among states based on the plot in ii). What could be the possible reasons to explain the variabilities? 
+
+iv) (Optional) Use `covid_intervention` to see whether the effectiveness of lockdown in flattening the curve.
+
+## COVID death trend
+
+i) For each month in 2020, plot the monthly deaths per 100k heatmap by state on US map. Use the same color range across months. (Hints: Set `limits` argument in `scale_fill_gradient()` or use `facet_wrap()`; use `lubridate::month()` and `lubridate::year()` to extract month and year from date; use `tidyr::complete(state, month, fill = list(new_case_per100k = NA))` to complete the missing months with no cases.)
+
+ii) (Optional) Use `plotly` to animate the monthly maps in i). Does it reveal any systematic way to capture the dynamic changes among states? (Hints: Follow *Appendix 3: Plotly heatmap::* in Module 6 regularization lecture to plot the heatmap using `plotly`. Use `frame` argument in `add_trace()` for animation. `plotly` only recognizes abbreviation of state names. Use `unique(us_map(regions = "states") %>% select(abbr, full))` to get the abbreviation and merge with the data to get state abbreviation.)
+
+# COVID factor
+
+We now try to build a good parsimonious model to find possible factors related to death rate on county level. Let us not take time series into account for the moment and use the total number as of *Feb 1, 2021*.
+
+i) Create the response variable `total_death_per100k` as the total of number of COVID deaths per 100k by *Feb 1, 2021*. We suggest to take log transformation as `log_total_death_per100k = log(total_death_per100k + 1)`. Merge `total_death_per100k` to `county_data` for the following analysis.
+
+ii) Select possible variables in `county_data` as covariates. We provide `county_data_sub`, a subset variables from `county_data`, for you to get started. Please add any potential variables as you wish. 
+
+    a) Report missing values in your final subset of variables. 
+
+    b) In the following anaylsis, you may ignore the missing values.
+
+iii) Use LASSO to choose a parsimonious model with all available sensible county-level information. **Force in State** in the process. Why we need to force in State? You may use `lambda.1se` to choose a smaller model. 
+
+iv) Use `Cp` or BIC to fine tune the LASSO model from iii). Again **force in State** in the process. 
+
+v) If necessary, reduce the model from iv) to a final model with all variables being significant at 0.05 level. Are the linear model assumptions all reasonably met?
+
+vi) It has been shown that COVID affects elderly the most. It is also claimed that the COVID death rate among African Americans and Latinos is higher. Does your analysis support these arguments?
+
+vii) Based on your final model, summarize your findings. In particular, summarize the state effect controlling for others. Provide intervention recommendations to policy makers to reduce COVID death rate.
+
+viii) What else can we do to improve our model? What other important information we may have missed? 
+
+ix) (Optional) Would your findings be very different if you had refined the data in some way or imputed the missing values in part ii). Check PCA lecture, section 10 for imputations via `softImpute`. 
+
