@@ -324,7 +324,7 @@ ggplot(data = walkscores_tracts, aes(fill = bike_score)) +
 
 ```
 
-### relationship between variables
+# health data
 
 EXTRA CODE TO GUIDE ANALYSIS
 
