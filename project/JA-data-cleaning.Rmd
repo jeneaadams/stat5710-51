@@ -526,7 +526,7 @@ merge5_new = merge5 %>%
 
 dim(merge5_new)
 
-write.csv(merge5_new, "data/census_healthdisp_cleaned.csv")
+# write.csv(merge5_new, "data/census_healthdisp_cleaned.csv")
   
 ```
 
