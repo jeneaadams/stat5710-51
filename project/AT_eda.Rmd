@@ -1,5 +1,5 @@
 ---
-title: "JA data cleaning"
+title: "AT eda"
 author:
 - Jenea Adams
 - Annan Timon
@@ -52,6 +52,26 @@ dim(census_disp)
 summary(census_disp)
 ```
 
+```{r}
+census_disp_final <- census_disp %>%
+  mutate(TractFIPS = as.character(TractFIPS)) %>%
+  filter(!(TractFIPS %in% na_tracts)) %>%
+  dplyr::rename(GEOID = TractFIPS) %>%
+  dplyr::select(-pct_hosp, -lon, -lat, -V1, -YEAR, -COUNT_ALL_RACES_ETHNICITIES)
+
+census_disp_final$transit_score[63] <- 0
+census_disp_final$bike_score[63] <- 60
+
+census_disp_final$n_hospitals[is.na(census_disp_final$n_hospitals)] <- 0
+census_disp_final$sumTOTAL_UNITS[is.na(census_disp_final$sumTOTAL_UNITS)] <- 0
+
+census_disp_final <- na.omit(census_disp_final)
+
+summary(census_disp_final)
+
+saveRDS(census_disp_final, "data/final_data.RDS")
+```
+
 
 
 ## Gini Index analysis
@@ -77,7 +97,7 @@ In order to directly download data from the Census API, you need a [key](http://
 
 ```{r}
 # get accesss to the census api
-census_api_key("f4a30edf07058b5e59f5bbfe6c2cc2cc7bbb8029", install = TRUE)
+# census_api_key("f4a30edf07058b5e59f5bbfe6c2cc2cc7bbb8029", install = TRUE)
 ```
 
 
@@ -245,7 +265,7 @@ TOTAL_HPSS 	  	Total number of high-produce supply stores within a half mile wal
 
 
 ```{r}
-food_access <- census_disp %>%
+food_access <- census_disp_final %>%
   dplyr::select(TractFIPS, avgHPSS_PER1000, avgLPSS_PER1000) %>%
   mutate(TractFIPS = as.character(TractFIPS)) %>%
   dplyr::rename(GEOID = TractFIPS)
@@ -323,6 +343,25 @@ ggplot(data = walkscores_tracts, aes(fill = bike_score)) +
 
 
 ```
+
+
+```{r}
+gini2010philly = gini(geo = "tract", state = "PA", county = "Philadelphia", year = 2010)
+
+gini2010philly$gini
+
+tracts2010philly = tigris::tracts(state = "PA", county = "Philadelphia", year = 2010, cb = TRUE) %>%
+  mutate(GEO_ID = gsub("1400000US","", GEO_ID)) %>%
+  dplyr::rename(GEOID = GEO_ID)
+
+tracts2010philly$GEOID
+
+
+tracts2010philly_gini = dplyr::left_join(tracts2010philly, gini2010philly$gini, by = "GEOID")
+```
+
+
+
 
 # health data
 
