@@ -26,7 +26,7 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps, skimr, GGaly, reshape2) 
+pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps, skimr, GGaly, reshape2, glmnet) 
 ```
 
 Read in data 
@@ -372,14 +372,100 @@ summary(final_data)
 str(final_data)
 ```
 
-# lm()
+# lm() - predicting gini
 
 ```{r}
 fit.all = lm(data = final_data[-1], gini ~ .)
 summary(fit.all)
 ```
 
+Forward selection
 ```{r}
+fit.forward = regsubsets(gini ~., final_data[-1], nvmax = 60, method = "forward")
+summary(fit.forward)
+
+```
+
+Backward selection
+```{r}
+fit.backward = regsubsets(gini ~., final_data[-1], nvmax = 60, method = "backward")
+summary(fit.backward)
+```
+
+```{r}
+fit.backward$w
+```
+
+
+exhaustive search 
+```{r}
+# fit.exh = regsubsets(gini ~., final_data[-1], nvmax = 50, method = "exhaustive", really.big = T)
+```
+
+
+
+# lm() - predicting diseases
+
+prep from AT 
+```{r}
+health_columns <- c(1, grep("[A-Z]*_CrudePrev",colnames(final_data)))
+demog_columns <- colnames(final_data)[grep("COUNT_.*|PERCENT_.*",colnames(final_data))]
+Ys <- colnames(final_data)[health_columns]
+features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
+                                        !(colnames(final_data) %in% demog_columns)]
+
+Ys #health stuff
+features
+```
+
+
+```{r}
+
+# models = matrix(nrow = length(Ys[-1]), ncol = length(features))
+
+models = list()
+all_ps = list()
+betas = list()
+  
+for(i in 1:length(Ys[-1])){
+  f = as.formula(
+  paste(Ys[i], 
+        paste(features, collapse = " + "), 
+        sep = " ~ "))
+  
+  #get model and add to list 
+  model = lm(f, final_data)
+  models[[Ys[-1][i]]] = model
+  
+  #get significant ps
+  p = coef(summary(model))[,4]
+  all_ps[[Ys[-1][i]]] = p 
+  
+  #get betas
+  beta = coef(summary(model))[,1]
+  betas[[Ys[-1][i]]] = beta
+}
+
+# print(f)
+
+
+# models
+# 
+# sig_ps
+# 
+# betas
+
+```
+
+finding significant Ps
+```{r}
+
+summary(models$CANCER_CrudePrev)$coefficients[,4] #extract p-vales from an individual model 
+
+```
+
+```{r}
+
 
 ```
 
@@ -388,7 +474,7 @@ summary(fit.all)
 
 ```{r}
 Y = final_data$gini
-X = model.matrix(gini~., data = final_data)[,-1]
+X = model.matrix(gini~., data = final_data[-1])[,-1]
 
 set.seed(1)
 pen.fac = rep(1, ncol(X))
@@ -404,3 +490,13 @@ coef.min
 length(rownames(as.matrix(coef.min))[-1]) #get rid of the intercept 
 ```
 
+# glm()
+
+# Model Evaluation 
+
+How well can these models predict health and quality of life 
+
+
+# Discussion points and Future Directions 
+
+- Look at interaction between related models 
