@@ -1,0 +1,406 @@
+---
+title: "JA EDA and lm/LASSO analysis"
+author:
+- Jenea Adams
+- Annan Timon
+date: 'april 26'
+output:
+  html_document:
+    code_folding: show
+    highlight: haddock
+    theme: lumen
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+  word_document:
+    toc: yes
+    toc_depth: '4'
+urlcolor: blue  
+---
+
+# Packages & Data
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps, skimr, GGaly, reshape2) 
+```
+
+Read in data 
+```{r}
+census_disp = read.csv("data/census_healthdisp_cleaned.csv")
+head(census_disp)
+```
+
+
+```{r}
+
+str(census_disp)
+
+# write.csv(str(census_disp), "data/final_vars.csv")
+```
+
+
+
+## organizing data 
+```{r}
+census_disp = census_disp %>%
+  mutate(TractFIPS = as.character(TractFIPS), 
+         YEAR = as.factor(YEAR)) %>%
+  rename(heat_health_impacts = N_VERYHIGH) %>%
+  mutate(heat_health_impacts = as.factor(heat_health_impacts)) %>%
+  select(-X)
+```
+
+
+
+# Data Dictionary 
+
+https://www.tablesgenerator.com/markdown_tables
+
+[insert data dictionary here]
+
+
+# EDA 
+
+## census NDI package
+```{r}
+
+# tidycensus::census_api_key("3352b422b0ef5aaabae7a20651522b5a7688e0bf", install = T, overwrite = T)
+
+
+gini2010philly = gini(geo = "tract", state = "PA", county = "Philadelphia", year = 2010)
+
+gini2010philly$gini
+
+tracts2010philly = tigris::tracts(state = "PA", county = "Philadelphia", year = 2010, cb = TRUE) %>%
+  mutate(GEO_ID = gsub("1400000US","", GEO_ID)) %>%
+  dplyr::rename(GEOID = GEO_ID)
+
+tracts2010philly$GEOID
+
+
+tracts2010philly_gini = dplyr::left_join(tracts2010philly, gini2010philly$gini, by = "GEOID")
+```
+
+```{r}
+tracts2010philly2 = tracts2010philly %>%
+  rename(TractFIPS = GEOID)
+census_disp_geo = left_join(tracts2010philly2, census_disp, by = "TractFIPS")
+```
+
+
+
+```{r}
+# tracts2010philly_gini$gini
+```
+
+
+```{r}
+tracts2010philly_gini %>%
+  ggplot() +
+  geom_sf(data = tracts2010philly_gini,
+          aes(fill = gini),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+
+```
+Having some issues by getting all NA values for the gini index, thus resulting in a blank map. 
+
+
+
+
+```{r}
+census_disp %>%
+  ggplot(aes(x = gini, y = walk_score, color = CANCER_CrudePrev)) + 
+  geom_point(alpha = 0.5) + 
+  geom_smooth(method = "lm", se = F, color = "orange", ) + 
+  stat_poly_eq(use_label(c("R2"))) +
+  theme_bw()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(aes(fill = CANCER_CrudePrev),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+
+
+```{r}
+census_disp %>%
+  ggplot(aes(x = gini, y = avgPCT_HPSS, color = BPHIGH_CrudePrev)) + 
+  geom_point(alpha = 0.5) + 
+  geom_smooth(method = "lm", se = F, color = "orange", ) + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) +
+  theme_bw()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(aes(fill = BPHIGH_CrudePrev),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+
+
+```{r}
+census_disp %>%
+  ggplot(aes(x = gini, y = avgPCT_HPSS, color = avgPCT_POVERTY)) + 
+  geom_point(alpha = 0.5) + 
+  geom_smooth(method = "lm", se = F, color = "orange", ) + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) +
+  theme_bw()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(aes(fill = avgPCT_POVERTY),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+
+
+
+```{r}
+census_disp %>%
+  ggplot(aes(x = SLEEP_CrudePrev, y = gini, color = avgHPSS_PER1000 , shape = heat_health_impacts)) + 
+  geom_point(alpha = 0.5) + 
+  # geom_smooth(method = "lm", se = F, color = "orange", ) +
+  # stat_poly_eq(use_label(c("eq", "R2"))) +
+  theme_bw()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(aes(fill = avgHPSS_PER1000),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+colnames(census_disp)
+```
+
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(aes(fill = HVI_SCORE),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = MHLTH_CrudePrev),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = SLEEP_CrudePrev),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = sumTOTAL_UNITS),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = DIABETES_CrudePrev),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+# census_disp_geo %>%
+#   select(PERCENT_WHITE_NH, PERCENT_BLACK_NH, PERCENT_ASIAN_NH, PERCENT_HISPANIC) %>%
+#   ggplot() +
+#   geom_sf(data = census_disp_geo, aes(fill = DIABETES_CrudePrev),
+#           color = "white") +
+#   ggplot2::scale_fill_viridis_c() +
+#   theme_void()
+```
+
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = pct_hosp),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = transit_score),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = walk_score),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = OBESITY_CrudePrev),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = TEETHLOST_CrudePrev),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = avgLPSS_PER1000),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+```
+
+
+
+
+```{r}
+census_disp %>%
+  ggplot(aes(gini)) + 
+  geom_histogram() + 
+  theme_bw()
+  
+```
+
+```{r}
+census_disp %>%
+  ggplot(aes(gini,
+             fill = heat_health_impacts)) + 
+  geom_histogram(color = "white") + 
+  guides(alpha = F, color = F)+
+  scale_fill_brewer(palette="Dark2") +
+  theme_bw()
+```
+
+```{r}
+mean(!is.na(census_disp$gini))
+
+census_disp %>%
+  mutate(gini_i = ifelse(gini > 0.4531, 1, 0), 
+         gini_i = as.factor(gini_i)) %>%
+  ggplot(aes(CANCER_CrudePrev,
+             fill = gini_i)) + 
+  geom_histogram(color = "white") + 
+  guides(alpha = F, 
+         color = F, 
+         fill = (guide_legend(title = "Gini Index > mean")))+
+  scale_fill_brewer(palette="Dark2", labels = c("Yes", "No", "NA")) +
+  geom_vline(aes(xintercept=mean(CANCER_CrudePrev)),
+            color="black", linetype="dashed", size=1)
+  theme_bw()
+```
+
+# model data prep 
+
+```{r}
+final_data = readRDS("data/final_data.RDS") %>%
+  select(-YEAR, -COUNT_ALL_RACES_ETHNICITIES) %>%
+  mutate(heat_health_effects = as.factor(N_VERYHIGH)) %>%
+  select(-N_VERYHIGH)
+```
+
+```{r}
+# census_disp2 = census_disp %>%
+#   select(-YEAR, -lat, -lon, )
+```
+
+```{r}
+summary(final_data)
+```
+
+
+```{r}
+str(final_data)
+```
+
+# lm()
+
+```{r}
+fit.all = lm(data = final_data[-1], gini ~ .)
+summary(fit.all)
+```
+
+```{r}
+
+```
+
+
+# LASSO 
+
+```{r}
+Y = final_data$gini
+X = model.matrix(gini~., data = final_data)[,-1]
+
+set.seed(1)
+pen.fac = rep(1, ncol(X))
+# pen.fac[grep('^State', colnames(X))] = 0
+
+
+fit.force.cv = cv.glmnet(X, Y, alpha = 1, nfolds = 12, intercept = T, #alpha is the 
+                         penalty.factor = pen.fac)
+
+coef.min = coef(fit.force.cv, s = "lambda.1se") # gives a more parsimonious and simpler model; result that is within one standard error fo the minimum, but the minimum? 
+coef.min = coef.min[which(coef.min !=0),]
+coef.min
+length(rownames(as.matrix(coef.min))[-1]) #get rid of the intercept 
+```
+

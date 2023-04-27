@@ -1,0 +1,39 @@
+---
+title: "Gentrification and Health Disparities: An Integrated Analysis of Inequality in Philadelphia"
+author: "Jenea Adams & Annan Timon"
+date: "`r Sys.Date()`"
+output:
+  powerpoint_presentation: default
+  ioslides_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Outline 
+
+1. Background & Significance 
+2. Data 
+3. Models 
+4. Evaluation
+5. Discussion 
+
+## Slide with Bullets
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+## Slide with R Output
+
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot example
+
+```{r pressure}
+plot(pressure)
+```
+
