@@ -93,9 +93,21 @@ census_disp_geo = left_join(tracts2010philly2, census_disp, by = "TractFIPS")
 ```
 
 
-
 ```{r}
 # tracts2010philly_gini$gini
+```
+
+
+```{r}
+tracts2010philly_gini %>%
+  ggplot() +
+  geom_sf(data = tracts2010philly_gini,
+          aes(fill = gini),
+          color = "white") +
+  # guides(fill = F) +
+  labs(title = "") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
 ```
 
 
@@ -174,7 +186,6 @@ census_disp_geo %>%
 
 
 
-
 ```{r}
 census_disp %>%
   ggplot(aes(x = SLEEP_CrudePrev, y = gini, color = avgHPSS_PER1000 , shape = heat_health_impacts)) + 
@@ -183,6 +194,7 @@ census_disp %>%
   # stat_poly_eq(use_label(c("eq", "R2"))) +
   theme_bw()
 ```
+
 
 ```{r}
 census_disp_geo %>%
