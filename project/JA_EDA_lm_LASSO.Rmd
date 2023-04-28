@@ -353,7 +353,7 @@ census_disp %>%
 
 ```{r}
 final_data = readRDS("data/final_data.RDS") %>%
-  select(-YEAR, -COUNT_ALL_RACES_ETHNICITIES) %>%
+  # select(-COUNT_ALL_RACES_ETHNICITIES) %>%
   mutate(heat_health_effects = as.factor(N_VERYHIGH)) %>%
   select(-N_VERYHIGH)
 ```
@@ -444,6 +444,8 @@ for(i in 1:length(Ys[-1])){
   #get betas
   beta = coef(summary(model))[,1]
   betas[[Ys[-1][i]]] = beta
+  
+  
 }
 
 # print(f)
@@ -464,13 +466,8 @@ summary(models$CANCER_CrudePrev)$coefficients[,4] #extract p-vales from an indiv
 
 ```
 
-```{r}
 
-
-```
-
-
-# LASSO 
+# LASSO gini
 
 ```{r}
 Y = final_data$gini
@@ -489,6 +486,51 @@ coef.min = coef.min[which(coef.min !=0),]
 coef.min
 length(rownames(as.matrix(coef.min))[-1]) #get rid of the intercept 
 ```
+
+# LASSO - predicting diseases 
+
+LASSO loop
+```{r}
+# 
+# models = list()
+# all_ps = list()
+# betas = list()
+
+lasso_models = list()
+plots = list()
+lasso_coefs = list()
+
+for(i in 1:length(Ys[-1])){
+  f = as.formula(
+  paste(Ys[i], 
+        paste(features, collapse = " + "), 
+        sep = " ~ "))
+  
+  y <- final_data[,Ys[-1][i]]
+  X1 <- model.matrix(f, final_data)[, -1]
+  fit.lasso <- cv.glmnet(X1, y, alpha=1)
+  
+  lasso_models[[Ys[-1][i]]] = fit.lasso #save model 
+  plots[[Ys[-1][i]]] = plot(fit.lasso) # save plot 
+  
+  #get coefs
+  coef.min = coef(fit.lasso, s = "lambda.1se")
+  coef.min = coef.min[which(coef.min !=0),]
+  lasso_coefs[[Ys[-1][i]]] = coef.min
+  
+}
+
+
+plot(fit.lasso)
+```
+
+
+```{r}
+
+```
+
+# test train split 
+
 
 # glm()
 
