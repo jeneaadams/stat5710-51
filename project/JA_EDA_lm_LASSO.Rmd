@@ -449,7 +449,12 @@ for(i in 1:length(Ys[-1])){
 }
 
 # print(f)
+ps.df<- as.tibble(all_ps)
+betas.df<- as.tibble(betas)
 
+betas.df$variables <- names(betas[[1]])
+
+betas.df
 
 # models
 # 
@@ -459,10 +464,65 @@ for(i in 1:length(Ys[-1])){
 
 ```
 
+```{r, fig.width=12, fig.height=10}
+dim(final_data)
+
+library(viridis)
+# funtion to color non significant values white
+makeColorRampPalette <- function(colors, cutoff.fraction, num.colors.in.palette)
+{
+  stopifnot(length(colors) == 4)
+  ramp1 <- colorRampPalette(colors[1:2])(num.colors.in.palette * cutoff.fraction)
+  ramp2 <- colorRampPalette(colors[3:4])(num.colors.in.palette * (1 - cutoff.fraction))
+  return(c(ramp1, ramp2))
+}
+
+
+change_matrix <- function(p_mat, beta_mat) {
+    new_mat <- matrix(nrow = nrow(p_mat), ncol = ncol(p_mat)-1)
+    
+    # iterate through and find values that are not significant
+    for(i in 1:nrow(new_mat)) {
+        for(j in 1:ncol(new_mat)) {
+            
+            if(p_mat[i,j] < .05) {
+                new_mat[i,j] <- beta_mat[i,j]
+                if(beta_mat[i,j] == "Inf") { 
+                    new_mat[i,j] <- NA
+                }
+                
+            }else {
+                new_mat[i,j] <- NA
+            }
+        }
+    }
+    
+    #print(new_mat)
+
+    
+    rownames(new_mat) <- p_mat$variables
+    colnames(new_mat) <- colnames(p_mat)[1:(length(p_mat)-1)]
+    
+    
+    return(data.frame(new_mat))                                      
+# -
+
+}
+
+significant_df <- change_matrix(ps.df, as.data.frame(betas.df))
+pheatmap(t(significant_df[-1,]), na_col = "#FFFFFFFF",
+         cluster_cols = F, cluster_rows = F,
+         color = inferno(10))
+
+```
+
+
 finding significant Ps
 ```{r}
 
 summary(models$CANCER_CrudePrev)$coefficients[,4] #extract p-vales from an individual model 
+
+significant_df
 
 ```
 
@@ -470,21 +530,21 @@ summary(models$CANCER_CrudePrev)$coefficients[,4] #extract p-vales from an indiv
 # LASSO gini
 
 ```{r}
-Y = final_data$gini
-X = model.matrix(gini~., data = final_data[-1])[,-1]
-
-set.seed(1)
-pen.fac = rep(1, ncol(X))
-# pen.fac[grep('^State', colnames(X))] = 0
-
-
-fit.force.cv = cv.glmnet(X, Y, alpha = 1, nfolds = 12, intercept = T, #alpha is the 
-                         penalty.factor = pen.fac)
-
-coef.min = coef(fit.force.cv, s = "lambda.1se") # gives a more parsimonious and simpler model; result that is within one standard error fo the minimum, but the minimum? 
-coef.min = coef.min[which(coef.min !=0),]
-coef.min
-length(rownames(as.matrix(coef.min))[-1]) #get rid of the intercept 
+# Y = final_data$gini
+# X = model.matrix(gini~., data = final_data[-1])[,-1]
+# 
+# set.seed(1)
+# pen.fac = rep(1, ncol(X))
+# # pen.fac[grep('^State', colnames(X))] = 0
+# 
+# 
+# fit.force.cv = cv.glmnet(X, Y, alpha = 1, nfolds = 12, intercept = T, #alpha is the 
+#                          penalty.factor = pen.fac)
+# 
+# coef.min = coef(fit.force.cv, s = "lambda.1se") # gives a more parsimonious and simpler model; result that is within one standard error fo the minimum, but the minimum? 
+# coef.min = coef.min[which(coef.min !=0),]
+# coef.min
+# length(rownames(as.matrix(coef.min))[-1]) #get rid of the intercept 
 ```
 
 # LASSO - predicting diseases 
@@ -500,43 +560,22 @@ lasso_models = list()
 plots = list()
 lasso_coefs = list()
 
+models_min = list()
+all_ps_min = list()
+betas_min = list()
+
 for(i in 1:length(Ys[-1])){
   f = as.formula(
-  paste(Ys[i], 
+  paste(Ys[-1][i], 
         paste(features, collapse = " + "), 
         sep = " ~ "))
   
-  y <- final_data[,Ys[-1][i]]
+  cur_feature <- Ys[-1][i]
+  y <- final_data %>% dplyr::select(!!cur_feature)
   X1 <- model.matrix(f, final_data)[, -1]
-  fit.lasso <- cv.glmnet(X1, y, alpha=1)
+  fit.lasso <- cv.glmnet(X1, y[[1]], alpha=1)
   
   lasso_models[[Ys[-1][i]]] = fit.lasso #save model 
-  plots[[Ys[-1][i]]] = plot(fit.lasso, main = paste(Ys[-1][i])) # save plot 
-  
-  #get coefs
-  coef.1se = coef(fit.lasso, s = "lambda.1se")
-  coef.1se = coef.1se[which(coef.1se !=0),]
-  lasso_coefs[[Ys[-1][i]]] = coef.1se
-  # 
-  # 
-  # #get new features and subsetting matrix
-  # features_sub <- rownames(as.matrix(coef.1se))[-1]
-  # if (!is.na(grep("heat_health.*", features_sub))) {
-  #   index = grep("heat_health.*", features_sub)
-  #   # print(index)
-  #   features_sub[index] = substr(features_sub[index], 1, nchar(features_sub[index])-1)
-  # }
-  # ##new formula 
-  # f_new <- as.formula(
-  # paste(Ys[-1][i], 
-  #       paste(features_sub, collapse = " + "), 
-  #       sep = " ~ "))
-  # print(f_new)
-  # 
-  # final_data_sub <- final_data %>% dplyr::select(all_of(c(Ys[-1][i],features_sub)))
-  # fit.glm <- glm(f_new, family=binomial, final_data_sub)
-  # 
-
   plots[[Ys[-1][i]]] = plot(fit.lasso) # save plot 
   
   #get coefs
@@ -544,16 +583,52 @@ for(i in 1:length(Ys[-1])){
   coef.min = coef.min[which(coef.min !=0),]
   lasso_coefs[[Ys[-1][i]]] = coef.min
   
+  
+  features_sub <- rownames(as.matrix(coef.min))[-1]
+  
+  if (sum(grepl("heat_health.*", features_sub)) > 0) {
+    index = grep("heat_health.*", features_sub)
+    features_sub[index] = substr(features_sub[index], 1, nchar(features_sub[index])-1)
+  }
+  
+  final_data_sub <- final_data %>% dplyr::select(all_of(c(Ys[-1][i], features_sub)))
+  
+  f_new <- as.formula(
+  paste(Ys[-1][i], 
+        paste(features_sub, collapse = " + "), 
+        sep = " ~ "))
+  model_min = lm(f_new, final_data_sub)
+  
+  #get model and add to list 
+  models_min[[Ys[-1][i]]] = model_min
+  
+  #get significant ps
+  p = coef(summary(model_min))[,4]
+  all_ps_min[[Ys[-1][i]]] = p 
+  
+  #get betas
+  beta = coef(summary(model_min))[,1]
+  betas_min[[Ys[-1][i]]] = beta
+  
 }
 
 
-plot(fit.lasso)
+summary(models_min$ACCESS2_CrudePrev)
+
+summary(models_min$CANCER_CrudePrev)
+
+summary(models_min$CASTHMA_CrudePrev)
+
+summary(models_min$STROKE_CrudePrev)
+
+summary(models_min$DIABETES_CrudePrev)
+
 ```
 
 
+```{r}
 
-# test train split 
-
+```
 
 
 ```{r}
