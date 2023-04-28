@@ -536,6 +536,14 @@ for(i in 1:length(Ys[-1])){
   # final_data_sub <- final_data %>% dplyr::select(all_of(c(Ys[-1][i],features_sub)))
   # fit.glm <- glm(f_new, family=binomial, final_data_sub)
   # 
+
+  plots[[Ys[-1][i]]] = plot(fit.lasso) # save plot 
+  
+  #get coefs
+  coef.min = coef(fit.lasso, s = "lambda.1se")
+  coef.min = coef.min[which(coef.min !=0),]
+  lasso_coefs[[Ys[-1][i]]] = coef.min
+  
 }
 
 
@@ -543,8 +551,19 @@ plot(fit.lasso)
 ```
 
 
+
 # test train split 
 
+
+
+```{r}
+
+```
+
+# test train split 
+
+
+# glm()
 
 
 # Model Evaluation 
