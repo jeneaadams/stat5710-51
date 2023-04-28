@@ -26,7 +26,7 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps, skimr, GGaly, reshape2, glmnet) 
+pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps, skimr, reshape2, glmnet, ggpubr) 
 ```
 
 Read in data 
@@ -361,6 +361,68 @@ census_disp %>%
   theme_bw()
 ```
 
+```{r}
+census_disp %>%
+  mutate(gini_i = ifelse(gini > 0.4531, 1, 0), 
+         gini_i = as.factor(gini_i)) %>%
+  ggplot(aes(BPHIGH_CrudePrev,
+             fill = gini_i)) + 
+  geom_histogram(color = "white") + 
+  guides(alpha = F, 
+         color = F, 
+         fill = (guide_legend(title = "Gini Index > mean")))+
+  scale_fill_brewer(palette="Dark2", labels = c("Yes", "No", "NA")) +
+  geom_vline(aes(xintercept=mean(BPHIGH_CrudePrev)),
+            color="black", linetype="dashed", size=1)
+  theme_bw()
+```
+
+
+
+```{r}
+p1 = census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo,
+          aes(fill = gini),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+
+p2 = census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo,
+          aes(fill = avgHPSS_PER1000),
+          color = "white") +
+  # scale_fill_gradient2() +
+  ggplot2::scale_fill_viridis_c(option = "plasma") +
+  # guides(fill = guide_legend(title = "[health indicator]")) +
+  theme_void()
+
+p3 = census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo,
+          aes(fill = KIDNEY_CrudePrev),
+          color = "white") +
+  # scale_fill_gradient2() +
+  ggplot2::scale_fill_viridis_c(option = "plasma") +
+  # guides(fill = guide_legend(title = "[health indicator]")) +
+  theme_void()
+
+ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
+```
+
+
+```{r}
+str(census_disp_geo)
+```
+
+
+
+```{r}
+colnames(census_disp_geo)
+```
+
+
 # model data prep 
 
 ```{r}
@@ -368,6 +430,11 @@ final_data = readRDS("data/final_data.RDS") %>%
   # select(-COUNT_ALL_RACES_ETHNICITIES) %>%
   mutate(heat_health_effects = as.factor(N_VERYHIGH)) %>%
   select(-N_VERYHIGH)
+```
+
+
+```{r}
+# str(final_data)
 ```
 
 ```{r}
@@ -637,15 +704,6 @@ summary(models_min$DIABETES_CrudePrev)
 
 ```
 
-
-```{r}
-
-```
-
-
-```{r}
-
-```
 
 # test train split 
 

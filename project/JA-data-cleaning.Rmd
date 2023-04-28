@@ -379,7 +379,7 @@ merge3.2 %>%
              y = transit_score, 
              color = CANCER_CrudePrev, 
              shape = N_VERYHIGH)) + 
-  geom_point(alpha = 0.6,
+  geom_point(alpha = 0.7,
              size = 3,
              stroke = 1) +
   # geom_smooth(method = "lm", se = F, show.legend = F) +
@@ -388,7 +388,7 @@ merge3.2 %>%
   # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
   labs(x = "Total Affordable Housing Units", y = "Transit Score", title = "EDA" ) +
   scale_shape_discrete(labels=c('No', 'Yes')) +
-  scale_color_gradient(low = "lightpink", high = "darkblue", na.value = NA) +
+  scale_color_gradient(low = "lightblue", high = "orange", na.value = NA) +
   guides(color=guide_legend(title="Cancer Prevalence"), 
          shape=guide_legend(title="High Heat-Related Illness")) +
   theme_bw() + 
