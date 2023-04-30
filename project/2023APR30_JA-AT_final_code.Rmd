@@ -507,11 +507,21 @@ change_matrix <- function(p_mat, beta_mat) {
 }
 
 significant_df <- change_matrix(ps.df, as.data.frame(betas.df))
-pheatmap(scale(t(significant_df[-1,]), scale = TRUE), na_col = "#FFFFFFFF",
+scaled_significant_df <- scale(t(significant_df[-1,]), scale = TRUE) %>% as.data.frame()
+
+pheatmap(scaled_significant_df, na_col = "#FFFFFFFF",
          cluster_cols = F, cluster_rows = F,
          color = inferno(100))
 
+#rownames(scaled_significant_df)[scaled_significant_df$gini>0 & !is.na(scaled_significant_df$gini)]
+#rownames(scaled_significant_df)[scaled_significant_df$gini<0 & !is.na(scaled_significant_df$gini)]
+
+#scaled_significant_df$avgPCT_POVERTY
+
 ```
+
+pos gini beta: "COPD_CrudePrev", "COREM_CrudePrev", "DIABETES_CrudePrev"
+negative gini beta: "ARTHRITIS_CrudePrev", "BPMED_CrudePrev", "COLON_SCREEN_CrudePrev", "DENTAL_CrudePrev", "HIGHCHOL_CrudePrev", "MAMMOUSE_CrudePrev", "PAPTEST_CrudePrev","SLEEP_CrudePrev", "STROKE_CrudePrev" 
 
 ## Model Selection 
 
