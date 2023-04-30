@@ -299,6 +299,40 @@ merge3.2 %>%
 census_disp = read.csv("data/census_healthdisp_cleaned.csv")
 ```
 
+[distributions of hospitals]
+```{r, message=FALSE}
+hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
+  dplyr::rename(street = STREET_ADDRESS, 
+         city = CITY, 
+         state = STATE)
+  
+hospitals_sf <- cxy_geocode(hospitals,
+                            street = "street", 
+                            city = "city", 
+                            state = "state", 
+                            class = "sf")
+```
+
+```{r}
+mapview::mapview(hospitals)
+```
+
+[istribution of affordable housing]
+
+```{r}
+affordable_housing <- readRDS("data/affordable_housing_geoid.rds") 
+  
+affordable_housing_sf <- cxy_geocode(affordable_housing,
+                            street = "street", 
+                            city = "city", 
+                            state = "state", 
+                            class = "sf")
+```
+
+```{r}
+mapview::mapview(affordable_housing_sf)
+```
+
 
 [talk about how transit and walk score is a little lower in our tracts with high inequality]
 
@@ -324,14 +358,23 @@ bike_score_plot <- census_disp_geo %>%
   ggplot2::scale_fill_viridis_c() +
   theme_void()
 
-plot_transport <- ggarrange(transit_score_plot, walk_score_plot, bike_score_plot, ncol = 2, nrow = 2)
+car_availability_plot <- census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = avgPCT_VEHICLE_AVAIL),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
 
-annotate_figure(plot_transport, top = text_grob("Walkability, Bikebility, and Utility of Public Transport by Census Tracts", face = "bold", size = 14))
+plot_transport <- ggarrange(transit_score_plot, walk_score_plot, bike_score_plot, car_availability_plot, ncol = 2, nrow = 2)
+
+annotate_figure(plot_transport, top = text_grob("Utility of Public Transport, Walkability, Bikebility, and Car availability by Census Tracts", face = "bold", size = 10))
 
 ```
 
 
 [Talk about we see both high and low produce supermarkets and stores in our tracts with high inequality]
+
+we also have number of restaurants but don't include the anlysis here for brevity
 
 ```{r}
 hpss_plot <- census_disp_geo %>%
@@ -464,9 +507,9 @@ change_matrix <- function(p_mat, beta_mat) {
 }
 
 significant_df <- change_matrix(ps.df, as.data.frame(betas.df))
-pheatmap(t(significant_df[-1,]), na_col = "#FFFFFFFF",
+pheatmap(scale(t(significant_df[-1,]), scale = TRUE), na_col = "#FFFFFFFF",
          cluster_cols = F, cluster_rows = F,
-         color = inferno(10))
+         color = inferno(100))
 
 ```
 
