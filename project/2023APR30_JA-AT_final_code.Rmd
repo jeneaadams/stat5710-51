@@ -34,6 +34,174 @@ pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
 
 # EDA 
 
+## Introduce the Black Bottom
+
+```{r out.width = "400px", echo = F, fig.cap="Logistic regression as 0-layer neural network"}
+knitr::include_graphics("images/black_bottom_philly.jpg")
+```
+
+
+
+[Insert description of the census tracts that we are looking at, talk about the non reseidential vs residential tracts]
+
+```{r, warning=FALSE, message=FALSE}
+# extract phila county geospatial data
+pa.tracts <- get_acs(geography = "tract", 
+              year = 2010,
+              variables = c(tpopr = "B03002_001"), 
+              state = "PA",
+              county = "Philadelphia",
+              output = "wide",
+              survey = "acs5",
+              geometry = TRUE,
+              cb = FALSE)
+
+
+
+na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
+              "42101980900", "42101980700", "42101980600", "42101980800",
+              "42101980500", "42101980000", "42101980300")
+
+pa.tracts$res <- as.numeric(pa.tracts$GEOID %in% na_tracts,3:length(pa.tracts))
+
+ggplot(pa.tracts,aes(fill = res)) + 
+  geom_sf() +
+  scale_fill_continuous(low="darkgrey", high="lightgrey") + 
+  theme_void()+ 
+  theme(legend.position = "none") +
+  labs(title = "Philadelphia Census Tracts") 
+
+```
+
+## Gini income inequality 
+
+
+[talk about how the gini inequality has changed over the time]
+
+```{r, warning=FALSE, fig.width=25, fig.height=8}
+philly_gini_all$mean_gini <- rowMeans(philly_gini_all[,2:length(philly_gini_all)])
+
+# select top 5 and bottom 5 census tracts with the highest and lowest mean gini index, respectively
+selected_tracts_high <- philly_gini_all[order(philly_gini_all$mean_gini, decreasing=T), ]$GEOID[1:10]
+#print(selected_tracts_high)
+selected_tracts_low <- philly_gini_all[order(philly_gini_all$mean_gini, decreasing=F), ]$GEOID[1:10]
+#print(selected_tracts_low)
+
+# flatten out df
+philly_gini_melt <-philly_gini_all %>%
+  dplyr::select(-mean_gini) %>%
+  reshape2::melt()
+
+# show change in gini index over time, highlighting census tracts with high gini
+high_ineq_trend <- philly_gini_melt%>%
+  ggplot(aes(x=variable, y=value, group =GEOID)) +
+  geom_line(col = "grey", alpha = .5) + 
+  geom_point(col = "grey", alpha = .5) +
+  geom_line(data = subset(philly_gini_melt, GEOID %in% selected_tracts_high),
+            aes(col = GEOID)) +
+  geom_point(data = subset(philly_gini_melt, GEOID %in% selected_tracts_high),
+            aes(col = GEOID)) +  
+  scale_color_manual(values = viridis(10)) +
+  theme_bw() +
+  labs(y = "Gini Index", x = "Year") 
+
+
+# plotting, subset census tracts with high gini to show where they are geographically
+ineq_tracts <- pa.tracts %>%
+  left_join(subset(philly_gini_all, GEOID %in% selected_tracts_high)) %>%
+  mutate_if(is.numeric,coalesce,0)
+
+# remove tracts that are always na (park and river area) and non residential
+na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
+              "42101980900", "42101980700", "42101980600", "42101980800",
+              "42101980500", "42101980000", "42101980300")
+
+ineq_tracts[ineq_tracts$GEOID %in% na_tracts,3:length(ineq_tracts)] <- NA
+
+# plot showing areas in west, center city east, and north philly experience the highest income inequality
+high_ineq_geo <- ggplot(data = ineq_tracts, aes(fill = mean_gini)) + 
+  geom_sf() +
+  scale_fill_continuous(low="grey", high="mediumpurple", 
+                       guide="colorbar",na.value="white") + 
+  theme_void()
+
+plot1 <- ggarrange(high_ineq_trend, high_ineq_geo, ncol = 2, nrow = 1, common.legend = TRUE,legend="bottom")
+
+high_plot <- annotate_figure(plot1, top = text_grob("Census tracts with highest Income inequality", face = "bold", size = 14))
+
+# same analysis as above but with the lowest income inequality
+
+low_ineq_trend <- philly_gini_melt%>%
+  ggplot(aes(x=variable, y=value, group =GEOID)) +
+  geom_line(col = "grey", alpha = .5) + 
+  geom_point(col = "grey", alpha = .5) +
+  geom_line(data = subset(philly_gini_melt, GEOID %in% selected_tracts_low),
+            aes(col = GEOID)) +
+  geom_point(data = subset(philly_gini_melt, GEOID %in% selected_tracts_low),
+            aes(col = GEOID)) +  
+  scale_color_manual(values = viridis(10)) +
+  theme_bw() +
+  labs(y = "Gini Index", x = "Year") 
+
+ineq_tracts <- pa.tracts %>%
+  left_join(subset(philly_gini_all, GEOID %in% selected_tracts_low)) %>%
+  mutate_if(is.numeric,coalesce,0)
+
+na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
+              "42101980900", "42101980700", "42101980600", "42101980800",
+              "42101980500", "42101980000", "42101980300")
+
+ineq_tracts[ineq_tracts$GEOID %in% na_tracts,3:length(ineq_tracts)] <- NA
+
+
+low_ineq_geo <- ggplot(data = ineq_tracts, aes(fill = mean_gini)) + 
+  geom_sf() +
+  scale_fill_continuous(low="grey", high="mediumpurple", 
+                       guide="colorbar",na.value="white") + 
+  theme_void()
+
+
+
+plot2 <- ggarrange(low_ineq_trend, low_ineq_geo, ncol = 2, nrow = 1, common.legend = TRUE,legend="bottom")
+
+low_plot <- annotate_figure(plot2, top = text_grob("Census tracts with lowest Income inequality", face = "bold", size = 14))
+
+
+ggarrange(high_plot, low_plot, ncol = 2, nrow = 1)
+
+```
+
+
+## looking specifically at 2010
+
+[introduce why we're specifically looking at 2010 (that's when most of our other data sets are from)]
+```{r}
+
+gini2010philly = gini(geo = "tract", state = "PA", county = "Philadelphia", year = 2010)
+
+gini2010philly$gini
+
+tracts2010philly = tigris::tracts(state = "PA", county = "Philadelphia", year = 2010, cb = TRUE) %>%
+  mutate(GEO_ID = gsub("1400000US","", GEO_ID)) %>%
+  dplyr::rename(GEOID = GEO_ID)
+
+tracts2010philly$GEOID
+
+
+tracts2010philly_gini = dplyr::left_join(tracts2010philly, gini2010philly$gini, by = "GEOID")
+```
+```{r}
+tracts2010philly_gini %>%
+  ggplot() +
+  geom_sf(data = tracts2010philly_gini,
+          aes(fill = gini),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+
+```
+
+
 
 ## test visualiazations after data cleaning 
 
@@ -250,7 +418,7 @@ for(i in 1:length(Ys[-1])){
   fit.lasso <- cv.glmnet(X1, y[[1]], alpha=1)
   
   lasso_models[[Ys[-1][i]]] = fit.lasso #save model 
-  plots_lasso[[Ys[-1][i]]] = plot(fit.lasso) # save plot 
+  plots_lasso[[Ys[-1][i]]] = plot(fit.lasso, main = Ys[-1][i]) # save plot 
   
   #get coefs
   coef.min = coef(fit.lasso, s = "lambda.1se")
@@ -316,6 +484,13 @@ population_philly = read.csv("data/Vital_Population_CT.csv", header = T)
 cities_census_health_full = read.csv("data/500_Cities__Census_Tract-level_Data__GIS_Friendly_Format___2019_release.csv",header = T)
 census_block_groups10 = read.csv("data/Census_Block_Groups_2010.csv")
 census_blocks10 = read.csv("data/Census_Blocks_2010.csv")
+```
+
+In order to directly download data from the Census API, you need a [key](http://api.census.gov/data/key_signup.html). You can sign up for a free key here. Type your key in quotes using the census_api_key() command.
+
+```{r}
+# get accesss to the census api
+# census_api_key("f4a30edf07058b5e59f5bbfe6c2cc2cc7bbb8029", install = TRUE)
 ```
 
 ```{r}
