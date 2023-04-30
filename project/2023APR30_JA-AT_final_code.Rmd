@@ -235,6 +235,32 @@ tracts2010philly_gini %>%
 
 ## test visualiazations after data cleaning 
 
+In this project, we use the following three nearly cleaned data:
+
+* **final_data.RDS**: Census-Tract-level socialeconomic information that combines the following datqsets:
+
+**Food access**: The Neighborhood Food Retail dataset includes GEOID level assessments of food access relevant to distance and types of high produce grocery stores, as well as if that area is a high poverty area.
+
+**Hospital locations**: locations of hospitals by type of care provided. We chose this to understand the distribution and access to healthcare in each census block.
+    
+**Heat Vulnerability**: scores and indicators for heat vulnerability by census block and prevalence of heat-related illnesses. This may or may not be related to access to green space and tree canopy. This data gives us an idea of environmental variables which contribute to health outcomes and quality of life for Philadelphia residents.
+
+**Affordable Housing**: locations of affordable and accessible housing projects recorded by the city. This data will provide information on the distribution of affordable housing options mapped to census blocks.
+
+**Philadelphia population metrics**: Demographic information of Philadelphia census blocks by race and ethnicity
+
+**Socioeconomic data**: income inequality calculated as a census tract-level Gini index.
+
+**Health data**: measures of prevalence of health measures such as cancer prevalence, access to health insurance, blood pressure, heart disease, and more by census tract.
+
+Transitscore/Walkscore/Bikescore: measures how walkable, well served by public transportation, and bikeable a location is
+
+Here is the break down of variable namea:
+
+```{r out.width = "400px", echo = F, fig.cap="Logistic regression as 0-layer neural network", echo=FALSE}
+knitr::include_graphics("images/variable_names.png")
+``` 
+
 ```{r}
 final_data = readRDS("data/final_data.RDS") %>%
   as.data.frame() %>%
