@@ -27,7 +27,7 @@ knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning =
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
                tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps,
-               skimr, GGaly, reshape2, glmnet, caret, viridis) 
+               skimr, GGaly, reshape2, glmnet, caret, viridis, pheatmap) 
 ```
 
 # Data 
@@ -317,9 +317,9 @@ hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
          state = STATE)
   
 # hospitals_sf <- cxy_geocode(hospitals,
-#                             street = "street", 
-#                             city = "city", 
-#                             state = "state", 
+#                             street = "street",
+#                             city = "city",
+#                             state = "state",
 #                             class = "sf")
 ```
 
@@ -333,11 +333,11 @@ hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
 ```{r}
 affordable_housing <- readRDS("data/affordable_housing_geoid.rds") 
   
-affordable_housing_sf <- cxy_geocode(affordable_housing,
-                            street = "street", 
-                            city = "city", 
-                            state = "state", 
-                            class = "sf")
+# affordable_housing_sf <- cxy_geocode(affordable_housing,
+#                             street = "street", 
+#                             city = "city", 
+#                             state = "state", 
+#                             class = "sf")
 ```
 
 ```{r}
@@ -603,7 +603,6 @@ for(i in 1:length(Ys[-1])){
   fit.lasso <- cv.glmnet(X1, y[[1]], alpha=1)
   
   lasso_models[[Ys[-1][i]]] = fit.lasso #save model 
-  plots_lasso[[Ys[-1][i]]] = plot(fit.lasso, main = Ys[-1][i]) # save plot 
   
   #get coefs
   coef.min = coef(fit.lasso, s = "lambda.1se")
@@ -650,7 +649,13 @@ for(i in 1:length(Ys[-1])){
 # 
 # summary(models_min$DIABETES_CrudePrev)
 
-lasso_models
+
+
+plot(lasso_models$DIABETES_CrudePrev, main = "Diabetes")
+print(summary(models_min$DIABETES_CrudePrev))
+
+plot(lasso_models$COPD_CrudePrev, main = "COPD")
+print(summary(models_min$COPD_CrudePrev))
 
 ```
 
