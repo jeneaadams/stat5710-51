@@ -112,13 +112,13 @@ tracts2010philly_gini %>%
 
 
 ```{r}
-tracts2010philly_gini %>%
-  ggplot() +
-  geom_sf(data = tracts2010philly_gini,
-          aes(fill = gini),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
+# tracts2010philly_gini %>%
+#   ggplot() +
+#   geom_sf(data = tracts2010philly_gini,
+#           aes(fill = gini),
+#           color = "white") +
+#   ggplot2::scale_fill_viridis_c() +
+#   theme_void()
 
 ```
 Having some issues by getting all NA values for the gini index, thus resulting in a blank map. 
