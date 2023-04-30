@@ -27,7 +27,7 @@ knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning =
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
                tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps,
-               skimr, GGaly, reshape2, glmnet, caret, Viridis) 
+               skimr, GGaly, reshape2, glmnet, caret, viridis) 
 ```
 
 # Data 
@@ -236,14 +236,24 @@ tracts2010philly_gini %>%
 ## test visualiazations after data cleaning 
 
 ```{r}
-merge3 %>%
+final_data = readRDS("data/final_data.RDS") %>%
+  as.data.frame() %>%
+  # select(-COUNT_ALL_RACES_ETHNICITIES) %>%
+  mutate(heat_health_effects = as.factor(N_VERYHIGH)) %>%
+  dplyr::select(-N_VERYHIGH)
+```
+
+```{r}
+# merge3 %>%
+final_data %>%
   ggplot(aes(x = HVI_SCORE, y = COPD_CrudePrev)) + 
   geom_point() +
   geom_smooth(method = "lm") + 
   stat_poly_eq(use_label(c("eq", "R2"))) + 
   theme_bw()
 
-merge3 %>%
+
+final_data %>%
   ggplot(aes(x = avgPCT_HPSS, y = BPHIGH_CrudePrev)) + 
   geom_point() +
   geom_smooth(method = "lm") + 
@@ -255,8 +265,8 @@ merge3 %>%
 
 
 ```{r}
-merge3.1 %>%
-  ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
+final_data %>%
+  ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = heat_health_effects)) + 
   geom_point(alpha = 0.5) +
   # geom_smooth(method = "lm", se = F) + 
   # stat_poly_eq(use_label(c("eq", "R2"))) + 
@@ -272,11 +282,11 @@ merge3.1 %>%
 
 
 ```{r}
-merge3.2 %>%
+final_data %>%
   ggplot(aes(x = sumTOTAL_UNITS, 
              y = transit_score, 
              color = CANCER_CrudePrev, 
-             shape = N_VERYHIGH)) + 
+             shape = heat_health_effects)) + 
   geom_point(alpha = 0.7,
              size = 3,
              stroke = 1) +
@@ -306,18 +316,19 @@ hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
          city = CITY, 
          state = STATE)
   
-hospitals_sf <- cxy_geocode(hospitals,
-                            street = "street", 
-                            city = "city", 
-                            state = "state", 
-                            class = "sf")
+# hospitals_sf <- cxy_geocode(hospitals,
+#                             street = "street", 
+#                             city = "city", 
+#                             state = "state", 
+#                             class = "sf")
 ```
 
 ```{r}
-mapview::mapview(hospitals)
+# mapview::mapview(hospitals)
 ```
 
-[istribution of affordable housing]
+
+[distribution of affordable housing]
 
 ```{r}
 affordable_housing <- readRDS("data/affordable_housing_geoid.rds") 
@@ -330,7 +341,7 @@ affordable_housing_sf <- cxy_geocode(affordable_housing,
 ```
 
 ```{r}
-mapview::mapview(affordable_housing_sf)
+# mapview::mapview(affordable_housing_sf)
 ```
 
 
@@ -396,6 +407,7 @@ plot_food_access <- ggarrange(hpss_plot, lpss_plot, ncol = 2, nrow = 1)
 
 annotate_figure(plot_food_access, top = text_grob("High vs. Low Produce Supemarkets and Stores by Census Tracts", face = "bold", size = 14))
 ```
+
 
 # Analysis 
 
@@ -517,11 +529,41 @@ pheatmap(scale(t(significant_df[-1,]), scale = TRUE), na_col = "#FFFFFFFF",
 
 ### Forward Selection 
 
+#### Diabetes 
+
+```{r}
+fit.forward.diab = regsubsets(DIABETES_CrudePrev ~., final_data[-1], nvmax = 60, method = "forward")
+summary(fit.forward.diab)
+```
+
+
+#### COPD 
+```{r}
+fit.forward.copd = regsubsets(COPD_CrudePrev ~., final_data[-1], nvmax = 60, method = "forward")
+summary(fit.forward.copd)
+```
+
+
+
 ### Backward Selection 
+
+#### Diabetes 
+
+```{r}
+fit.backward.diab = regsubsets(DIABETES_CrudePrev ~., final_data[-1], nvmax = 60, method = "backward")
+summary(fit.backward.diab)
+```
+
+
+#### COPD 
+```{r}
+fit.backward.copd = regsubsets(COPD_CrudePrev ~., final_data[-1], nvmax = 60, method = "backward")
+summary(fit.backward.copd)
+```
 
 ### LASSO 
 
-# LASSO - predicting diseases 
+# LASSO - predicting all diseases 
 
 LASSO loop
 ```{r}
