@@ -29,7 +29,7 @@ knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning =
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr,
                rmapshaper,tmap, areal,leaflet, RColorBrewer,raster, rasterVis, tidycensus, censusapi,
-               reshape2, wesanderson, ggarrange, viridis, ggsci, mapview) 
+               reshape2, wesanderson, ggarrange, viridis, ggsci, mapview, data.table) 
 ```
 
 In this case study, we use the following three nearly cleaned data:
@@ -53,10 +53,14 @@ summary(census_disp)
 ```
 
 ```{r}
+# remove tracts that are always na (park and river area) and non residential
+na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
+              "42101980900", "42101980700", "42101980600", "42101980800",
+              "42101980500", "42101980000", "42101980300")
+
 census_disp_final <- census_disp %>%
   mutate(TractFIPS = as.character(TractFIPS)) %>%
   filter(!(TractFIPS %in% na_tracts)) %>%
-  dplyr::rename(GEOID = TractFIPS) %>%
   dplyr::select(-pct_hosp, -lon, -lat, -V1, -YEAR, -COUNT_ALL_RACES_ETHNICITIES)
 
 census_disp_final$transit_score[63] <- 0
@@ -113,6 +117,20 @@ pa.tracts <- get_acs(geography = "tract",
               survey = "acs5",
               geometry = TRUE,
               cb = FALSE)
+
+
+
+na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
+              "42101980900", "42101980700", "42101980600", "42101980800",
+              "42101980500", "42101980000", "42101980300")
+
+pa.tracts$res <- as.numeric(pa.tracts$GEOID %in% na_tracts,3:length(pa.tracts))
+
+ggplot(pa.tracts,aes(fill = res)) + 
+  geom_sf() +
+  scale_fill_continuous(low="darkgrey", high="lightgrey") + 
+  theme_void()+ 
+  theme(legend.position = "none")
 ```
 
 ```{r, warning=FALSE, fig.width=10, fig.height=8}
@@ -203,6 +221,15 @@ plot2 <- ggarrange(low_ineq_trend, low_ineq_geo, ncol = 2, nrow = 1, common.lege
 
 annotate_figure(plot2, top = text_grob("Census tracts with lowest Income inequality", face = "bold", size = 14))
 
+
+ggplot(data = ineq_tracts, aes(fill = mean_gini)) + 
+  geom_sf() +
+  scale_fill_continuous(low="darkgrey", high="darkgrey", 
+                        na.value="red") + 
+  theme_void()
+
+
+dim(ineq_tracts)
 ```
 
 ## distribution of 

@@ -40,11 +40,11 @@ census_disp_final <- readRDS("data/final_data.RDS")
 ```{r}
 health_columns <- c(1, grep("[A-Z]*_CrudePrev",colnames(census_disp_final)))
 demog_columns <- colnames(census_disp_final)[grep("COUNT_.*|PERCENT_.*",colnames(census_disp_final))]
-predictors <- colnames(census_disp_final)[health_columns]
-features <- colnames(census_disp_final)[!(colnames(census_disp_final) %in% predictors) &
+Ys <- colnames(census_disp_final)[health_columns]
+features <- colnames(census_disp_final)[!(colnames(census_disp_final) %in% Ys) &
                                         !(colnames(census_disp_final) %in% demog_columns)]
 
-predictors
+Ys
 features
 ```
 #### ignore NN stuff for now
@@ -80,6 +80,13 @@ summary(obes)
 
 chd <-lm(CHD_CrudePrev~., test_model_chd)
 summary(chd)
+
+
+coef(summary(diab)) %>% 
+  data.frame() %>%
+  mutate_if()
+
+diab
 ```
 
 
