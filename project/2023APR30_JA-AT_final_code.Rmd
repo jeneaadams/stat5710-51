@@ -36,7 +36,7 @@ pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
 
 ## Introduce the Black Bottom
 
-```{r out.width = "400px", echo = F, fig.cap="Logistic regression as 0-layer neural network"}
+```{r out.width = "400px", echo = F, fig.cap="Logistic regression as 0-layer neural network", echo=FALSE}
 knitr::include_graphics("images/black_bottom_philly.jpg")
 ```
 
@@ -44,7 +44,7 @@ knitr::include_graphics("images/black_bottom_philly.jpg")
 
 [Insert description of the census tracts that we are looking at, talk about the non reseidential vs residential tracts]
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # extract phila county geospatial data
 pa.tracts <- get_acs(geography = "tract", 
               year = 2010,
@@ -78,7 +78,22 @@ ggplot(pa.tracts,aes(fill = res)) +
 
 [talk about how the gini inequality has changed over the time]
 
-```{r, warning=FALSE, fig.width=25, fig.height=8}
+```{r, warning=FALSE, fig.width=25, fig.height=8, message=FALSE, echo=FALSE}
+# extract gini coefficient for 2010 and generate a matrix
+gini_2010 <- gini(geo = "tract", year = 2010, quiet = F, state = "PA", county = "Philadelphia")
+philly_gini_all <- gini_2010$gini %>%
+  dplyr::select(GEOID, gini) %>%
+  dplyr::rename(!!as.character(2010) := gini)
+
+# extract philly gini data for years 2010-2019
+for (year in 2011:2019) {
+  curData <- gini(geo = "tract", year = year, quiet = F, state = "PA", county = "Philadelphia")
+  philly_gini_all <- curData$gini %>%
+    dplyr::rename(!!as.character(year) := gini) %>%
+    dplyr::select(GEOID, !!as.character(year)) %>%
+    left_join(philly_gini_all, ., by ="GEOID")
+}
+
 philly_gini_all$mean_gini <- rowMeans(philly_gini_all[,2:length(philly_gini_all)])
 
 # select top 5 and bottom 5 census tracts with the highest and lowest mean gini index, respectively
@@ -175,21 +190,35 @@ ggarrange(high_plot, low_plot, ncol = 2, nrow = 1)
 ## looking specifically at 2010
 
 [introduce why we're specifically looking at 2010 (that's when most of our other data sets are from)]
-```{r}
+
+```{r, message=FALSE, echo=FALSE}
+census_disp = read.csv("data/census_healthdisp_cleaned.csv")
+
+census_disp %<>%
+  mutate(TractFIPS = as.character(TractFIPS), 
+         YEAR = as.factor(YEAR)) %>%
+  rename(heat_health_impacts = N_VERYHIGH) %>%
+  mutate(heat_health_impacts = as.factor(heat_health_impacts)) %>%
+  dplyr::select(-X)
 
 gini2010philly = gini(geo = "tract", state = "PA", county = "Philadelphia", year = 2010)
 
-gini2010philly$gini
 
 tracts2010philly = tigris::tracts(state = "PA", county = "Philadelphia", year = 2010, cb = TRUE) %>%
   mutate(GEO_ID = gsub("1400000US","", GEO_ID)) %>%
   dplyr::rename(GEOID = GEO_ID)
 
-tracts2010philly$GEOID
 
 
 tracts2010philly_gini = dplyr::left_join(tracts2010philly, gini2010philly$gini, by = "GEOID")
+
+
+tracts2010philly2 = tracts2010philly %>%
+  rename(TractFIPS = GEOID)
+census_disp_geo = left_join(tracts2010philly2, census_disp, by = "TractFIPS")
 ```
+
+
 ```{r}
 tracts2010philly_gini %>%
   ggplot() +
@@ -198,6 +227,7 @@ tracts2010philly_gini %>%
           color = "white") +
   ggplot2::scale_fill_viridis_c() +
   theme_void()
+
 
 ```
 
@@ -263,6 +293,66 @@ merge3.2 %>%
   theme(legend.position = "right")
 ```
 
+
+## eda looking at relationship of our variables
+```{r}
+census_disp = read.csv("data/census_healthdisp_cleaned.csv")
+```
+
+
+[talk about how transit and walk score is a little lower in our tracts with high inequality]
+
+```{r}
+transit_score_plot <- census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = transit_score),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+
+walk_score_plot <- census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = walk_score),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+
+bike_score_plot <- census_disp_geo %>%
+  ggplot() +
+  geom_sf(data = census_disp_geo, aes(fill = bike_score),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+
+plot_transport <- ggarrange(transit_score_plot, walk_score_plot, bike_score_plot, ncol = 2, nrow = 2)
+
+annotate_figure(plot_transport, top = text_grob("Walkability, Bikebility, and Utility of Public Transport by Census Tracts", face = "bold", size = 14))
+
+```
+
+
+[Talk about we see both high and low produce supermarkets and stores in our tracts with high inequality]
+
+```{r}
+hpss_plot <- census_disp_geo %>%
+  ggplot() +
+  geom_sf(aes(fill = avgHPSS_PER1000),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+
+lpss_plot <- census_disp_geo %>%
+  ggplot() +
+  geom_sf(aes(fill = avgLPSS_PER1000),
+          color = "white") +
+  ggplot2::scale_fill_viridis_c() +
+  theme_void()
+
+
+plot_food_access <- ggarrange(hpss_plot, lpss_plot, ncol = 2, nrow = 1)
+
+annotate_figure(plot_food_access, top = text_grob("High vs. Low Produce Supemarkets and Stores by Census Tracts", face = "bold", size = 14))
+```
 
 # Analysis 
 
