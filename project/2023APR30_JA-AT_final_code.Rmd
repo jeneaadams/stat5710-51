@@ -616,6 +616,113 @@ final_data = readRDS("data/final_data.RDS") %>%
 
 ## Linear Model 
 
+
+```{r}
+health_columns <- c(1, grep("[A-Z]*_CrudePrev",colnames(final_data)))
+demog_columns <- colnames(final_data)[grep("COUNT_.*|PERCENT_.*",colnames(final_data))]
+Ys <- colnames(final_data)[health_columns]
+features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
+                                        !(colnames(final_data) %in% demog_columns)]
+
+Ys #health stuff
+features
+
+models = list()
+all_ps = list()
+betas = list()
+  
+for(i in 1:length(Ys[-1])){
+  f = as.formula(
+  paste(Ys[i], 
+        paste(features, collapse = " + "), 
+        sep = " ~ "))
+  
+  #get model and add to list 
+  model = lm(f, final_data)
+  models[[Ys[-1][i]]] = model
+  
+  #get significant ps
+  p = coef(summary(model))[,4]
+  all_ps[[Ys[-1][i]]] = p 
+  
+  #get betas
+  beta = coef(summary(model))[,1]
+  betas[[Ys[-1][i]]] = beta
+  
+  
+}
+
+# print(f)
+ps.df<- as.tibble(all_ps)
+betas.df<- as.tibble(betas)
+
+betas.df$variables <- names(betas[[1]])
+
+betas.df
+```
+
+```{r, fig.width=12, fig.height=10}
+dim(final_data)
+
+library(viridis)
+# funtion to color non significant values white
+makeColorRampPalette <- function(colors, cutoff.fraction, num.colors.in.palette)
+{
+  stopifnot(length(colors) == 4)
+  ramp1 <- colorRampPalette(colors[1:2])(num.colors.in.palette * cutoff.fraction)
+  ramp2 <- colorRampPalette(colors[3:4])(num.colors.in.palette * (1 - cutoff.fraction))
+  return(c(ramp1, ramp2))
+}
+
+
+change_matrix <- function(p_mat, beta_mat) {
+    new_mat <- matrix(nrow = nrow(p_mat), ncol = ncol(p_mat)-1)
+    
+    # iterate through and find values that are not significant
+    for(i in 1:nrow(new_mat)) {
+        for(j in 1:ncol(new_mat)) {
+            
+            if(p_mat[i,j] < .05) {
+                new_mat[i,j] <- beta_mat[i,j]
+                if(beta_mat[i,j] == "Inf") { 
+                    new_mat[i,j] <- NA
+                }
+                
+            }else {
+                new_mat[i,j] <- NA
+            }
+        }
+    }
+    
+    #print(new_mat)
+
+    
+    rownames(new_mat) <- p_mat$variables
+    colnames(new_mat) <- colnames(p_mat)[1:(length(p_mat)-1)]
+    
+    
+    return(data.frame(new_mat))                                      
+# -
+
+}
+
+significant_df <- change_matrix(ps.df, as.data.frame(betas.df))
+pheatmap(t(significant_df[-1,]), na_col = "#FFFFFFFF",
+         cluster_cols = F, cluster_rows = F,
+         color = inferno(10))
+
+```
+
+
+finding significant Ps
+```{r}
+
+summary(models$CANCER_CrudePrev)$coefficients[,4] #extract p-vales from an individual model 
+
+significant_df
+
+```
+
 ## Model Selection 
 
 ### Forward Selection 

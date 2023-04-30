@@ -121,7 +121,7 @@ tracts2010philly_gini %>%
 #   theme_void()
 
 ```
-Having some issues by getting all NA values for the gini index, thus resulting in a blank map. 
+
 
 
 
@@ -505,10 +505,6 @@ Backward selection
 ```{r}
 fit.backward = regsubsets(gini ~., final_data[-1], nvmax = 60, method = "backward")
 summary(fit.backward)
-```
-
-```{r}
-fit.backward$w
 ```
 
 
