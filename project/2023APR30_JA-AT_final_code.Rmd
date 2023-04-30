@@ -27,7 +27,7 @@ knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning =
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
                tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps,
-               skimr, GGaly, reshape2, glmnet, caret, viridis) 
+               skimr, GGaly, reshape2, glmnet, caret, viridis, pheatmap) 
 ```
 
 # Data 
@@ -537,22 +537,40 @@ negative gini beta: "ARTHRITIS_CrudePrev", "BPMED_CrudePrev", "COLON_SCREEN_Crud
 
 ## Model Selection 
 
+Next we perform model selection on models to predict diabetes and COPD prevelance since they appear to have a strong positive correlation to gini index. 
+
+Pepare the data subsetting for model prediction of disease variables vs socioeconomic indicators
+```{r}
+health_columns <- c(1, grep("[A-Z]*_CrudePrev",colnames(final_data)))
+demog_columns <- colnames(final_data)[grep("COUNT_.*|PERCENT_.*",colnames(final_data))]
+Ys <- colnames(final_data)[health_columns]
+features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
+                                        !(colnames(final_data) %in% demog_columns)]
+
+```
+
+
+
 ### Forward Selection 
 
 #### Diabetes 
 
 ```{r}
-fit.forward.diab = regsubsets(DIABETES_CrudePrev ~., final_data[-1], nvmax = 60, method = "forward")
+# final_data[-1][features]
+
+fit.forward.diab = regsubsets(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev), nvmax = 60, method = "forward")
 summary(fit.forward.diab)
 ```
 
 
 #### COPD 
 ```{r}
-fit.forward.copd = regsubsets(COPD_CrudePrev ~., final_data[-1], nvmax = 60, method = "forward")
+# fit.forward.copd = regsubsets(COPD_CrudePrev ~., final_data[-1][features], nvmax = 60, method = "forward")
+# summary(fit.forward.copd)
+
+fit.forward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1][features], final_data$COPD_CrudePrev), nvmax = 60, method = "forward")
 summary(fit.forward.copd)
 ```
-
 
 
 ### Backward Selection 
@@ -560,16 +578,27 @@ summary(fit.forward.copd)
 #### Diabetes 
 
 ```{r}
-fit.backward.diab = regsubsets(DIABETES_CrudePrev ~., final_data[-1], nvmax = 60, method = "backward")
+# fit.backward.diab = regsubsets(DIABETES_CrudePrev ~., final_data[-1][features], nvmax = 60, method = "backward")
+# summary(fit.backward.diab)
+
+fit.backward.diab = regsubsets(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev), nvmax = 60, method = "backward")
 summary(fit.backward.diab)
 ```
 
 
 #### COPD 
 ```{r}
-fit.backward.copd = regsubsets(COPD_CrudePrev ~., final_data[-1], nvmax = 60, method = "backward")
+# fit.backward.copd = regsubsets(COPD_CrudePrev ~., final_data[-1][features], nvmax = 60, method = "backward")
+# summary(fit.backward.copd)
+
+fit.backward.diab = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1][features], final_data$COPD_CrudePrev), nvmax = 60, method = "forward")
 summary(fit.backward.copd)
 ```
+
+```{r}
+coef(fit.backward.copd, 19)
+```
+
 
 ### LASSO 
 
