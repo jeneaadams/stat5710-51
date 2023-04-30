@@ -32,6 +32,68 @@ pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris
 
 # EDA 
 
+
+## test visualiazations after data cleaning 
+
+```{r}
+merge3 %>%
+  ggplot(aes(x = HVI_SCORE, y = COPD_CrudePrev)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  stat_poly_eq(use_label(c("eq", "R2"))) + 
+  theme_bw()
+
+merge3 %>%
+  ggplot(aes(x = avgPCT_HPSS, y = BPHIGH_CrudePrev)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  stat_regline_equation(label.y = 60, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 55, aes(label = ..rr.label..)) +
+  theme_bw()
+```
+
+
+```{r}
+merge3.1 %>%
+  ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
+  geom_point(alpha = 0.5) +
+  # geom_smooth(method = "lm", se = F) + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  scale_color_discrete(labels=c('No', 'Yes')) +
+  labs(x = "Total Affordable Housing Units", y = "Prevalenace of High Blood Pressure", title = "Integrated view of health disparities, poverty, and environmental factors" ) +
+  guides(size=guide_legend(title="Average % Poverty"), 
+         color=guide_legend(title="High Heat-Related Illness")) +
+  theme_bw() + 
+  theme(legend.position = "left")
+```
+
+
+```{r}
+merge3.2 %>%
+  ggplot(aes(x = sumTOTAL_UNITS, 
+             y = transit_score, 
+             color = CANCER_CrudePrev, 
+             shape = N_VERYHIGH)) + 
+  geom_point(alpha = 0.7,
+             size = 3,
+             stroke = 1) +
+  # geom_smooth(method = "lm", se = F, show.legend = F) +
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  labs(x = "Total Affordable Housing Units", y = "Transit Score", title = "EDA" ) +
+  scale_shape_discrete(labels=c('No', 'Yes')) +
+  scale_color_gradient(low = "lightblue", high = "orange", na.value = NA) +
+  guides(color=guide_legend(title="Cancer Prevalence"), 
+         shape=guide_legend(title="High Heat-Related Illness")) +
+  theme_bw() + 
+  theme(legend.position = "right")
+```
+
+
 # Analysis 
 
 ## Linear Model 
@@ -47,3 +109,206 @@ pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris
 ## Reduced Linear Model
 
 # Appendix I: Data Cleaning 
+
+Data landing and inspection 
+
+```{r}
+affordable_housing = read.csv("data/Affordable_Housing.csv", header = T)
+heat_vuln = read.csv("data/HEAT_EXPOSURE_CENSUS_TRACT.csv", header = T)
+food_access = read.csv("data/NeighborhoodFoodRetail.csv", header = T)
+hospitals = read.csv("data/Hospitals.csv", header = T)
+population_philly = read.csv("data/Vital_Population_CT.csv", header = T)
+cities_census_health_full = read.csv("data/500_Cities__Census_Tract-level_Data__GIS_Friendly_Format___2019_release.csv",header = T)
+census_block_groups10 = read.csv("data/Census_Block_Groups_2010.csv")
+census_blocks10 = read.csv("data/Census_Blocks_2010.csv")
+```
+
+```{r}
+census_blocks10$GEOID10 = as.factor(census_blocks10$GEOID10)
+```
+
+
+376 tracts here
+```{r}
+head(cities_census_health_full)
+
+philly_census_health = cities_census_health_full %>%
+  filter(PlaceName == "Philadelphia")
+```
+
+
+
+384 census tracts here (2010 data)
+```{r}
+head(population_philly)
+
+population_philly = population_philly %>%
+  dplyr::rename(TractFIPS = GEOGRAPHY_NAME) 
+```
+
+
+384 census tracts here (2010 data)
+```{r}
+head(heat_vuln)
+
+heat_vuln = heat_vuln %>%
+  dplyr::rename(TractFIPS = GEOID10)
+
+heat_vuln %>% #sanity check 
+  filter(TractFIPS ==42101000100)
+```
+
+
+
+philly_census_health x population_philly (by race) 
+```{r}
+merge1 = merge(philly_census_health, population_philly, by = "TractFIPS")
+head(merge1)
+dim(merge1) #376 tracts and 77 columns, some which may not be used 
+
+# merge1 + heat vulnerability = philly census health, population by race, and heat vulnerability
+merge2 = merge(merge1, heat_vuln, by = "TractFIPS" )
+head(merge2)
+dim(merge2) #376 census tracts and 88 variables 
+```
+
+
+Next we just need to separate out the last digit in the food_access GEOID10 to transform the census block group number into a census tract number (https://www.census.gov/programs-surveys/geography/guidance/geo-identifiers.html#:~:text=Census%20Tract,482012231001)
+```{r}
+food_access = food_access %>%
+  mutate(new_tracts = substr(GEOID10,1,nchar(GEOID10)-1)) %>%
+  dplyr::rename(TractFIPS = new_tracts)
+```
+
+The new census tract column is now ``TractFIPS`` like the other datasets. 
+
+Then we can average the estimates for each census tract to get one row of data for each census tract. 
+
+```{r}
+food_access_agg = food_access %>%
+  arrange(TractFIPS) %>%
+  group_by(TractFIPS) %>%
+  summarise(sumTOTAL_LPSS = sum(TOTAL_LPSS),
+            avgLPSS_PER1000 = mean(LPSS_PER1000),
+            sumTOTAL_HPSS = sum(TOTAL_HPSS),
+            avgHPSS_PER1000 = mean(HPSS_PER1000),
+            avgPCT_HPSS = mean(PCT_HPSS),
+            avgPCT_VEHICLE_AVAIL = mean(PCT_VEHICLE_AVAILABILITY),
+            sumTOTAL_RESTAURANTS = sum(TOTAL_RESTAURANTS),
+            avgPCT_POVERTY = mean(PCT_POVERTY))
+
+head(food_access_agg)
+```
+
+So now that we are down to about 380 census tracts, we can merge with the other data for ``merege3`` 
+
+```{r}
+# merge2 + food_access_ag = philly census health, population by race, heat vulnerability, and food access
+merge3 = merge(merge2, food_access_agg, by = "TractFIPS" )
+head(merge3)
+dim(merge3) #376 census tracts and 94 variables 
+
+merge3$TractFIPS = as.character(merge3$TractFIPS) #tidying up 
+```
+
+
+Geolocating addresses (for the housing and hospital data) to census tracts
+```{r}
+affordable_housing2 = affordable_housing %>%
+  dplyr::rename(street = ADDRESS) %>%
+  mutate(city = "Philadelphia", 
+         state = "PA")
+
+# Generate geoids for the address list
+# affordable_housing2_geoid = append_geoid(affordable_housing2, 'tract')
+
+#since this takes a minute, I'll save it as an RDS file 
+# saveRDS(affordable_housing2_geoid, file = "data/affordable_housing_geoid.rds")
+
+affordable_housing2_geoid = readRDS("data/affordable_housing_geoid.rds")
+
+
+# affordable_housing2_geoid = affordable_housing2_geoid %>%
+#   rename(TractFIPS = geoid )
+```
+
+
+```{r}
+# Get the total number of affordable housing units by census tract
+
+affordable_housing2_geoid = affordable_housing2_geoid %>%
+  group_by(TractFIPS) %>%
+  summarise(sumTOTAL_UNITS = sum(TOTAL_UNITS)) %>%
+  drop_na() #leaves 144 census tracts with known addresses and affordable housing units
+
+# merge3.1 = affordable_housing_geoid, food_access_agg, philly census health, population by race, heat vulnerability
+
+merge3.1 = left_join(merge3, affordable_housing2_geoid, by = "TractFIPS")
+
+# merge3.2 = walk score, affordable_housing_geoid, food_access_agg, philly census health, population by race, heat vulnerability 
+
+merge3.2 = merge(merge3.1, walk, by = "TractFIPS")
+```
+
+
+Getting census tract-level gini indices 
+```{r}
+
+philly_tract_gini = gini(geo = "tract", year = 2010, quiet = F, state = "PA", county = "Philadelphia")
+
+saveRDS(philly_tract_gini, "data/philly_census_tract_gini.rds")
+
+colnames(philly_tract_gini[[1]])
+
+philly_tract_gini_df = philly_tract_gini[[1]] %>%
+  dplyr::rename(TractFIPS = GEOID)
+```
+
+Merge these with the rest of the data matrix 
+```{r}
+# merge4 = gini, walk score, affordable_housing_geoid, food_access_agg, philly census health, population by race, heat vulnerability
+
+merge4 = merge(merge3.2, philly_tract_gini_df, by = "TractFIPS")
+```
+
+Preparing hospital data 
+```{r}
+new_hosp = readRDS("data/hospitals_cleaned.RDS")
+head(new_hosp)
+
+new_hosp = new_hosp %>%
+  dplyr::rename(street = STREET_ADDRESS, 
+         city = CITY, 
+         state = STATE)
+
+new_hosp_geoid = append_geoid(new_hosp, 'tract')
+
+new_hosp_geoid = new_hosp_geoid %>%
+  dplyr::rename(TractFIPS = geoid)
+
+new_hosp_geoid_pct = new_hosp_geoid %>%
+  group_by(TractFIPS) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  mutate(pct_hosp = n/sum(n))
+
+```
+
+
+Final merge 
+```{r}
+merge5 = left_join(merge4, new_hosp_geoid_pct, by = "TractFIPS")
+
+#take out shapes and add them as a variable 
+
+merge5_new = merge5 %>%
+  select(-PlaceName, -PlaceFIPS, -Place_TractID, -StateAbbr, -Geolocation.x, -Geolocation.y, -OBJECTID.x, -OBJECTID.y, -GEOGRAPHY, -colnames(merge5)[grep(".*_Crude95CI", colnames(merge5))], -OBJECTID_1, -Shape__Area.x, -Shape__Length.x, -Shape__Area.y, -Shape__Length.y, -tract, -county, -state, -NAME10) %>%
+  dplyr::rename(n_hospitals = n)
+
+dim(merge5_new)
+
+# write.csv(merge5_new, "data/census_healthdisp_cleaned.csv")
+```
+
+
+

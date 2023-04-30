@@ -391,7 +391,7 @@ p1 = census_disp_geo %>%
 p2 = census_disp_geo %>%
   ggplot() +
   geom_sf(data = census_disp_geo,
-          aes(fill = avgHPSS_PER1000),
+          aes(fill = ARTHRITIS_CrudePrev),
           color = "white") +
   # scale_fill_gradient2() +
   ggplot2::scale_fill_viridis_c(option = "plasma") +
@@ -401,7 +401,7 @@ p2 = census_disp_geo %>%
 p3 = census_disp_geo %>%
   ggplot() +
   geom_sf(data = census_disp_geo,
-          aes(fill = KIDNEY_CrudePrev),
+          aes(fill = HIGHCHOL_CrudePrev),
           color = "white") +
   # scale_fill_gradient2() +
   ggplot2::scale_fill_viridis_c(option = "plasma") +
@@ -409,6 +409,42 @@ p3 = census_disp_geo %>%
   theme_void()
 
 ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot(aes(x = ACCESS2_CrudePrev, y = avgPCT_VEHICLE_AVAIL)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  stat_poly_eq(use_label(c("eq", "R2"))) + 
+  theme_bw()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot(aes(x = ARTHRITIS_CrudePrev, y = gini)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  stat_poly_eq(use_label(c("eq", "R2"))) + 
+  theme_bw()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot(aes(x = MAMMOUSE_CrudePrev, y = gini)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  stat_poly_eq(use_label(c("eq", "R2"))) + 
+  theme_bw()
+```
+
+```{r}
+census_disp_geo %>%
+  ggplot(aes(x = TEETHLOST_CrudePrev, y = gini)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  stat_poly_eq(use_label(c("eq", "R2"))) + 
+  theme_bw()
 ```
 
 
