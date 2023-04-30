@@ -1,10 +1,13 @@
 ---
-title: "JA-AT_Final Rmd"
+title: "Gentrification and Health Disparities: An Integrated Analysis of Inequality in Philadelphia"
 author:
 - Jenea Adams
 - Annan Timon
 date: 'april 30'
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
   html_document:
     code_folding: show
     highlight: haddock
@@ -12,9 +15,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  pdf_document:
-    toc: yes
-    toc_depth: '4'
   word_document:
     toc: yes
     toc_depth: '4'
@@ -27,10 +27,14 @@ knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning =
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
                tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps,
-               skimr, GGaly, reshape2, glmnet, caret, viridis, pheatmap) 
+               skimr, GGaly, reshape2, glmnet, caret, viridis, pheatmap, tidycensus) 
+
+# resize figs with:  warning=FALSE, fig.width=25, fig.height=8, message=FALSE, echo=FALSE
 ```
 
-# Data 
+
+# Executive Summary 
+[let's put the summary at the top here so that we can make sure we have room for it]
 
 # EDA 
 
@@ -78,7 +82,7 @@ ggplot(pa.tracts,aes(fill = res)) +
 
 [talk about how the gini inequality has changed over the time]
 
-```{r, warning=FALSE, fig.width=25, fig.height=8, message=FALSE, echo=FALSE}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # extract gini coefficient for 2010 and generate a matrix
 gini_2010 <- gini(geo = "tract", year = 2010, quiet = F, state = "PA", county = "Philadelphia")
 philly_gini_all <- gini_2010$gini %>%
@@ -142,7 +146,7 @@ high_ineq_geo <- ggplot(data = ineq_tracts, aes(fill = mean_gini)) +
 
 plot1 <- ggarrange(high_ineq_trend, high_ineq_geo, ncol = 2, nrow = 1, common.legend = TRUE,legend="bottom")
 
-high_plot <- annotate_figure(plot1, top = text_grob("Census tracts with highest Income inequality", face = "bold", size = 14))
+high_plot <- annotate_figure(plot1, top = text_grob("Census tracts with highest \nIncome inequality", face = "bold", size = 14))
 
 # same analysis as above but with the lowest income inequality
 
@@ -179,7 +183,7 @@ low_ineq_geo <- ggplot(data = ineq_tracts, aes(fill = mean_gini)) +
 
 plot2 <- ggarrange(low_ineq_trend, low_ineq_geo, ncol = 2, nrow = 1, common.legend = TRUE,legend="bottom")
 
-low_plot <- annotate_figure(plot2, top = text_grob("Census tracts with lowest Income inequality", face = "bold", size = 14))
+low_plot <- annotate_figure(plot2, top = text_grob("Census tracts with lowest \nIncome inequality", face = "bold", size = 14))
 
 
 ggarrange(high_plot, low_plot, ncol = 2, nrow = 1)
@@ -219,7 +223,7 @@ census_disp_geo = left_join(tracts2010philly2, census_disp, by = "TractFIPS")
 ```
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 tracts2010philly_gini %>%
   ggplot() +
   geom_sf(data = tracts2010philly_gini,
@@ -261,7 +265,7 @@ Here is the break down of variable namea:
 knitr::include_graphics("images/variable_names.png")
 ``` 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 final_data = readRDS("data/final_data.RDS") %>%
   as.data.frame() %>%
   # select(-COUNT_ALL_RACES_ETHNICITIES) %>%
@@ -269,7 +273,7 @@ final_data = readRDS("data/final_data.RDS") %>%
   dplyr::select(-N_VERYHIGH)
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # merge3 %>%
 final_data %>%
   ggplot(aes(x = HVI_SCORE, y = COPD_CrudePrev)) + 
@@ -290,7 +294,7 @@ final_data %>%
 ```
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 final_data %>%
   ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = heat_health_effects)) + 
   geom_point(alpha = 0.5) +
@@ -307,7 +311,7 @@ final_data %>%
 ```
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 final_data %>%
   ggplot(aes(x = sumTOTAL_UNITS, 
              y = transit_score, 
@@ -331,12 +335,12 @@ final_data %>%
 
 
 ## eda looking at relationship of our variables
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 census_disp = read.csv("data/census_healthdisp_cleaned.csv")
 ```
 
 [distributions of hospitals]
-```{r, message=FALSE}
+```{r, echo = F, message=FALSE}
 hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
   dplyr::rename(street = STREET_ADDRESS, 
          city = CITY, 
@@ -349,14 +353,14 @@ hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
 #                             class = "sf")
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # mapview::mapview(hospitals)
 ```
 
 
 [distribution of affordable housing]
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 affordable_housing <- readRDS("data/affordable_housing_geoid.rds") 
   
 # affordable_housing_sf <- cxy_geocode(affordable_housing,
@@ -366,14 +370,14 @@ affordable_housing <- readRDS("data/affordable_housing_geoid.rds")
 #                             class = "sf")
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # mapview::mapview(affordable_housing_sf)
 ```
 
 
 [talk about how transit and walk score is a little lower in our tracts with high inequality]
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 transit_score_plot <- census_disp_geo %>%
   ggplot() +
   geom_sf(data = census_disp_geo, aes(fill = transit_score),
@@ -413,7 +417,7 @@ annotate_figure(plot_transport, top = text_grob("Utility of Public Transport, Wa
 
 we also have number of restaurants but don't include the anlysis here for brevity
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 hpss_plot <- census_disp_geo %>%
   ggplot() +
   geom_sf(aes(fill = avgHPSS_PER1000),
@@ -441,7 +445,7 @@ annotate_figure(plot_food_access, top = text_grob("High vs. Low Produce Supemark
 
 model data prep 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 final_data = readRDS("data/final_data.RDS") %>%
   as.data.frame() %>%
   # select(-COUNT_ALL_RACES_ETHNICITIES) %>%
@@ -450,7 +454,7 @@ final_data = readRDS("data/final_data.RDS") %>%
 ```
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # final dat
 set.seed(2)
 index <- sample(nrow(final_data), round(nrow(final_data)*.70), replace = F)
@@ -460,19 +464,19 @@ final_data_test <- final_data[-index, ]
 dim(final_data_test)
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 health_columns <- c(1, grep("[A-Z]*_CrudePrev",colnames(final_data)))
 demog_columns <- colnames(final_data)[grep("COUNT_.*|PERCENT_.*",colnames(final_data))]
 Ys <- colnames(final_data)[health_columns]
 features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
                                         !(colnames(final_data) %in% demog_columns)]
 
-Ys #health stuff
-features
+# Ys #health stuff
+# features
 ```
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 
 # models = matrix(nrow = length(Ys[-1]), ncol = length(features))
 
@@ -507,12 +511,12 @@ betas.df<- as.tibble(betas)
 
 betas.df$variables <- names(betas[[1]])
 
-betas.df
+# betas.df
 
 
 ```
 
-```{r, fig.width=12, fig.height=10}
+```{r, warning=FALSE, fig.width=15, fig.height=15, message=FALSE, echo=FALSE}
 
 change_matrix <- function(p_mat, beta_mat) {
     new_mat <- matrix(nrow = nrow(p_mat), ncol = ncol(p_mat)-1)
@@ -534,14 +538,10 @@ change_matrix <- function(p_mat, beta_mat) {
     }
     
     #print(new_mat)
-
     
     rownames(new_mat) <- beta_mat$variables
     colnames(new_mat) <- colnames(p_mat)[1:(length(p_mat)-1)]
-    
-    
     return(data.frame(new_mat))                                      
-
 }
 
 significant_df <- change_matrix(ps.df, as.data.frame(betas.df))
@@ -566,7 +566,7 @@ negative gini beta: "ARTHRITIS_CrudePrev", "BPMED_CrudePrev", "COLON_SCREEN_Crud
 Next we perform model selection on models to predict diabetes and COPD prevelance since they appear to have a strong positive correlation to gini index. 
 
 Pepare the data subsetting for model prediction of disease variables vs socioeconomic indicators
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 health_columns <- c(1, grep("[A-Z]*_CrudePrev",colnames(final_data)))
 demog_columns <- colnames(final_data)[grep("COUNT_.*|PERCENT_.*",colnames(final_data))]
 Ys <- colnames(final_data)[health_columns]
@@ -581,21 +581,16 @@ features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
 
 #### Diabetes 
 
-```{r}
-# final_data[-1][features]
-
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 fit.forward.diab = regsubsets(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev), nvmax = 60, method = "forward")
-summary(fit.forward.diab)
+# summary(fit.forward.diab)
 ```
 
 
 #### COPD 
-```{r}
-# fit.forward.copd = regsubsets(COPD_CrudePrev ~., final_data[-1][features], nvmax = 60, method = "forward")
-# summary(fit.forward.copd)
-
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 fit.forward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1][features], final_data$COPD_CrudePrev), nvmax = 60, method = "forward")
-summary(fit.forward.copd)
+# summary(fit.forward.copd)
 ```
 
 
@@ -603,26 +598,21 @@ summary(fit.forward.copd)
 
 #### Diabetes 
 
-```{r}
-# fit.backward.diab = regsubsets(DIABETES_CrudePrev ~., final_data[-1][features], nvmax = 60, method = "backward")
-# summary(fit.backward.diab)
-
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 fit.backward.diab = regsubsets(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev), nvmax = 60, method = "backward")
-summary(fit.backward.diab)
+# summary(fit.backward.diab)
 ```
 
 
 #### COPD 
-```{r}
-# fit.backward.copd = regsubsets(COPD_CrudePrev ~., final_data[-1][features], nvmax = 60, method = "backward")
-# summary(fit.backward.copd)
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 
-fit.backward.diab = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1][features], final_data$COPD_CrudePrev), nvmax = 60, method = "forward")
-summary(fit.backward.copd)
+fit.backward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1][features], final_data$COPD_CrudePrev), nvmax = 60, method = "forward")
+# summary(fit.backward.copd)
 ```
 
-```{r}
-coef(fit.backward.copd, 19)
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+coef(fit.backward.copd, 10)
 ```
 
 
@@ -631,8 +621,7 @@ coef(fit.backward.copd, 19)
 # LASSO - predicting all diseases 
 
 LASSO loop
-```{r}
-# 
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # models = list()
 # all_ps = list()
 # betas = list()
@@ -687,24 +676,13 @@ for(i in 1:length(Ys[-1])){
   p = coef(summary(model_min))[,4]
   all_ps_min[[Ys[-1][i]]] = p 
   
-  #get betas
+  #get betas 
   beta = coef(summary(model_min))[,1]
   betas_min[[Ys[-1][i]]] = beta
   
 }
 
-
-# summary(models_min$ACCESS2_CrudePrev)
-# 
-# summary(models_min$CANCER_CrudePrev)
-# 
-# summary(models_min$CASTHMA_CrudePrev)
-# 
-# summary(models_min$STROKE_CrudePrev)
-# 
 # summary(models_min$DIABETES_CrudePrev)
-
-
 
 plot(lasso_models$DIABETES_CrudePrev, main = "Diabetes")
 print(summary(models_min$DIABETES_CrudePrev))
@@ -718,9 +696,14 @@ print(summary(models_min$COPD_CrudePrev))
 
 # Appendix I: Data Cleaning 
 
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+tidycensus::census_api_key("3352b422b0ef5aaabae7a20651522b5a7688e0bf", install = T, overwrite = T)
+```
+
+
 Data landing and inspection 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 affordable_housing = read.csv("data/Affordable_Housing.csv", header = T)
 heat_vuln = read.csv("data/HEAT_EXPOSURE_CENSUS_TRACT.csv", header = T)
 food_access = read.csv("data/NeighborhoodFoodRetail.csv", header = T)
@@ -733,19 +716,19 @@ census_blocks10 = read.csv("data/Census_Blocks_2010.csv")
 
 In order to directly download data from the Census API, you need a [key](http://api.census.gov/data/key_signup.html). You can sign up for a free key here. Type your key in quotes using the census_api_key() command.
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # get accesss to the census api
 # census_api_key("f4a30edf07058b5e59f5bbfe6c2cc2cc7bbb8029", install = TRUE)
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 census_blocks10$GEOID10 = as.factor(census_blocks10$GEOID10)
 ```
 
 
 376 tracts here
-```{r}
-head(cities_census_health_full)
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+# head(cities_census_health_full)
 
 philly_census_health = cities_census_health_full %>%
   filter(PlaceName == "Philadelphia")
@@ -754,8 +737,8 @@ philly_census_health = cities_census_health_full %>%
 
 
 384 census tracts here (2010 data)
-```{r}
-head(population_philly)
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+# head(population_philly)
 
 population_philly = population_philly %>%
   dplyr::rename(TractFIPS = GEOGRAPHY_NAME) 
@@ -763,8 +746,8 @@ population_philly = population_philly %>%
 
 
 384 census tracts here (2010 data)
-```{r}
-head(heat_vuln)
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+# head(heat_vuln)
 
 heat_vuln = heat_vuln %>%
   dplyr::rename(TractFIPS = GEOID10)
@@ -776,20 +759,20 @@ heat_vuln %>% #sanity check
 
 
 philly_census_health x population_philly (by race) 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 merge1 = merge(philly_census_health, population_philly, by = "TractFIPS")
-head(merge1)
+# head(merge1)
 dim(merge1) #376 tracts and 77 columns, some which may not be used 
 
 # merge1 + heat vulnerability = philly census health, population by race, and heat vulnerability
 merge2 = merge(merge1, heat_vuln, by = "TractFIPS" )
-head(merge2)
+# head(merge2)
 dim(merge2) #376 census tracts and 88 variables 
 ```
 
 
 Next we just need to separate out the last digit in the food_access GEOID10 to transform the census block group number into a census tract number (https://www.census.gov/programs-surveys/geography/guidance/geo-identifiers.html#:~:text=Census%20Tract,482012231001)
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 food_access = food_access %>%
   mutate(new_tracts = substr(GEOID10,1,nchar(GEOID10)-1)) %>%
   dplyr::rename(TractFIPS = new_tracts)
@@ -799,7 +782,7 @@ The new census tract column is now ``TractFIPS`` like the other datasets.
 
 Then we can average the estimates for each census tract to get one row of data for each census tract. 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 food_access_agg = food_access %>%
   arrange(TractFIPS) %>%
   group_by(TractFIPS) %>%
@@ -817,10 +800,10 @@ head(food_access_agg)
 
 So now that we are down to about 380 census tracts, we can merge with the other data for ``merege3`` 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # merge2 + food_access_ag = philly census health, population by race, heat vulnerability, and food access
 merge3 = merge(merge2, food_access_agg, by = "TractFIPS" )
-head(merge3)
+# head(merge3)
 dim(merge3) #376 census tracts and 94 variables 
 
 merge3$TractFIPS = as.character(merge3$TractFIPS) #tidying up 
@@ -828,7 +811,7 @@ merge3$TractFIPS = as.character(merge3$TractFIPS) #tidying up
 
 
 Geolocating addresses (for the housing and hospital data) to census tracts
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 affordable_housing2 = affordable_housing %>%
   dplyr::rename(street = ADDRESS) %>%
   mutate(city = "Philadelphia", 
@@ -848,7 +831,7 @@ affordable_housing2_geoid = readRDS("data/affordable_housing_geoid.rds")
 ```
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # Get the total number of affordable housing units by census tract
 
 affordable_housing2_geoid = affordable_housing2_geoid %>%
@@ -862,12 +845,21 @@ merge3.1 = left_join(merge3, affordable_housing2_geoid, by = "TractFIPS")
 
 # merge3.2 = walk score, affordable_housing_geoid, food_access_agg, philly census health, population by race, heat vulnerability 
 
+walk = read.csv("data/walkscores.csv")
+
+# walk %>%
+#   arrange(TractFIPS)
+
+walk$transit_score = as.numeric(walk$transit_score)
+walk$bike_score = as.numeric(walk$bike_score)
+walk$TractFIPS = as.character(walk$TractFIPS)
+
 merge3.2 = merge(merge3.1, walk, by = "TractFIPS")
 ```
 
 
 Getting census tract-level gini indices 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 
 philly_tract_gini = gini(geo = "tract", year = 2010, quiet = F, state = "PA", county = "Philadelphia")
 
@@ -880,14 +872,14 @@ philly_tract_gini_df = philly_tract_gini[[1]] %>%
 ```
 
 Merge these with the rest of the data matrix 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # merge4 = gini, walk score, affordable_housing_geoid, food_access_agg, philly census health, population by race, heat vulnerability
 
 merge4 = merge(merge3.2, philly_tract_gini_df, by = "TractFIPS")
 ```
 
 Preparing hospital data 
-```{r}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 new_hosp = readRDS("data/hospitals_cleaned.RDS")
 head(new_hosp)
 
@@ -896,33 +888,33 @@ new_hosp = new_hosp %>%
          city = CITY, 
          state = STATE)
 
-new_hosp_geoid = append_geoid(new_hosp, 'tract')
-
-new_hosp_geoid = new_hosp_geoid %>%
-  dplyr::rename(TractFIPS = geoid)
-
-new_hosp_geoid_pct = new_hosp_geoid %>%
-  group_by(TractFIPS) %>%
-  summarise(n = n()) %>%
-  ungroup() %>%
-  mutate(pct_hosp = n/sum(n))
+# new_hosp_geoid = append_geoid(new_hosp, 'tract')
+# 
+# new_hosp_geoid = new_hosp_geoid %>%
+#   dplyr::rename(TractFIPS = geoid)
+# 
+# new_hosp_geoid_pct = new_hosp_geoid %>%
+#   group_by(TractFIPS) %>%
+#   summarise(n = n()) %>%
+#   ungroup() %>%
+#   mutate(pct_hosp = n/sum(n))
 
 ```
 
 
 Final merge 
-```{r}
-merge5 = left_join(merge4, new_hosp_geoid_pct, by = "TractFIPS")
-
-#take out shapes and add them as a variable 
-
-merge5_new = merge5 %>%
-  select(-PlaceName, -PlaceFIPS, -Place_TractID, -StateAbbr, -Geolocation.x, -Geolocation.y, -OBJECTID.x, -OBJECTID.y, -GEOGRAPHY, -colnames(merge5)[grep(".*_Crude95CI", colnames(merge5))], -OBJECTID_1, -Shape__Area.x, -Shape__Length.x, -Shape__Area.y, -Shape__Length.y, -tract, -county, -state, -NAME10) %>%
-  dplyr::rename(n_hospitals = n)
-
-dim(merge5_new)
-
-# write.csv(merge5_new, "data/census_healthdisp_cleaned.csv")
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+# merge5 = left_join(merge4, new_hosp_geoid_pct, by = "TractFIPS")
+# 
+# #take out shapes and add them as a variable 
+# 
+# merge5_new = merge5 %>%
+#   select(-PlaceName, -PlaceFIPS, -Place_TractID, -StateAbbr, -Geolocation.x, -Geolocation.y, -OBJECTID.x, -OBJECTID.y, -GEOGRAPHY, -colnames(merge5)[grep(".*_Crude95CI", colnames(merge5))], -OBJECTID_1, -Shape__Area.x, -Shape__Length.x, -Shape__Area.y, -Shape__Length.y, -tract, -county, -state, -NAME10) %>%
+#   dplyr::rename(n_hospitals = n)
+# 
+# dim(merge5_new)
+# 
+# # write.csv(merge5_new, "data/census_healthdisp_cleaned.csv")
 ```
 
 
