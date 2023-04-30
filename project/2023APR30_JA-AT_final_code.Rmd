@@ -25,15 +25,287 @@ urlcolor: blue
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning = F)
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy, tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps, skimr, GGaly, reshape2, glmnet) 
+pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
+               tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps,
+               skimr, GGaly, reshape2, glmnet, caret, Viridis) 
 ```
 
 # Data 
 
+# EDA 
 
-## Appendix I: Data Cleaning 
 
-Data loading and inspection 
+## test visualiazations after data cleaning 
+
+```{r}
+merge3 %>%
+  ggplot(aes(x = HVI_SCORE, y = COPD_CrudePrev)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  stat_poly_eq(use_label(c("eq", "R2"))) + 
+  theme_bw()
+
+merge3 %>%
+  ggplot(aes(x = avgPCT_HPSS, y = BPHIGH_CrudePrev)) + 
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  stat_regline_equation(label.y = 60, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 55, aes(label = ..rr.label..)) +
+  theme_bw()
+```
+
+
+```{r}
+merge3.1 %>%
+  ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
+  geom_point(alpha = 0.5) +
+  # geom_smooth(method = "lm", se = F) + 
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  scale_color_discrete(labels=c('No', 'Yes')) +
+  labs(x = "Total Affordable Housing Units", y = "Prevalenace of High Blood Pressure", title = "Integrated view of health disparities, poverty, and environmental factors" ) +
+  guides(size=guide_legend(title="Average % Poverty"), 
+         color=guide_legend(title="High Heat-Related Illness")) +
+  theme_bw() + 
+  theme(legend.position = "left")
+```
+
+
+```{r}
+merge3.2 %>%
+  ggplot(aes(x = sumTOTAL_UNITS, 
+             y = transit_score, 
+             color = CANCER_CrudePrev, 
+             shape = N_VERYHIGH)) + 
+  geom_point(alpha = 0.7,
+             size = 3,
+             stroke = 1) +
+  # geom_smooth(method = "lm", se = F, show.legend = F) +
+  # stat_poly_eq(use_label(c("eq", "R2"))) + 
+  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
+  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
+  labs(x = "Total Affordable Housing Units", y = "Transit Score", title = "EDA" ) +
+  scale_shape_discrete(labels=c('No', 'Yes')) +
+  scale_color_gradient(low = "lightblue", high = "orange", na.value = NA) +
+  guides(color=guide_legend(title="Cancer Prevalence"), 
+         shape=guide_legend(title="High Heat-Related Illness")) +
+  theme_bw() + 
+  theme(legend.position = "right")
+```
+
+
+# Analysis 
+
+## Linear Model 
+
+model data prep 
+
+```{r}
+final_data = readRDS("data/final_data.RDS") %>%
+  as.data.frame() %>%
+  # select(-COUNT_ALL_RACES_ETHNICITIES) %>%
+  mutate(heat_health_effects = as.factor(N_VERYHIGH)) %>%
+  dplyr::select(-N_VERYHIGH)
+```
+
+
+```{r}
+# final dat
+set.seed(2)
+index <- sample(nrow(final_data), round(nrow(final_data)*.70), replace = F)
+final_data_train <- final_data[index,]
+dim(final_data_train)
+final_data_test <- final_data[-index, ]
+dim(final_data_test)
+```
+
+```{r}
+health_columns <- c(1, grep("[A-Z]*_CrudePrev",colnames(final_data)))
+demog_columns <- colnames(final_data)[grep("COUNT_.*|PERCENT_.*",colnames(final_data))]
+Ys <- colnames(final_data)[health_columns]
+features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
+                                        !(colnames(final_data) %in% demog_columns)]
+
+Ys #health stuff
+features
+```
+
+
+```{r}
+
+# models = matrix(nrow = length(Ys[-1]), ncol = length(features))
+
+models = list()
+all_ps = list()
+betas = list()
+  
+for(i in 1:length(Ys[-1])){
+  f = as.formula(
+  paste(Ys[i], 
+        paste(features, collapse = " + "), 
+        sep = " ~ "))
+  
+  #get model and add to list 
+  model = lm(f, final_data)
+  models[[Ys[-1][i]]] = model
+  
+  #get significant ps
+  p = coef(summary(model))[,4]
+  all_ps[[Ys[-1][i]]] = p 
+  
+  #get betas
+  beta = coef(summary(model))[,1]
+  betas[[Ys[-1][i]]] = beta
+  
+  
+}
+
+# print(f)
+ps.df<- as.tibble(all_ps)
+betas.df<- as.tibble(betas)
+
+betas.df$variables <- names(betas[[1]])
+
+betas.df
+
+
+```
+
+```{r, fig.width=12, fig.height=10}
+
+change_matrix <- function(p_mat, beta_mat) {
+    new_mat <- matrix(nrow = nrow(p_mat), ncol = ncol(p_mat)-1)
+    
+    # iterate through and find values that are not significant
+    for(i in 1:nrow(new_mat)) {
+        for(j in 1:ncol(new_mat)) {
+            
+            if(p_mat[i,j] < .05) {
+                new_mat[i,j] <- beta_mat[i,j]
+                if(beta_mat[i,j] == "Inf") { 
+                    new_mat[i,j] <- NA
+                }
+                
+            }else {
+                new_mat[i,j] <- NA
+            }
+        }
+    }
+    
+    #print(new_mat)
+
+    
+    rownames(new_mat) <- beta_mat$variables
+    colnames(new_mat) <- colnames(p_mat)[1:(length(p_mat)-1)]
+    
+    
+    return(data.frame(new_mat))                                      
+
+}
+
+significant_df <- change_matrix(ps.df, as.data.frame(betas.df))
+pheatmap(t(significant_df[-1,]), na_col = "#FFFFFFFF",
+         cluster_cols = F, cluster_rows = F,
+         color = inferno(10))
+
+```
+
+## Model Selection 
+
+### Forward Selection 
+
+### Backward Selection 
+
+### LASSO 
+
+# LASSO - predicting diseases 
+
+LASSO loop
+```{r}
+# 
+# models = list()
+# all_ps = list()
+# betas = list()
+
+lasso_models = list()
+plots_lasso = list()
+lasso_coefs = list()
+
+models_min = list()
+all_ps_min = list()
+betas_min = list()
+
+for(i in 1:length(Ys[-1])){
+  
+  f = as.formula(
+  paste(Ys[-1][i], 
+        paste(features, collapse = " + "), 
+        sep = " ~ "))
+  
+  cur_feature <- Ys[-1][i]
+  y <- final_data %>% dplyr::select(!!cur_feature)
+  X1 <- model.matrix(f, final_data)[, -1]
+  fit.lasso <- cv.glmnet(X1, y[[1]], alpha=1)
+  
+  lasso_models[[Ys[-1][i]]] = fit.lasso #save model 
+  plots_lasso[[Ys[-1][i]]] = plot(fit.lasso) # save plot 
+  
+  #get coefs
+  coef.min = coef(fit.lasso, s = "lambda.1se")
+  coef.min = coef.min[which(coef.min !=0),]
+  lasso_coefs[[Ys[-1][i]]] = coef.min
+  
+  
+  features_sub <- rownames(as.matrix(coef.min))[-1]
+  
+  if (sum(grepl("heat_health.*", features_sub)) > 0) {
+    index = grep("heat_health.*", features_sub)
+    features_sub[index] = substr(features_sub[index], 1, nchar(features_sub[index])-1)
+  }
+  
+  final_data_sub <- final_data %>% dplyr::select(all_of(c(Ys[-1][i], features_sub)))
+  
+  f_new <- as.formula(
+  paste(Ys[-1][i], 
+        paste(features_sub, collapse = " + "), 
+        sep = " ~ "))
+  model_min = lm(f_new, final_data_sub)
+  
+  #get model and add to list 
+  models_min[[Ys[-1][i]]] = model_min
+  
+  #get significant ps
+  p = coef(summary(model_min))[,4]
+  all_ps_min[[Ys[-1][i]]] = p 
+  
+  #get betas
+  beta = coef(summary(model_min))[,1]
+  betas_min[[Ys[-1][i]]] = beta
+  
+}
+
+
+# summary(models_min$ACCESS2_CrudePrev)
+# 
+# summary(models_min$CANCER_CrudePrev)
+# 
+# summary(models_min$CASTHMA_CrudePrev)
+# 
+# summary(models_min$STROKE_CrudePrev)
+# 
+# summary(models_min$DIABETES_CrudePrev)
+
+lasso_models
+
+```
+
+## Reduced Linear Model
+
+# Appendix I: Data Cleaning 
+
+Data landing and inspection 
 
 ```{r}
 affordable_housing = read.csv("data/Affordable_Housing.csv", header = T)
@@ -80,6 +352,7 @@ heat_vuln = heat_vuln %>%
 heat_vuln %>% #sanity check 
   filter(TractFIPS ==42101000100)
 ```
+
 
 
 philly_census_health x population_philly (by race) 
@@ -232,544 +505,5 @@ dim(merge5_new)
 # write.csv(merge5_new, "data/census_healthdisp_cleaned.csv")
 ```
 
-
-
-
-## test visualiazations after data cleaning 
-
-```{r}
-merge3 %>%
-  ggplot(aes(x = HVI_SCORE, y = COPD_CrudePrev)) + 
-  geom_point() +
-  geom_smooth(method = "lm") + 
-  stat_poly_eq(use_label(c("eq", "R2"))) + 
-  theme_bw()
-
-merge3 %>%
-  ggplot(aes(x = avgPCT_HPSS, y = BPHIGH_CrudePrev)) + 
-  geom_point() +
-  geom_smooth(method = "lm") + 
-  # stat_poly_eq(use_label(c("eq", "R2"))) + 
-  stat_regline_equation(label.y = 60, aes(label = ..eq.label..)) +
-  stat_regline_equation(label.y = 55, aes(label = ..rr.label..)) +
-  theme_bw()
-```
-
-
-```{r}
-merge3.1 %>%
-  ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = N_VERYHIGH)) + 
-  geom_point(alpha = 0.5) +
-  # geom_smooth(method = "lm", se = F) + 
-  # stat_poly_eq(use_label(c("eq", "R2"))) + 
-  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
-  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
-  scale_color_discrete(labels=c('No', 'Yes')) +
-  labs(x = "Total Affordable Housing Units", y = "Prevalenace of High Blood Pressure", title = "Integrated view of health disparities, poverty, and environmental factors" ) +
-  guides(size=guide_legend(title="Average % Poverty"), 
-         color=guide_legend(title="High Heat-Related Illness")) +
-  theme_bw() + 
-  theme(legend.position = "left")
-```
-
-
-```{r}
-merge3.2 %>%
-  ggplot(aes(x = sumTOTAL_UNITS, 
-             y = transit_score, 
-             color = CANCER_CrudePrev, 
-             shape = N_VERYHIGH)) + 
-  geom_point(alpha = 0.7,
-             size = 3,
-             stroke = 1) +
-  # geom_smooth(method = "lm", se = F, show.legend = F) +
-  # stat_poly_eq(use_label(c("eq", "R2"))) + 
-  # stat_regline_equation(label.y = 60, aes(label = ..eq.label..), show.legend = F) +
-  # stat_regline_equation(label.y = 55, aes(label = ..rr.label..), show.legend = F) +
-  labs(x = "Total Affordable Housing Units", y = "Transit Score", title = "EDA" ) +
-  scale_shape_discrete(labels=c('No', 'Yes')) +
-  scale_color_gradient(low = "lightblue", high = "orange", na.value = NA) +
-  guides(color=guide_legend(title="Cancer Prevalence"), 
-         shape=guide_legend(title="High Heat-Related Illness")) +
-  theme_bw() + 
-  theme(legend.position = "right")
-```
-
-
-# EDA 
-
-Change in gini over time 
-
-```{r}
-census_disp <-fread("data/census_healthdisp_cleaned.csv")
-
-census_disp_final <- census_disp %>%
-  mutate(TractFIPS = as.character(TractFIPS)) %>%
-  filter(!(TractFIPS %in% na_tracts)) %>%
-  dplyr::rename(GEOID = TractFIPS) %>%
-  dplyr::select(-pct_hosp, -lon, -lat, -V1, -YEAR, -COUNT_ALL_RACES_ETHNICITIES)
-
-census_disp_final$transit_score[63] <- 0
-census_disp_final$bike_score[63] <- 60
-
-census_disp_final$n_hospitals[is.na(census_disp_final$n_hospitals)] <- 0
-census_disp_final$sumTOTAL_UNITS[is.na(census_disp_final$sumTOTAL_UNITS)] <- 0
-
-census_disp_final <- na.omit(census_disp_final)
-
-summary(census_disp_final)
-
-saveRDS(census_disp_final, "data/final_data.RDS")
-
-# Gini index analysis 
-# extract gini coefficient for 2010 and generate a matrix
-gini_2010 <- gini(geo = "tract", year = 2010, quiet = F, state = "PA", county = "Philadelphia")
-philly_gini_all <- gini_2010$gini %>%
-  dplyr::select(GEOID, gini) %>%
-  dplyr::rename(!!as.character(2010) := gini)
-
-# extract philly gini data for years 2010-2019
-for (year in 2011:2019) {
-  curData <- gini(geo = "tract", year = year, quiet = F, state = "PA", county = "Philadelphia")
-  philly_gini_all <- curData$gini %>%
-    dplyr::rename(!!as.character(year) := gini) %>%
-    dplyr::select(GEOID, !!as.character(year)) %>%
-    left_join(philly_gini_all, ., by ="GEOID")
-}
-
-# In order to directly download data from the Census API, you need a [key](http://api.census.gov/data/key_signup.html). You can sign up for a free key here. Type your key in quotes using the census_api_key() command.
-# get accesss to the census api
-# census_api_key("f4a30edf07058b5e59f5bbfe6c2cc2cc7bbb8029", install = TRUE)
-
-# extract phila county geospatial data
-pa.tracts <- get_acs(geography = "tract", 
-              year = 2010,
-              variables = c(tpopr = "B03002_001"), 
-              state = "PA",
-              county = "Philadelphia",
-              output = "wide",
-              survey = "acs5",
-              geometry = TRUE,
-              cb = FALSE)
-
-philly_gini_all$mean_gini <- rowMeans(philly_gini_all[,2:length(philly_gini_all)])
-
-# select top 5 and bottom 5 census tracts with the highest and lowest mean gini index, respectively
-selected_tracts_high <- philly_gini_all[order(philly_gini_all$mean_gini, decreasing=T), ]$GEOID[1:10]
-#print(selected_tracts_high)
-selected_tracts_low <- philly_gini_all[order(philly_gini_all$mean_gini, decreasing=F), ]$GEOID[1:10]
-#print(selected_tracts_low)
-
-# flatten out df
-philly_gini_melt <-philly_gini_all %>%
-  dplyr::select(-mean_gini) %>%
-  reshape2::melt()
-
-# show change in gini index over time, highlighting census tracts with high gini
-high_ineq_trend <- philly_gini_melt%>%
-  ggplot(aes(x=variable, y=value, group =GEOID)) +
-  geom_line(col = "grey", alpha = .5) + 
-  geom_point(col = "grey", alpha = .5) +
-  geom_line(data = subset(philly_gini_melt, GEOID %in% selected_tracts_high),
-            aes(col = GEOID)) +
-  geom_point(data = subset(philly_gini_melt, GEOID %in% selected_tracts_high),
-            aes(col = GEOID)) +  
-  scale_color_manual(values = viridis(10)) +
-  theme_bw() +
-  labs(y = "Gini Index", x = "Year") 
-
-
-# plotting, subset census tracts with high gini to show where they are geographically
-ineq_tracts <- pa.tracts %>%
-  left_join(subset(philly_gini_all, GEOID %in% selected_tracts_high)) %>%
-  mutate_if(is.numeric,coalesce,0)
-
-# remove tracts that are always na (park and river area) and non residential
-na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
-              "42101980900", "42101980700", "42101980600", "42101980800",
-              "42101980500", "42101980000", "42101980300")
-
-ineq_tracts[ineq_tracts$GEOID %in% na_tracts,3:length(ineq_tracts)] <- NA
-
-# plot showing areas in west, center city east, and north philly experience the highest income inequality
-high_ineq_geo <- ggplot(data = ineq_tracts, aes(fill = mean_gini)) + 
-  geom_sf() +
-  scale_fill_continuous(low="grey", high="mediumpurple", 
-                       guide="colorbar",na.value="white") + 
-  theme_void()
-
-plot1 <- ggarrange(high_ineq_trend, high_ineq_geo, ncol = 2, nrow = 1, common.legend = TRUE,legend="bottom")
-
-annotate_figure(plot1, top = text_grob("Census tracts with highest Income inequality", face = "bold", size = 14))
-
-# same analysis as above but with the lowest income inequality
-
-low_ineq_trend <- philly_gini_melt%>%
-  ggplot(aes(x=variable, y=value, group =GEOID)) +
-  geom_line(col = "grey", alpha = .5) + 
-  geom_point(col = "grey", alpha = .5) +
-  geom_line(data = subset(philly_gini_melt, GEOID %in% selected_tracts_low),
-            aes(col = GEOID)) +
-  geom_point(data = subset(philly_gini_melt, GEOID %in% selected_tracts_low),
-            aes(col = GEOID)) +  
-  scale_color_manual(values = viridis(10)) +
-  theme_bw() +
-  labs(y = "Gini Index", x = "Year") 
-
-ineq_tracts <- pa.tracts %>%
-  left_join(subset(philly_gini_all, GEOID %in% selected_tracts_low)) %>%
-  mutate_if(is.numeric,coalesce,0)
-
-na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
-              "42101980900", "42101980700", "42101980600", "42101980800",
-              "42101980500", "42101980000", "42101980300")
-
-ineq_tracts[ineq_tracts$GEOID %in% na_tracts,3:length(ineq_tracts)] <- NA
-
-
-low_ineq_geo <- ggplot(data = ineq_tracts, aes(fill = mean_gini)) + 
-  geom_sf() +
-  scale_fill_continuous(low="grey", high="mediumpurple", 
-                       guide="colorbar",na.value="white") + 
-  theme_void()
-
-
-
-plot2 <- ggarrange(low_ineq_trend, low_ineq_geo, ncol = 2, nrow = 1, common.legend = TRUE,legend="bottom")
-
-annotate_figure(plot2, top = text_grob("Census tracts with lowest Income inequality", face = "bold", size = 14))
-
-```
-
-
-Distribution of ... 
-```{r}
-# hospitals 
-hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
-  dplyr::rename(street = STREET_ADDRESS, 
-         city = CITY, 
-         state = STATE)
-  
-hospitals_sf <- cxy_geocode(hospitals,
-                            street = "street", 
-                            city = "city", 
-                            state = "state", 
-                            class = "sf")
-
-mapview::mapview(hospitals_sf)
-
-#affordable housing 
-affordable_housing <- readRDS("data/affordable_housing_geoid.rds") 
-  
-affordable_housing_sf <- cxy_geocode(affordable_housing,
-                            street = "street", 
-                            city = "city", 
-                            state = "state", 
-                            class = "sf")
-
-mapview::mapview(affordable_housing_sf)
-
-# food access 
-food_access <- census_disp_final %>%
-  dplyr::select(TractFIPS, avgHPSS_PER1000, avgLPSS_PER1000) %>%
-  mutate(TractFIPS = as.character(TractFIPS)) %>%
-  dplyr::rename(GEOID = TractFIPS)
-
-# plotting, subset census tracts with high gini to show where they are geographically
-food_access_tracts <- pa.tracts %>%
-  left_join(food_access)
-
-
-# plot showing areas in west, center city east, and north philly experience the highest income inequality
-
-ggplot(data = food_access_tracts, aes(fill = avgHPSS_PER1000)) + 
-  geom_sf() +
-  scale_fill_distiller(palette = "RdPu", 
-                       direction = 1) + 
-  theme_void()
-
-
-ggplot(data = food_access_tracts, aes(fill = avgLPSS_PER1000)) + 
-  geom_sf() +
-  scale_fill_distiller(palette = "RdPu", 
-                       direction = 1) + 
-  theme_void()
-
-```
-
-
-Showing gini for 2010 census data in Philly 
-```{r}
-# tidycensus::census_api_key("3352b422b0ef5aaabae7a20651522b5a7688e0bf", install = T, overwrite = T)
-
-
-# geting gini
-gini2010philly = gini(geo = "tract", state = "PA", county = "Philadelphia", year = 2010)
-
-gini2010philly$gini
-
-# getting geometry 
-tracts2010philly = tigris::tracts(state = "PA", county = "Philadelphia", year = 2010, cb = TRUE) %>%
-  mutate(GEO_ID = gsub("1400000US","", GEO_ID)) %>%
-  dplyr::rename(GEOID = GEO_ID)
-
-tracts2010philly$GEOID
-
-# merging geomtry with gini data 
-tracts2010philly_gini = dplyr::left_join(tracts2010philly, gini2010philly$gini, by = "GEOID")
-
-tracts2010philly2 = tracts2010philly %>%
-  rename(TractFIPS = GEOID)
-census_disp_geo = left_join(tracts2010philly2, census_disp, by = "TractFIPS")
-
-#plotting 
-tracts2010philly_gini %>%
-  ggplot() +
-  geom_sf(data = tracts2010philly_gini,
-          aes(fill = gini),
-          color = "white") +
-  # guides(fill = F) +
-  labs(title = "") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-```
-
-
-Spatial distribution of variables of interest 
-
-```{r}
-
-#blood pressure
-census_disp_geo %>%
-  ggplot() +
-  geom_sf(aes(fill = BPHIGH_CrudePrev),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-
-#poverty 
-census_disp_geo %>%
-  ggplot() +
-  geom_sf(aes(fill = avgPCT_POVERTY),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-
-#high produce supply stores 
-census_disp_geo %>%
-  ggplot() +
-  geom_sf(aes(fill = avgHPSS_PER1000),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-
-
-#heat vulnerability index 
-census_disp_geo %>%
-  ggplot() +
-  geom_sf(aes(fill = HVI_SCORE),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-
-```
-
-
-Inspecting association between variables 
-```{r}
-
-# gini vs percent of high produce supply stores + percent poverty
-census_disp %>%
-  ggplot(aes(x = gini, y = avgPCT_HPSS, color = avgPCT_POVERTY)) + 
-  geom_point(alpha = 0.5) + 
-  geom_smooth(method = "lm", se = F, color = "orange", ) + 
-  # stat_poly_eq(use_label(c("eq", "R2"))) +
-  theme_bw()
-
-#heat health impact by gini index 
-census_disp %>%
-  ggplot(aes(gini,
-             fill = heat_health_impacts)) + 
-  geom_histogram(color = "white") + 
-  guides(alpha = F, color = F)+
-  scale_fill_brewer(palette="Dark2") +
-  theme_bw()
-
-# access to health insurance and vehicle avilability 
-census_disp_geo %>%
-  ggplot(aes(x = ACCESS2_CrudePrev, y = avgPCT_VEHICLE_AVAIL)) + 
-  geom_point() +
-  geom_smooth(method = "lm") + 
-  stat_poly_eq(use_label(c("eq", "R2"))) + 
-  theme_bw()
-```
-
-
-# Analysis 
-
-```{r}
-final_data = readRDS("data/final_data.RDS") %>%
-  # select(-COUNT_ALL_RACES_ETHNICITIES) %>%
-  mutate(heat_health_effects = as.factor(N_VERYHIGH)) %>%
-  select(-N_VERYHIGH)
-```
-
-## Linear Model 
-
-
-```{r}
-health_columns <- c(1, grep("[A-Z]*_CrudePrev",colnames(final_data)))
-demog_columns <- colnames(final_data)[grep("COUNT_.*|PERCENT_.*",colnames(final_data))]
-Ys <- colnames(final_data)[health_columns]
-features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
-                                        !(colnames(final_data) %in% demog_columns)]
-
-Ys #health stuff
-features
-
-models = list()
-all_ps = list()
-betas = list()
-  
-for(i in 1:length(Ys[-1])){
-  f = as.formula(
-  paste(Ys[i], 
-        paste(features, collapse = " + "), 
-        sep = " ~ "))
-  
-  #get model and add to list 
-  model = lm(f, final_data)
-  models[[Ys[-1][i]]] = model
-  
-  #get significant ps
-  p = coef(summary(model))[,4]
-  all_ps[[Ys[-1][i]]] = p 
-  
-  #get betas
-  beta = coef(summary(model))[,1]
-  betas[[Ys[-1][i]]] = beta
-  
-  
-}
-
-# print(f)
-ps.df<- as.tibble(all_ps)
-betas.df<- as.tibble(betas)
-
-betas.df$variables <- names(betas[[1]])
-
-betas.df
-```
-
-```{r, fig.width=12, fig.height=10}
-dim(final_data)
-
-library(viridis)
-# funtion to color non significant values white
-makeColorRampPalette <- function(colors, cutoff.fraction, num.colors.in.palette)
-{
-  stopifnot(length(colors) == 4)
-  ramp1 <- colorRampPalette(colors[1:2])(num.colors.in.palette * cutoff.fraction)
-  ramp2 <- colorRampPalette(colors[3:4])(num.colors.in.palette * (1 - cutoff.fraction))
-  return(c(ramp1, ramp2))
-}
-
-
-change_matrix <- function(p_mat, beta_mat) {
-    new_mat <- matrix(nrow = nrow(p_mat), ncol = ncol(p_mat)-1)
-    
-    # iterate through and find values that are not significant
-    for(i in 1:nrow(new_mat)) {
-        for(j in 1:ncol(new_mat)) {
-            
-            if(p_mat[i,j] < .05) {
-                new_mat[i,j] <- beta_mat[i,j]
-                if(beta_mat[i,j] == "Inf") { 
-                    new_mat[i,j] <- NA
-                }
-                
-            }else {
-                new_mat[i,j] <- NA
-            }
-        }
-    }
-    
-    #print(new_mat)
-
-    
-    rownames(new_mat) <- p_mat$variables
-    colnames(new_mat) <- colnames(p_mat)[1:(length(p_mat)-1)]
-    
-    
-    return(data.frame(new_mat))                                      
-# -
-
-}
-
-significant_df <- change_matrix(ps.df, as.data.frame(betas.df))
-pheatmap(t(significant_df[-1,]), na_col = "#FFFFFFFF",
-         cluster_cols = F, cluster_rows = F,
-         color = inferno(10))
-
-```
-
-
-finding significant Ps
-```{r}
-
-summary(models$CANCER_CrudePrev)$coefficients[,4] #extract p-vales from an individual model 
-
-significant_df
-
-```
-
-## Model Selection 
-
-### Forward Selection 
-
-### Backward Selection 
-
-### LASSO 
-
-## Reduced Linear Model
-
-# Appendix II: Extended EDA 
-
-```{r}
-
-#poor mental health 
-census_disp_geo %>%
-  ggplot() +
-  geom_sf(data = census_disp_geo, aes(fill = MHLTH_CrudePrev),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-
-#diabetes 
-census_disp_geo %>%
-  ggplot() +
-  geom_sf(data = census_disp_geo, aes(fill = DIABETES_CrudePrev),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-
-#transit score 
-census_disp_geo %>%
-  ggplot() +
-  geom_sf(data = census_disp_geo, aes(fill = transit_score),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-
-# low produce supply sotres 
-census_disp_geo %>%
-  ggplot() +
-  geom_sf(data = census_disp_geo, aes(fill = avgLPSS_PER1000),
-          color = "white") +
-  ggplot2::scale_fill_viridis_c() +
-  theme_void()
-
-
-```
 
 
