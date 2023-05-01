@@ -37,6 +37,8 @@ pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
 # Executive Summary 
 
 ## Abstract & Goal of the Study 
+Gentrification is a process of affluent residents and businesses displacing existing low-income residents and businesses. Beyond prospects for so-called "urban renewal", gentrification has real, tangible effects on the landscape and trajectories of existing communities who often don't benefit from the changes of a neighborhood and are disenfranchised from participating in the growth of their area. Gentrification also has documented health effects on communities, such as shortened life expectancy, higher cancer rates, higher infant mortality, and cardiovascular diseases. Income inequality can be used to estimate gentrification rates. It can be quantified by a [Gini index](https://www.census.gov/topics/income-poverty/income-inequality/about/metrics/gini-index.html) which is a value from 0 to 1 indicating inequality in the dispersion of income in a given unit. **This study begins to to investigate a statistical framework for capturing the relationship between income inequality and health effects in Philadelphia from integrated datasets.**
+
 
 ## Data 
 In this project, we use the following three nearly cleaned data:
@@ -57,18 +59,13 @@ In this project, we use the following three nearly cleaned data:
 
 **Health data**: measures of prevalence of health measures such as cancer prevalence, access to health insurance, blood pressure, heart disease, and more by census tract.
 
-Transitscore/Walkscore/Bikescore: measures how walkable, well served by public transportation, and bikeable a location is
+**Transitscore/Walkscore/Bikescore**: measures how walkable, well served by public transportation, and bikeable a location is
 
-Here is the break down of variable names:
-
-```{r out.width = "400px", echo = F, fig.cap="Logistic regression as 0-layer neural network", echo=FALSE}
-knitr::include_graphics("images/variable_names.png")
-``` 
 
 
 **Philadelphia's Black Bottom**
 
-```{r out.width = "400px", echo = F, fig.cap="Logistic regression as 0-layer neural network", echo=FALSE}
+```{r out.width = "400px", echo = F, fig.cap="Philadelphia's Black Bottom from 1930 to 1973", echo=FALSE}
 knitr::include_graphics("images/black_bottom_philly.jpg")
 ```
 
@@ -206,7 +203,7 @@ ggarrange(high_plot, low_plot, ncol = 2, nrow = 1)
 
 
 ## Brief Summary of Findings
-We found that there were strong associations between indicators of income inequality and adverse health outcomes in and closely bordering the footprint of Philadelphia's Black bottom. 
+We found that there were strong associations between indicators of income inequality and adverse health outcomes in and closely bordering the footprint of Philadelphia's Black bottom. This association is particularly strong in in models used to predict COPD prevalence and Diabeates prevalence, diseases for which we see strong evidence of geospatial disparities in and around Philadelphia's Historic Black Bottom. 
 
 
 # EDA
@@ -260,39 +257,37 @@ tracts2010philly_gini %>%
           color = "white") +
   ggplot2::scale_fill_viridis_c() +
   theme_void()
-
-
 ```
 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # merge3 %>%
-final_data %>%
+j1 = final_data %>%
   ggplot(aes(x = HVI_SCORE, y = COPD_CrudePrev)) + 
   geom_point() +
   geom_smooth(method = "lm") + 
   stat_poly_eq(use_label(c("eq", "R2"))) + 
-  labs(title = "Heat Vulnerability Index by COPD Prevalence", 
+  labs(title = "Heat Vulnerability Index \nby COPD Prevalence", 
        x = "Heat Vulnerability Index", 
        y = "COPD Prevalence") +
   theme_bw()
 
 
-final_data %>%
+j2 = final_data %>%
   ggplot(aes(x = avgPCT_HPSS, y = BPHIGH_CrudePrev)) + 
   geom_point() +
   geom_smooth(method = "lm") + 
   # stat_poly_eq(use_label(c("eq", "R2"))) + 
   stat_regline_equation(label.y = 60, aes(label = ..eq.label..)) +
   stat_regline_equation(label.y = 55, aes(label = ..rr.label..)) +
-  labs(title = "% of High Produce Supply Stores by High Blood Pressure Prevalence", 
+  labs(title = "% of High Produce Supply Stores \nby High Blood Pressure Prevalence", 
        x = "% High Produce Supply Stores", y = "High Blood Pressure Prevalence") +
   theme_bw()
 ```
 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-final_data %>%
+j3 = final_data %>%
   ggplot(aes(x = sumTOTAL_UNITS, y = BPHIGH_CrudePrev, size = avgPCT_POVERTY, color = heat_health_effects)) + 
   geom_point(alpha = 0.5) +
   # geom_smooth(method = "lm", se = F) + 
@@ -307,49 +302,11 @@ final_data %>%
   theme(legend.position = "left")
 ```
 
-
-
-
-
-## eda looking at relationship of our variables
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-census_disp = read.csv("data/census_healthdisp_cleaned.csv")
-```
-
-[distributions of hospitals]
-```{r, echo = F, message=FALSE}
-hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
-  dplyr::rename(street = STREET_ADDRESS, 
-         city = CITY, 
-         state = STATE)
-  
-# hospitals_sf <- cxy_geocode(hospitals,
-#                             street = "street",
-#                             city = "city",
-#                             state = "state",
-#                             class = "sf")
-```
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-# mapview::mapview(hospitals)
+ggarrange(j1, j2, ncol = 2, nrow = 1)
 ```
 
 
-[distribution of affordable housing]
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-affordable_housing <- readRDS("data/affordable_housing_geoid.rds") 
-  
-# affordable_housing_sf <- cxy_geocode(affordable_housing,
-#                             street = "street", 
-#                             city = "city", 
-#                             state = "state", 
-#                             class = "sf")
-```
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-# mapview::mapview(affordable_housing_sf)
-```
 
 
 [talk about how transit and walk score is a little lower in our tracts with high inequality]
@@ -420,7 +377,7 @@ annotate_figure(plot_food_access, top = text_grob("High vs. Low Produce Supemark
 
 ## Linear Model 
 
-model data prep 
+Model data prep 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 final_data = readRDS("data/final_data.RDS") %>%
@@ -492,6 +449,8 @@ betas.df$variables <- names(betas[[1]])
 
 
 ```
+
+
 
 ```{r, warning=FALSE, fig.width=15, fig.height=15, message=FALSE, echo=FALSE}
 
@@ -670,6 +629,8 @@ print(summary(models_min$COPD_CrudePrev))
 ```
 
 ## Reduced Linear Model
+
+
 
 # Appendix I: Data Cleaning 
 
@@ -932,3 +893,54 @@ final_data %>%
   theme_bw() + 
   theme(legend.position = "right")
 ```
+
+
+
+## eda looking at relationship of our variables
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+census_disp = read.csv("data/census_healthdisp_cleaned.csv")
+```
+
+[distributions of hospitals]
+```{r, echo = F, message=FALSE}
+hospitals <- readRDS("data/hospitals_cleaned.RDS") %>%
+  dplyr::rename(street = STREET_ADDRESS, 
+         city = CITY, 
+         state = STATE)
+  
+# hospitals_sf <- cxy_geocode(hospitals,
+#                             street = "street",
+#                             city = "city",
+#                             state = "state",
+#                             class = "sf")
+```
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+# mapview::mapview(hospitals)
+```
+
+
+[distribution of affordable housing]
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+affordable_housing <- readRDS("data/affordable_housing_geoid.rds") 
+  
+# affordable_housing_sf <- cxy_geocode(affordable_housing,
+#                             street = "street", 
+#                             city = "city", 
+#                             state = "state", 
+#                             class = "sf")
+```
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+# mapview::mapview(affordable_housing_sf)
+```
+
+
+
+# Appendix III: Data Dictionary 
+Here is the break down of variable names:
+
+```{r out.width = "400px", echo = F, fig.cap="Data Dictionary", echo=FALSE}
+knitr::include_graphics("images/variable_names.png")
+``` 
