@@ -28,7 +28,7 @@ knitr::opts_chunk$set(fig.height=4, fig.width=7, fig.align = 'center', warning =
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
                tigris, ndi, dplyr, mapview, tidycensus, RColorBrewer, leaps,
-               skimr, GGaly, reshape2, glmnet, caret, viridis, pheatmap, tidycensus) 
+               skimr, GGaly, reshape2, glmnet, caret, viridis, pheatmap, tidycensus, car) 
 
 # resize figs with:  warning=FALSE, fig.width=25, fig.height=8, message=FALSE, echo=FALSE
 ```
@@ -65,12 +65,13 @@ In this project, we use the following three nearly cleaned data:
 
 **Philadelphia's Black Bottom**
 
-```{r out.width = "400px", echo = F, fig.cap="Philadelphia's Black Bottom from 1930 to 1973", echo=FALSE}
+```{r out.width = "400px", echo = F, fig.cap="Philadelphia's Black Bottom from 1930 to 1973", echo=FALSE, out.width="60%"}
 knitr::include_graphics("images/black_bottom_philly.jpg")
 ```
 
 
-**Gini income inequality**
+
+**Gini: measuring income inequality**
 
 [talk about how the gini inequality has changed over the time]
 
@@ -520,13 +521,35 @@ features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 fit.forward.diab = regsubsets(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev), nvmax = 60, method = "forward")
 # summary(fit.forward.diab)
+
+fit.forward.diab$rss
+
+# min = which.min(fit.forward.diab$rss)
+# plot(fit.forward.diab$rss, type = 'b')
+# points(min, fit.forward.diab$rss[min][1], col = "red", cex = 2, pch = 20)
+# 
+
+# summary(fit.forward.diab)
+
+# f.d <- summary(fit.forward.diab)
+# names(f.d)
+# str(f.d)
+
+
+# Let's look at the `which` table
+
+# f.d$which
 ```
+
+
 
 
 #### COPD 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 fit.forward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1][features], final_data$COPD_CrudePrev), nvmax = 60, method = "forward")
 # summary(fit.forward.copd)
+
+which.min(fit.forward.copd$rss)
 ```
 
 
@@ -537,6 +560,8 @@ fit.forward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1]
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 fit.backward.diab = regsubsets(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev), nvmax = 60, method = "backward")
 # summary(fit.backward.diab)
+
+which.min(fit.backward.diab$rss)
 ```
 
 
@@ -548,9 +573,56 @@ fit.backward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1
 ```
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-coef(fit.backward.copd, 10)
+coef(fit.backward.copd, 3)
 ```
 
+```{r}
+plot(fit.backward.copd, scale = "r2")
+```
+
+
+### Evaluation of Forward and Backward selection
+
+
+
+Diabetes 
+```{r}
+which.min(summary(fit.forward.diab)$rss)
+
+which.min(summary(fit.forward.diab)$rss)
+
+coef(fit.forward.diab, 20)
+```
+
+```{r}
+which.min(summary(fit.backward.diab)$rss)
+
+which.min(summary(fit.backward.diab)$rss)
+
+coef(fit.backward.diab, 20)
+```
+
+The RSS is the smallest for the 20-variable model for Diabetes in both forward and backward selection
+
+
+COPD 
+```{r}
+which.min(summary(fit.forward.copd)$rss)
+
+which.min(summary(fit.forward.copd)$rss)
+
+coef(fit.forward.copd, 20)
+```
+
+```{r}
+which.min(summary(fit.backward.copd)$rss)
+
+which.min(summary(fit.backward.copd)$rss)
+
+coef(fit.backward.copd, 20)
+```
+
+The RSS is the smallest for the 20-variable model for COPD in both forward and backward selection
 
 ### LASSO 
 
@@ -630,6 +702,10 @@ print(summary(models_min$COPD_CrudePrev))
 
 ## Reduced Linear Model
 
+### Diabetes
+
+
+### COPD 
 
 
 # Appendix I: Data Cleaning 
