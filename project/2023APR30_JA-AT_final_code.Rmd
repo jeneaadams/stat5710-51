@@ -698,9 +698,17 @@ print(summary(models_min$COPD_CrudePrev))
 
 ```
 
-## Reduced Linear Model
+## Reduced Linear Model Evaluation
 
 ### Diabetes
+
+```{r}
+# # diab.full = lm(data = final_data[-1], DIABETES_CrudePrev ~.)
+# diab.full = lm(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev))
+# 
+# anova(diab.full, lasso_models$DIABETES_CrudePrev)
+```
+
 
 
 
