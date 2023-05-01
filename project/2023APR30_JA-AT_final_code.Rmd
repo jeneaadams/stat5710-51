@@ -73,7 +73,7 @@ knitr::include_graphics("images/black_bottom_philly.jpg")
 
 **Gini: measuring income inequality**
 
-Gini indexes have changed over time. Here we select the top and bottom 5 census tracts based on theer mean Gini coefficient from 2011 to 2019.  
+Gini indexes have changed over time. Here we select the top and bottom 5 census tracts based on their mean Gini coefficient from 2011 to 2019. We see that the Black Bottom area has had a high mean gini index. 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 
@@ -420,7 +420,7 @@ betas = list()
   
 for(i in 1:length(Ys[-1])){
   f = as.formula(
-  paste(Ys[i], 
+  paste(Ys[-1][i], 
         paste(features, collapse = " + "), 
         sep = " ~ "))
   
@@ -494,12 +494,12 @@ pheatmap(scaled_significant_df, na_col = "#FFFFFFFF",
 
 ```
 
-pos gini beta: "COPD_CrudePrev", "COREM_CrudePrev", "DIABETES_CrudePrev"
-negative gini beta: "ARTHRITIS_CrudePrev", "BPMED_CrudePrev", "COLON_SCREEN_CrudePrev", "DENTAL_CrudePrev", "HIGHCHOL_CrudePrev", "MAMMOUSE_CrudePrev", "PAPTEST_CrudePrev","SLEEP_CrudePrev", "STROKE_CrudePrev" 
+Disease that with prevalences that increase with every increase in gini index: COLON_SCREEN_CrudePrev, COPD_CrudePrev, DENTAL_CrudePrev, STROKE_CrudePrev
+Disease that with prevalences that decrease with every increase in gini index: ACCESS2_CrudePrev, BPHIGH_CrudePrev, CHOLSCREEN_CrudePrev, CSMOKING_CrudePrev, DIABETES_CrudePrev, LPA_CrudePrev, OBESITY_CrudePrev, PHLTH_CrudePrev, SLEEP_CrudePrev
 
 ## Model Selection 
 
-Next we perform model selection on models to predict diabetes and COPD prevelance since they appear to have a strong positive correlation to gini index. 
+Next we perform model selection on models to predict colon screening and COPD prevalence since they appear to have a strong positive correlation to gini index. 
 
 Pepare the data subsetting for model prediction of disease variables vs socioeconomic indicators
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
@@ -513,15 +513,16 @@ features <- colnames(final_data)[!(colnames(final_data) %in% Ys) &
 
 
 
+
 ### Forward Selection 
 
-#### Diabetes 
+#### Stroke
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-fit.forward.diab = regsubsets(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev), nvmax = 60, method = "forward")
+fit.forward.stroke = regsubsets(final_data$STROKE_CrudePrev ~., cbind(final_data[-1][features], final_data$STROKE_CrudePrev), nvmax = 60, method = "forward")
 # summary(fit.forward.diab)
 
-fit.forward.diab$rss
+fit.forward.stroke$rss
 
 # min = which.min(fit.forward.diab$rss)
 # plot(fit.forward.diab$rss, type = 'b')
@@ -542,7 +543,6 @@ fit.forward.diab$rss
 
 
 
-
 #### COPD 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 fit.forward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1][features], final_data$COPD_CrudePrev), nvmax = 60, method = "forward")
@@ -554,13 +554,13 @@ which.min(fit.forward.copd$rss)
 
 ### Backward Selection 
 
-#### Diabetes 
+#### Stroke
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-fit.backward.diab = regsubsets(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev), nvmax = 60, method = "backward")
+fit.backward.stroke = regsubsets(final_data$STROKE_CrudePrev ~., cbind(final_data[-1][features], final_data$STROKE_CrudePrev), nvmax = 60, method = "backward")
 # summary(fit.backward.diab)
 
-which.min(fit.backward.diab$rss)
+which.min(fit.backward.stroke$rss)
 ```
 
 
@@ -573,35 +573,35 @@ fit.backward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1
 
 
 
-
 ### Evaluation of Forward and Backward selection
 
 
-We evaluate some of the outputs from `regsubsets` by looking for best performing subsets with high R^2 values or low RSS (Residual Sum of Squares). Overall, it seems that forward and backward selection has the lowest RSS for the 20-variable model, but the plots show that there may be some variables that provide the hights R^2, such as heat exposure, behicle availability, and experiencing health effects from heat exposure for the COPD prediction model. 
+We evaluate some of the outputs from `regsubsets` by looking for best performing subsets with high R^2 values or low RSS (Residual Sum of Squares). Overall, it seems that forward and backward selection has the lowest RSS for the 20-variable model, but the plots show that there may be some variables that provide the hights R^2, such as heat exposure, vehicle availability, and experiencing health effects from heat exposure for the COPD prediction model. 
 
 
 ```{r}
 plot(fit.backward.copd, scale = "r2")
 ```
 
-Diabetes 
+Stroke
 ```{r}
-which.min(summary(fit.forward.diab)$rss)
+which.min(summary(fit.forward.stroke)$rss)
 
-which.min(summary(fit.forward.diab)$rss)
+which.min(summary(fit.forward.stroke)$rss)
 
-coef(fit.forward.diab, 20)
+coef(fit.forward.stroke, 20)
 ```
 
 ```{r}
-which.min(summary(fit.backward.diab)$rss)
+which.min(summary(fit.backward.stroke)$rss)
 
-which.min(summary(fit.backward.diab)$rss)
+which.min(summary(fit.backward.stroke)$rss)
 
-coef(fit.backward.diab, 20)
+coef(fit.backward.stroke, 20)
 ```
 
-The RSS is the smallest for the 20-variable model for Diabetes in both forward and backward selection
+
+The RSS is the smallest for the 20-variable model for Stroke in both forward and backward selection
 
 
 COPD 
@@ -611,6 +611,7 @@ which.min(summary(fit.forward.copd)$rss)
 which.min(summary(fit.forward.copd)$rss)
 
 coef(fit.forward.copd, 20)
+
 ```
 
 ```{r}
@@ -690,25 +691,51 @@ for(i in 1:length(Ys[-1])){
 
 # summary(models_min$DIABETES_CrudePrev)
 
-plot(lasso_models$DIABETES_CrudePrev, main = "Diabetes\n")
-print(summary(models_min$DIABETES_CrudePrev))
+plot(lasso_models$STROKE_CrudePrev, main = "Stroke\n")
+print(summary(models_min$STROKE_CrudePrev))
 
 plot(lasso_models$COPD_CrudePrev, main = "COPD\n")
 print(summary(models_min$COPD_CrudePrev))
 
 ```
 
-## Reduced Linear Model Evaluation
 
-### Diabetes
+Stroke
 
+Linear Model Residual and QQ plot
 ```{r}
-# # diab.full = lm(data = final_data[-1], DIABETES_CrudePrev ~.)
-# diab.full = lm(final_data$DIABETES_CrudePrev ~., cbind(final_data[-1][features], final_data$DIABETES_CrudePrev))
-# 
-# anova(diab.full, lasso_models$DIABETES_CrudePrev)
+par(mfrow = c(1, 2))
+plot(models$STROKE_CrudePrev,1:2)
+```
+Linear Model after LASSO Residual and QQ plot
+```{r}
+par(mfrow = c(1, 2))
+plot(models_min$STROKE_CrudePrev,1:2)
 ```
 
+The linearity assumption for both models is met since the residual plot show reasonable symmetry.
+
+
+```{r}
+anova(models$STROKE_CrudePrev, models_min$STROKE_CrudePrev)
+```
+
+COPD
+
+Linear Model Residual and QQ plot
+```{r}
+par(mfrow = c(1, 2))
+plot(models$COPD_CrudePrev,1:2)
+```
+Linear Model after LASSO Residual and QQ plot
+```{r}
+par(mfrow = c(1, 2))
+plot(models_min$COPD_CrudePrev,1:2)
+```
+
+```{r}
+anova(models$COPD_CrudePrev, models_min$COPD_CrudePrev)
+```
 
 
 
