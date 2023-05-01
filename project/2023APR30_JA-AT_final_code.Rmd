@@ -78,6 +78,25 @@ knitr::include_graphics("images/black_bottom_philly.jpg")
 [talk about how the gini inequality has changed over the time]
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
+
+# extract phila county geospatial data
+pa.tracts <- get_acs(geography = "tract", 
+              year = 2010,
+              variables = c(tpopr = "B03002_001"), 
+              state = "PA",
+              county = "Philadelphia",
+              output = "wide",
+              survey = "acs5",
+              geometry = TRUE,
+              cb = FALSE)
+
+
+
+na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
+              "42101980900", "42101980700", "42101980600", "42101980800",
+              "42101980500", "42101980000", "42101980300")
+
+pa.tracts$res <- as.numeric(pa.tracts$GEOID %in% na_tracts,3:length(pa.tracts))
 # extract gini coefficient for 2010 and generate a matrix
 gini_2010 <- gini(geo = "tract", year = 2010, quiet = F, state = "PA", county = "Philadelphia")
 philly_gini_all <- gini_2010$gini %>%
@@ -881,24 +900,7 @@ Final merge
 We used only the following residential census tracts for the analysis
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-# extract phila county geospatial data
-pa.tracts <- get_acs(geography = "tract", 
-              year = 2010,
-              variables = c(tpopr = "B03002_001"), 
-              state = "PA",
-              county = "Philadelphia",
-              output = "wide",
-              survey = "acs5",
-              geometry = TRUE,
-              cb = FALSE)
 
-
-
-na_tracts <-c("42101980400", "42101005000", "42101980200", "42101980100",
-              "42101980900", "42101980700", "42101980600", "42101980800",
-              "42101980500", "42101980000", "42101980300")
-
-pa.tracts$res <- as.numeric(pa.tracts$GEOID %in% na_tracts,3:length(pa.tracts))
 
 ggplot(pa.tracts,aes(fill = res)) + 
   geom_sf() +
