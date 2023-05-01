@@ -37,35 +37,35 @@ pacman::p_load(sf, readxl, tidyverse, ggplot2, ggpmisc, ggpubr, censusxy,
 # Executive Summary 
 
 ## Abstract & Goal of the Study 
-Gentrification is a process of affluent residents and businesses displacing existing low-income residents and businesses. Beyond prospects for so-called "urban renewal", gentrification has real, tangible effects on the landscape and trajectories of existing communities who often don't benefit from the changes of a neighborhood and are disenfranchised from participating in the growth of their area. Gentrification also has documented health effects on communities, such as shortened life expectancy, higher cancer rates, higher infant mortality, and cardiovascular diseases. Income inequality can be used to estimate gentrification rates. It can be quantified by a [Gini index](https://www.census.gov/topics/income-poverty/income-inequality/about/metrics/gini-index.html) which is a value from 0 to 1 indicating inequality in the dispersion of income in a given unit. **This study begins to to investigate a statistical framework for capturing the relationship between income inequality and health effects in Philadelphia from integrated datasets.**
+Gentrification is a process of affluent residents and businesses displacing existing low-income residents and businesses. Beyond prospects for so-called "urban renewal", gentrification has real, tangible effects on the landscape and trajectories of existing communities who often don't benefit from the changes of a neighborhood and are disenfranchised from participating in the growth of their area. Gentrification also has documented health effects on communities, such as shortened life expectancy, higher cancer rates, higher infant mortality, and cardiovascular diseases. Income inequality can be used to estimate gentrification rates. It can be quantified by a [Gini index](https://www.census.gov/topics/income-poverty/income-inequality/about/metrics/gini-index.html) which is a value from 0 to 1 indicating inequality in the dispersion of income in a given unit. **This study begins to to investigate a statistical framework for capturing the relationship between income inequality and health effects in Philadelphia, especially the historic Black Bottom (Figure 1), from integrated datasets.**
 
 
 ## Data 
 In this project, we use the following three nearly cleaned data:
 
-* **final_data.RDS**: Census-Tract-level socialeconomic information that combines the following datqsets:
+**final_data.RDS**: Census-Tract-level socialeconomic information that combines the following datqsets:
 
-**Food access**: The Neighborhood Food Retail dataset includes GEOID level assessments of food access relevant to distance and types of high produce grocery stores, as well as if that area is a high poverty area.
+- **Food access**: The Neighborhood Food Retail dataset includes GEOID level assessments of food access relevant to distance and types of high produce grocery stores, as well as if that area is a high poverty area.
 
-**Hospital locations**: locations of hospitals by type of care provided. We chose this to understand the distribution and access to healthcare in each census block.
+- **Hospital locations**: locations of hospitals by type of care provided. We chose this to understand the distribution and access to healthcare in each census block.
     
-**Heat Vulnerability**: scores and indicators for heat vulnerability by census block and prevalence of heat-related illnesses. This may or may not be related to access to green space and tree canopy. This data gives us an idea of environmental variables which contribute to health outcomes and quality of life for Philadelphia residents.
+- **Heat Vulnerability**: scores and indicators for heat vulnerability by census block and prevalence of heat-related illnesses. This may or may not be related to access to green space and tree canopy. This data gives us an idea of environmental variables which contribute to health outcomes and quality of life for Philadelphia residents.
 
-**Affordable Housing**: locations of affordable and accessible housing projects recorded by the city. This data will provide information on the distribution of affordable housing options mapped to census blocks.
+- **Affordable Housing**: locations of affordable and accessible housing projects recorded by the city. This data will provide information on the distribution of affordable housing options mapped to census blocks.
 
-**Philadelphia population metrics**: Demographic information of Philadelphia census blocks by race and ethnicity
+- **Philadelphia population metrics**: Demographic information of Philadelphia census blocks by race and ethnicity
 
-**Socioeconomic data**: income inequality calculated as a census tract-level Gini index.
+- **Socioeconomic data**: income inequality calculated as a census tract-level Gini index.
 
-**Health data**: measures of prevalence of health measures such as cancer prevalence, access to health insurance, blood pressure, heart disease, and more by census tract.
+- **Health data**: measures of prevalence of health measures such as cancer prevalence, access to health insurance, blood pressure, heart disease, and more by census tract.
 
-**Transitscore/Walkscore/Bikescore**: measures how walkable, well served by public transportation, and bikeable a location is
+- **Transitscore/Walkscore/Bikescore**: measures how walkable, well served by public transportation, and bikeable a location is
 
 
 
 **Philadelphia's Black Bottom**
 
-```{r out.width = "400px", echo = F, fig.cap="Philadelphia's Black Bottom from 1930 to 1973", echo=FALSE, out.width="60%"}
+```{r out.width = "400px", echo = F, fig.cap="Philadelphia's Black Bottom from 1930 to 1973", echo=FALSE, out.width="30%"}
 knitr::include_graphics("images/black_bottom_philly.jpg")
 ```
 
@@ -73,7 +73,7 @@ knitr::include_graphics("images/black_bottom_philly.jpg")
 
 **Gini: measuring income inequality**
 
-[talk about how the gini inequality has changed over the time]
+Gini indexes have changed over time. Here we select the top and bottom 5 census tracts based on theer mean Gini coefficient from 2011 to 2019.  
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 
@@ -220,7 +220,7 @@ final_data = readRDS("data/final_data.RDS") %>%
 
 **looking specifically at 2010**
 
-[introduce why we're specifically looking at 2010 (that's when most of our other data sets are from)]
+Even though the last census concluded in 2020, we are using 2010 data because that was the year for the most robust and informative data available from our many sources.
 
 ```{r, message=FALSE, echo=FALSE}
 census_disp = read.csv("data/census_healthdisp_cleaned.csv")
@@ -310,7 +310,7 @@ ggarrange(j1, j2, ncol = 2, nrow = 1)
 
 
 
-[talk about how transit and walk score is a little lower in our tracts with high inequality]
+Transit and walks scores are lower in census tracts with higher (than average) inequality/Gini indexes. 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 transit_score_plot <- census_disp_geo %>%
@@ -348,9 +348,8 @@ annotate_figure(plot_transport, top = text_grob("Utility of Public Transport, Wa
 ```
 
 
-[Talk about we see both high and low produce supermarkets and stores in our tracts with high inequality]
-
-we also have number of restaurants but don't include the anlysis here for brevity
+There's a wider distribution of low produce supply stores than high produce supply stores, which seem to be concentrated in the center of the city. 
+We also have number of restaurants but don't include the analysis here for brevity
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 hpss_plot <- census_disp_geo %>%
@@ -572,18 +571,18 @@ fit.backward.copd = regsubsets(final_data$COPD_CrudePrev ~., cbind(final_data[-1
 # summary(fit.backward.copd)
 ```
 
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-coef(fit.backward.copd, 3)
-```
 
-```{r}
-plot(fit.backward.copd, scale = "r2")
-```
 
 
 ### Evaluation of Forward and Backward selection
 
 
+We evaluate some of the outputs from `regsubsets` by looking for best performing subsets with high R^2 values or low RSS (Residual Sum of Squares). Overall, it seems that forward and backward selection has the lowest RSS for the 20-variable model, but the plots show that there may be some variables that provide the hights R^2, such as heat exposure, behicle availability, and experiencing health effects from heat exposure for the COPD prediction model. 
+
+
+```{r}
+plot(fit.backward.copd, scale = "r2")
+```
 
 Diabetes 
 ```{r}
@@ -624,9 +623,8 @@ coef(fit.backward.copd, 20)
 
 The RSS is the smallest for the 20-variable model for COPD in both forward and backward selection
 
-### LASSO 
 
-# LASSO - predicting all diseases 
+### LASSO - predicting all diseases 
 
 LASSO loop
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
@@ -692,10 +690,10 @@ for(i in 1:length(Ys[-1])){
 
 # summary(models_min$DIABETES_CrudePrev)
 
-plot(lasso_models$DIABETES_CrudePrev, main = "Diabetes")
+plot(lasso_models$DIABETES_CrudePrev, main = "Diabetes\n")
 print(summary(models_min$DIABETES_CrudePrev))
 
-plot(lasso_models$COPD_CrudePrev, main = "COPD")
+plot(lasso_models$COPD_CrudePrev, main = "COPD\n")
 print(summary(models_min$COPD_CrudePrev))
 
 ```
@@ -704,8 +702,6 @@ print(summary(models_min$COPD_CrudePrev))
 
 ### Diabetes
 
-
-### COPD 
 
 
 # Appendix I: Data Cleaning 
@@ -972,7 +968,7 @@ final_data %>%
 
 
 
-## eda looking at relationship of our variables
+**EDA looking at relationship of our variables**
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 census_disp = read.csv("data/census_healthdisp_cleaned.csv")
 ```
